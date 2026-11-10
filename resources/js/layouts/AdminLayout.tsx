@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router';
 import { canOpen, permissionFor } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
 import { SignOutButton } from '@/app/SignOutButton';
+import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 
 function NavIcon({ children }: { children: ReactNode }) {
@@ -401,10 +402,10 @@ export function AdminLayout() {
 
             <header className="on-dark sticky top-0 z-30 bg-maroon-900 text-white md:hidden">
                 <div className="flex h-16 items-center justify-between gap-3 pr-2 pl-4">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <BrandLink to="/admin">
                         <BrandLogos size="sm" className="shrink-0" />
                         <p className="truncate text-base font-bold tracking-tight">DRRMO EAMS</p>
-                    </div>
+                    </BrandLink>
                     <button
                         type="button"
                         aria-expanded={menuOpen}
@@ -435,17 +436,19 @@ export function AdminLayout() {
 
             <aside className="on-dark sticky top-0 hidden h-dvh w-20 shrink-0 flex-col bg-maroon-900 text-white md:flex lg:w-64">
                 <div className="flex flex-col items-center border-b border-white/10 px-4 pt-6 pb-5 lg:items-start lg:px-6">
-                    <BrandLogos
-                        size="sm"
-                        className="flex-col gap-2 lg:hidden! [&>span]:h-px [&>span]:w-6"
-                    />
-                    <BrandLogos size="md" className="hidden! lg:flex!" />
-                    <div className="mt-4 hidden lg:block">
-                        <p className="text-base leading-tight font-bold tracking-tight text-white">
-                            DRRMO EAMS
-                        </p>
-                        <p className="mt-0.5 text-xs text-white/60">Administration</p>
-                    </div>
+                    <BrandLink to="/admin" className="flex-col items-center lg:items-start">
+                        <BrandLogos
+                            size="sm"
+                            className="flex-col gap-2 lg:hidden! [&>span]:h-px [&>span]:w-6"
+                        />
+                        <BrandLogos size="md" className="hidden! lg:flex!" />
+                        <div className="mt-4 hidden lg:block">
+                            <p className="text-base leading-tight font-bold tracking-tight text-white">
+                                DRRMO EAMS
+                            </p>
+                            <p className="mt-0.5 text-xs text-white/60">Administration</p>
+                        </div>
+                    </BrandLink>
                 </div>
                 <div className="flex-1 lg:overflow-y-auto">
                     <AdminNav rail />

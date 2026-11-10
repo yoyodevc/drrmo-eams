@@ -7,6 +7,7 @@
 // consent API and to useMe() (see design-specs/privacy-consent.md).
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Alert } from '@/shared/ui/Alert';
+import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 import { Button } from '@/shared/ui/Button';
 import {
@@ -49,12 +50,12 @@ export function PrivacyConsentView({
 
             <header className="border-b border-stone-200">
                 <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <BrandLink>
                         <BrandLogos size="sm" className="shrink-0 text-stone-900" />
                         <span className="hidden text-sm font-semibold text-stone-900 sm:inline">
                             DRRMO EAMS
                         </span>
-                    </div>
+                    </BrandLink>
                     {signOut}
                 </div>
             </header>

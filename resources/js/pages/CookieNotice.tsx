@@ -4,6 +4,7 @@
 // config/session.php). tests/Feature/Core/CookieNoticeTest.php checks that they do.
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 
 interface CookieInfo {
@@ -121,12 +122,12 @@ export function CookieNotice() {
         <div className="min-h-dvh bg-white">
             <header className="border-b border-stone-200">
                 <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <BrandLink>
                         <BrandLogos size="sm" className="shrink-0 text-stone-900" />
                         <span className="hidden text-sm font-semibold text-stone-900 sm:inline">
                             DRRMO EAMS
                         </span>
-                    </div>
+                    </BrandLink>
                     <Link
                         to="/login"
                         className="flex min-h-12 items-center gap-1.5 text-sm font-medium text-maroon-700 hover:underline"

@@ -9,6 +9,7 @@ import {
     NOTICE_VERSION,
 } from '@/features/records/PrivacyNotice';
 import { MobileLayout } from '@/layouts/MobileLayout';
+import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 
 export function PrivacyNoticePage() {
@@ -37,12 +38,12 @@ export function PrivacyNoticePage() {
         <div className="min-h-dvh bg-white">
             <header className="border-b border-stone-200">
                 <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <BrandLink>
                         <BrandLogos size="sm" className="shrink-0 text-stone-900" />
                         <span className="hidden text-sm font-semibold text-stone-900 sm:inline">
                             DRRMO EAMS
                         </span>
-                    </div>
+                    </BrandLink>
                     {!me && (
                         <Link
                             to="/login"

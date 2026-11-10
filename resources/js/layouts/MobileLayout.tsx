@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { useAlerts } from '@/features/notifications/unread';
 import { SignOutButton } from '@/app/SignOutButton';
+import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 
 function TabIcon({ children }: { children: ReactNode }) {
@@ -115,12 +116,12 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
         <div className="min-h-dvh bg-stone-50">
             <header className="sticky top-0 z-20 border-b border-stone-200 bg-white pt-[env(safe-area-inset-top)]">
                 <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 pr-2 pl-4 md:gap-8 md:px-10">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <BrandLink to="/me">
                         <BrandLogos size="sm" className="shrink-0 text-stone-900" />
                         <p className="truncate text-base font-bold tracking-tight text-stone-900">
                             DRRMO EAMS
                         </p>
-                    </div>
+                    </BrandLink>
                     <nav aria-label="Main" className="hidden h-full flex-1 md:block">
                         <ul className="flex h-full items-stretch gap-1">
                             {tabs.map((tab) => (
