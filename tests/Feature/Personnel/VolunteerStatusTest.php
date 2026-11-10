@@ -93,5 +93,5 @@ it('lets a person read only their own availability and history', function () {
     withAuthCookies(loginCookies($mine))->getJson('/api/me/availability')
         ->assertOk()->assertJsonPath('data.status', 'inactive')
         ->assertJsonCount(1, 'data.history')->assertJsonPath('data.history.0.reason', 'On leave');
-    test()->withHeaders([])->getJson('/api/me/availability')->assertUnauthorized();
+    test()->withAuthCookies([])->getJson('/api/me/availability')->assertUnauthorized();
 });

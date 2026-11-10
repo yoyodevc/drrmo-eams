@@ -69,5 +69,5 @@ it('keeps non-admins from reading other peoples contacts', function () {
     $other->emergencyContacts()->create(CONTACT);
 
     withAuthCookies(loginCookies($me))->getJson("/api/admin/people/{$other->id}/emergency-contacts")->assertForbidden();
-    $this->getJson('/api/me/emergency-contacts')->assertUnauthorized();
+    $this->withAuthCookies([])->getJson('/api/me/emergency-contacts')->assertUnauthorized();
 });

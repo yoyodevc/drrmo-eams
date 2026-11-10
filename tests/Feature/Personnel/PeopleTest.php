@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Notifications\Contracts\MailSender;
+use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Models\Department;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Models\AuditLog;
@@ -89,17 +90,18 @@ it('lists people with filters and search', function () {
     User::factory()->role(RoleCode::Volunteer)->create(['first_name' => 'Maria', 'last_name' => 'Santos', 'team' => 'ert', 'department_id' => $dept->id]);
     User::factory()->role(RoleCode::Volunteer)->inactive()->create(['first_name' => 'Jose', 'last_name' => 'Cruz', 'team' => 'security']);
     User::factory()->role(RoleCode::Marshal)->create(['first_name' => 'Lina', 'last_name' => 'Diaz']);
-    User::factory()->role(RoleCode::Volunteer)->accountStatus(App\Modules\Personnel\Enums\AccountStatus::PendingApproval)->create();
+    User::factory()->role(RoleCode::Volunteer)->accountStatus(AccountStatus::PendingApproval)->create();
 
-    $get = fn (string $q = '') => withAuthCookies(loginCookies($admin))->getJson('/api/people'.$q)->assertOk();
+    $get = fn (string $q = '') => withAuthCookies(loginCookies($admin))->getJson('/api/people'.$q);
+    $ok = fn (string $q = '') => $get($q)->assertOk();
 
-    $get()->assertJsonCount(4, 'data')->assertJsonPath('meta.total', 4);
-    $get('?role=volunteer')->assertJsonCount(2, 'data');
-    $get('?team=ert')->assertJsonCount(1, 'data');
-    $get('?status=inactive')->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Jose Cruz');
-    $get("?department={$dept->id}")->assertJsonCount(1, 'data');
-    $get('?search=maria santos')->assertJsonCount(1, 'data');
-    $get('?search=diaz')->assertJsonCount(1, 'data');
+    $ok()->assertJsonCount(4, 'data')->assertJsonPath('meta.total', 4);
+    $ok('?role=volunteer')->assertJsonCount(2, 'data');
+    $ok('?team=ert')->assertJsonCount(1, 'data');
+    $ok('?status=inactive')->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Jose Cruz');
+    $ok("?department={$dept->id}")->assertJsonCount(1, 'data');
+    $ok('?search=maria santos')->assertJsonCount(1, 'data');
+    $ok('?search=diaz')->assertJsonCount(1, 'data');
     $get('?role=nonsense')->assertUnprocessable();
 });
 
@@ -120,7 +122,7 @@ it('keeps non-admins out of the people endpoints', function () {
     withAuthCookies(loginCookies($volunteer))->postJson('/api/people', newPerson())->assertForbidden();
     withAuthCookies(loginCookies($volunteer))->patchJson("/api/people/{$other->id}", newPerson())->assertForbidden();
     withAuthCookies(loginCookies($volunteer))->postJson("/api/people/{$other->id}/invite")->assertForbidden();
-    $this->getJson('/api/people')->assertUnauthorized();
+    $this->withAuthCookies([])->getJson('/api/people')->assertUnauthorized();
     expect(User::query()->where('email', 'ana.reyes@example.test')->exists())->toBeFalse();
 });
 
@@ -135,5 +137,5 @@ it('lets a person read their profile and change only their contact number', func
     expect($me->email)->toBe('me@example.test')->and($me->roleCode())->toBe(RoleCode::Volunteer);
     withAuthCookies(loginCookies($me))->patchJson('/api/me/profile', ['contact_number' => 'abc'])->assertUnprocessable();
     withAuthCookies(loginCookies($me))->patchJson('/api/me/profile', ['contact_number' => ''])->assertOk()->assertJsonPath('data.contact_number', null);
-    $this->getJson('/api/me/profile')->assertUnauthorized();
+    $this->withAuthCookies([])->getJson('/api/me/profile')->assertUnauthorized();
 });

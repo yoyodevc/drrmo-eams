@@ -93,6 +93,6 @@ it('serves the template and keeps non-admins out', function () {
     withAuthCookies(loginCookies($admin))->get('/api/people/import/template')->assertOk()->assertHeader('Content-Disposition', 'attachment; filename="people-template.csv"');
     withAuthCookies(loginCookies($volunteer))->get('/api/people/import/template')->assertForbidden();
     withAuthCookies(loginCookies($volunteer))->post('/api/people/import', ['file' => csv("Ana,Reyes,ana@example.test,,volunteer,,\n")])->assertForbidden();
-    $this->post('/api/people/import', [])->assertUnauthorized();
+    $this->withAuthCookies([])->postJson('/api/people/import', [])->assertUnauthorized();
     expect(User::query()->where('email', 'ana@example.test')->exists())->toBeFalse();
 });
