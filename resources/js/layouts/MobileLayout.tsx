@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet } from 'react-router';
 import { useAlerts } from '@/features/notifications/unread';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -158,6 +158,20 @@ export function MobileLayout() {
                 className="mx-auto max-w-6xl px-6 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none md:px-10 md:pt-10 md:pb-16"
             >
                 <Outlet />
+                <footer className="mt-10 flex flex-wrap gap-x-6 gap-y-1 border-t border-stone-200 pt-4 text-sm">
+                    <Link
+                        to="/me/availability"
+                        className="inline-flex min-h-11 items-center font-medium text-stone-700 underline hover:text-stone-900"
+                    >
+                        My availability
+                    </Link>
+                    <Link
+                        to="/privacy"
+                        className="inline-flex min-h-11 items-center font-medium text-stone-700 underline hover:text-stone-900"
+                    >
+                        Privacy notice
+                    </Link>
+                </footer>
             </main>
 
             <nav
