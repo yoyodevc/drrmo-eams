@@ -259,3 +259,12 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: capped at 5 contacts to keep the list useful in an emergency and stop abuse of the field
 - Evidence: tests/Feature/Personnel/EmergencyContactTest.php
 - Paper: Chapter 3 (system design, data privacy)
+
+## 2026-11-10 · Personnel admin screens redesign (personnel)
+- What was built: People now has role tabs (Everyone, Volunteers, Marshals, Coordinators, Admins) with a count on each, a bar that says how many sign up requests wait for review, and rows you can click anywhere to open the profile
+- What was built: the profile has an Availability card for volunteers. It says what the status means, has a Set active or Set inactive button with a reason dialog, and shows the history as a timeline
+- What was built: Teams and departments shows each list with its people count (a link to People filtered by it). Add and edit open a small dialog. Delete on a team or department that still has people explains why it cannot go and offers Set inactive instead
+- Decision and why: the separate Volunteer status screen is gone. SCREENS.md already said the volunteer toggle belongs to the People list and profile, and the old screen repeated the list, the history and the contacts that the profile has. `/admin/volunteers` now opens People on the Volunteers tab
+- Decision and why: the people list API returns `meta.counts`, the number in each role under the other filters, so the tab counts match what you searched for
+- Evidence: tests/Feature/Personnel/PeopleTest.php
+- Paper: Chapter 3 (system design, user interface)
