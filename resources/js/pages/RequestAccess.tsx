@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AuthLayout, AuthLink } from '@/app/AuthLayout';
+import { RequestSteps } from '@/features/personnel/components/RequestSteps';
 import { requestAccess } from '@/features/personnel/registration';
 import { ApiError } from '@/shared/api/client';
 import { Alert } from '@/shared/ui/Alert';
@@ -76,27 +77,32 @@ export function RequestAccess() {
     return (
         <AuthLayout
             title="Request access"
-            subtitle="For volunteers. The DRRMO office approves every request before you can sign in."
+            subtitle="For volunteers. The DRRMO office checks every request before you can sign in."
         >
-            <form onSubmit={submit} className="mt-8 space-y-5" noValidate>
-                <TextField
-                    label="First name"
-                    autoComplete="given-name"
-                    maxLength={100}
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    error={errors.first_name}
-                    required
-                />
-                <TextField
-                    label="Last name"
-                    autoComplete="family-name"
-                    maxLength={100}
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    error={errors.last_name}
-                    required
-                />
+            <RequestSteps current={1} />
+
+            <form onSubmit={submit} className="mt-7 space-y-5" noValidate>
+                {/* Side by side from 400 px, so large phones and the desktop column save a row. */}
+                <div className="grid gap-5 min-[400px]:grid-cols-2 min-[400px]:gap-3">
+                    <TextField
+                        label="First name"
+                        autoComplete="given-name"
+                        maxLength={100}
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        error={errors.first_name}
+                        required
+                    />
+                    <TextField
+                        label="Last name"
+                        autoComplete="family-name"
+                        maxLength={100}
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        error={errors.last_name}
+                        required
+                    />
+                </div>
                 <TextField
                     label="Email"
                     type="email"
@@ -127,16 +133,26 @@ export function RequestAccess() {
                 />
 
                 <div>
-                    <label className="flex items-start gap-3 text-sm text-stone-700">
+                    {/* The whole box is the tap target. It turns red when the box is left unticked. */}
+                    <label
+                        className={`flex cursor-pointer items-start gap-3 rounded-control border px-4 py-3.5 text-sm leading-relaxed text-stone-700 transition-colors ${errors.privacy_consent ? 'border-red-600 bg-red-50/40' : consent ? 'border-maroon-700/40 bg-maroon-50' : 'border-stone-300 bg-white hover:border-stone-400'}`}
+                    >
                         <input
                             type="checkbox"
                             checked={consent}
                             onChange={(e) => setConsent(e.target.checked)}
+                            aria-invalid={errors.privacy_consent ? true : undefined}
+                            aria-describedby={
+                                errors.privacy_consent ? 'privacy-consent-error' : undefined
+                            }
                             className="mt-0.5 size-5 shrink-0 accent-maroon-700"
                         />
-                        <span>
+                        <span className="text-pretty">
                             I have read the{' '}
-                            <Link to="/privacy" className="font-medium text-maroon-700 underline">
+                            <Link
+                                to="/privacy"
+                                className="font-medium text-maroon-700 underline underline-offset-2 hover:text-maroon-600"
+                            >
                                 privacy notice
                             </Link>{' '}
                             and agree that the DRRMO keeps my name, email and duty records under the
@@ -144,7 +160,10 @@ export function RequestAccess() {
                         </span>
                     </label>
                     {errors.privacy_consent && (
-                        <p className="mt-1.5 text-sm font-medium text-red-700">
+                        <p
+                            id="privacy-consent-error"
+                            className="mt-1.5 text-sm font-medium text-red-700"
+                        >
                             {errors.privacy_consent}
                         </p>
                     )}

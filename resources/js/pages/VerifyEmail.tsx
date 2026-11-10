@@ -4,6 +4,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { AuthLayout, AuthLink } from '@/app/AuthLayout';
+import { RequestSteps } from '@/features/personnel/components/RequestSteps';
 import { confirmEmail, resendCode } from '@/features/personnel/registration';
 import { ApiError } from '@/shared/api/client';
 import { Alert } from '@/shared/ui/Alert';
@@ -101,9 +102,17 @@ export function VerifyEmail() {
     return (
         <AuthLayout
             title="Confirm your email"
-            subtitle={`We sent a 6 digit code to ${email}. It works for 10 minutes.`}
+            subtitle={
+                <>
+                    We sent a 6 digit code to{' '}
+                    <span className="font-medium break-all text-stone-900">{email}</span>. It works
+                    for 10 minutes.
+                </>
+            }
         >
-            <form onSubmit={submit} className="mt-8 space-y-5" noValidate>
+            <RequestSteps current={2} />
+
+            <form onSubmit={submit} className="mt-7" noValidate>
                 <TextField
                     label="Confirmation code"
                     inputMode="numeric"
@@ -112,19 +121,21 @@ export function VerifyEmail() {
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                     disabled={locked}
-                    className="[&_input]:text-center [&_input]:text-2xl [&_input]:tracking-[0.5em]"
+                    hint="Check your spam folder if it is not in your inbox."
+                    className="[&_input]:text-center [&_input]:text-2xl [&_input]:font-semibold [&_input]:tracking-[0.5em] [&_input]:tabular-nums"
                     required
                 />
 
-                <Button type="submit" block loading={busy} disabled={locked}>
+                {/* Stays in the page while empty, so screen readers hear what appears in it. */}
+                <div className="mt-5 space-y-3 empty:mt-0" aria-live="polite">
+                    {error && <Alert tone="error">{error}</Alert>}
+                    {notice && <Alert tone="success">{notice}</Alert>}
+                </div>
+
+                <Button type="submit" block loading={busy} disabled={locked} className="mt-5">
                     {busy ? 'Checking...' : 'Confirm email'}
                 </Button>
             </form>
-
-            <div className="mt-4 space-y-3" aria-live="polite">
-                {error && <Alert tone="error">{error}</Alert>}
-                {notice && <Alert tone="success">{notice}</Alert>}
-            </div>
 
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm">
                 <Button
@@ -140,8 +151,11 @@ export function VerifyEmail() {
                           ? `Send a new code in ${wait}s`
                           : 'Send a new code'}
                 </Button>
-                <AuthLink to="/login">Back to sign in</AuthLink>
+                <AuthLink to="/register">Use a different email</AuthLink>
             </div>
+            <p className="mt-5 text-sm">
+                <AuthLink to="/login">Back to sign in</AuthLink>
+            </p>
         </AuthLayout>
     );
 }
