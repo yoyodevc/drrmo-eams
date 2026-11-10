@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Personnel\Models;
 
 use App\Modules\Access\Enums\Role as RoleCode;
+use App\Modules\Access\Contracts\PermissionChecker;
+use App\Modules\Access\Models\PermissionGrant;
 use App\Modules\Access\Models\Role;
 use App\Modules\Notifications\Contracts\EmailMessage;
 use App\Modules\Notifications\Contracts\MailSender;
@@ -142,8 +144,28 @@ class User extends Authenticatable
         return ! $this->isDisabled() && $this->account_status === AccountStatus::Active;
     }
 
-    public function hasPermission(string $code): bool
+    /**
+     * Role permission or an active grant, answered by the Access module's PermissionChecker.
+     * Pass the event id when the question is about one event, so event grants can match.
+     */
+    public function hasPermission(string $code, ?int $eventId = null): bool
     {
-        return $this->role?->permissions->contains('code', $code) ?? false;
+        return app(PermissionChecker::class)->allows($this, $code, $eventId);
+    }
+
+    /**
+     * Grants that are in force right now, with their permission. Cached on this object once loaded.
+     *
+     * @return HasMany<PermissionGrant, $this>
+     */
+    public function activeGrants(): HasMany
+    {
+        return $this->hasMany(PermissionGrant::class)->active()->with('permission');
+    }
+
+    /** @return HasMany<PermissionGrant, $this> */
+    public function grants(): HasMany
+    {
+        return $this->hasMany(PermissionGrant::class);
     }
 }

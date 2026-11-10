@@ -22,7 +22,8 @@ class MeResource extends JsonResource
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
-        $this->resource->loadMissing('role.permissions');
+        $this->resource->loadMissing('role.permissions', 'activeGrants.event');
+        $grants = $this->resource->activeGrants->filter(fn ($g) => $g->permission->grantable);
         $consent = app(ConsentChecker::class);
         $role = $this->resource->roleCode();
 
@@ -36,7 +37,17 @@ class MeResource extends JsonResource
             'team' => $this->team,
             'team_name' => $this->teamName(),
             'status' => $this->status->value,
-            'permissions' => $this->role->permissions->pluck('code')->sort()->values()->all(),
+            // Role permissions plus grants that are in force and not tied to one event.
+            'permissions' => $this->role->permissions->pluck('code')
+                ->merge($grants->whereNull('event_id')->map(fn ($g) => $g->permission->code))
+                ->unique()->sort()->values()->all(),
+            // Every grant in force now, so the app can show event scoped access and when it ends.
+            'grants' => $grants->map(fn ($g) => [
+                'permission' => $g->permission->code,
+                'event_id' => $g->event_id,
+                'event_title' => $g->event?->title,
+                'ends_at' => $g->ends_at->toIso8601String(),
+            ])->values()->all(),
             'consent' => [
                 'privacy_notice' => $consent->has($this->resource, ConsentPurpose::PrivacyNotice),
                 // True when they agreed to an older notice version, so the screen can say it changed.

@@ -5,6 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
+import { GrantsCard } from '@/features/access/components/GrantsCard';
 import { personContacts } from '@/features/personnel/contacts';
 import { getPerson, resendInvite, roleLabels } from '@/features/personnel/people';
 import {
@@ -250,6 +251,8 @@ export function PersonProfile() {
                             history={history}
                         />
                     )}
+
+                    {p.role !== 'admin' && <GrantsCard personId={p.id} firstName={p.first_name} />}
 
                     <Card title="Details" id="details-title">
                         <div className="space-y-6">

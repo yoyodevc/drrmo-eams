@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useMe, type Me } from '@/app/auth';
 import { SignOutButton } from '@/app/SignOutButton';
+import { MyGrants } from '@/features/access/components/MyGrants';
 
 function Icon({ children, className = 'size-5' }: { children: ReactNode; className?: string }) {
     return (
@@ -171,6 +172,8 @@ export function MyProfile() {
                     />
                 </ul>
             </section>
+
+            <MyGrants />
 
             <SignOutButton className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control border border-stone-300 bg-white px-5 text-base font-semibold text-stone-800 transition-colors hover:bg-stone-50 active:bg-stone-100">
                 <Icon>

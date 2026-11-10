@@ -37,8 +37,8 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S2.3 | Emergency contacts | Done |
 | S2.4 | Volunteer active and inactive toggle | Done |
 | S2.5 | Privacy notice and consent | Done |
-| S2.6 | Permission check with grants | Not started |
-| S2.7 | Grants manager | Not started |
+| S2.6 | Permission check with grants | Done |
+| S2.7 | Grants manager | Done |
 | S2.8 | Coordinator event notices | Done |
 | S3.1 | Assignment conflict checks | Done |
 | S3.2 | Acknowledge | Done |

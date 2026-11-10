@@ -20,7 +20,15 @@ export interface Me {
     team: string | null;
     team_name?: string | null;
     status: 'active' | 'inactive';
+    // Role permissions plus grants in force that are not tied to one event.
     permissions: string[];
+    // Every grant in force now, including ones for one event.
+    grants?: {
+        permission: string;
+        event_id: number | null;
+        event_title: string | null;
+        ends_at: string;
+    }[];
     consent: {
         privacy_notice: boolean;
         // True when they agreed to an older notice version.

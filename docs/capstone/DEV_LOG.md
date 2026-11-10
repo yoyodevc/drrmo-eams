@@ -285,3 +285,13 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: the same checks run for Check file and Import, so a file that passed the check cannot fail later for a reason the check missed (an email taken in between aside)
 - Evidence: tests/Feature/Personnel/PeopleImportTest.php
 - Paper: Chapter 3 (system design)
+
+## 2026-11-10 · S2.6 and S2.7 Permission grants (access)
+- What was built: a permission now comes from the person's role or from a time-limited grant. `User::hasPermission()` asks one place, the Access `PermissionChecker`, so every policy honors grants without changing. A grant counts while `starts_at <= now < ends_at` and it is not revoked. A grant tied to one event only answers questions about that event
+- What was built: an admin opens a person's profile and uses the Extra access card to give access (the live map, submit site reports, read site reports) with an event, a start, an end and a reason, or to end a grant early. Admins have all of these already, so their profile hides the card
+- What was built: the Me tab shows a person the extra access they hold or will hold, and when it ends. `GET /api/me` also returns the grants in force, and leaves event grants out of the flat `permissions` list
+- Decision and why: `reports.submit` must name an event, and `location.view` can last 7 days at most. The server also refuses a permission the role already holds, an account that cannot sign in, a start in the past and an overlapping grant for the same permission
+- Decision and why: revoking sets `revoked_at` and `revoked_by`, and nothing is deleted, so the history stays. Giving and revoking both write an audit row (`grant.created`, `grant.revoked`)
+- Decision and why: only permissions marked grantable can be granted, and the checker ignores a grant row for any other permission, so a bad row can never open admin features
+- Evidence: tests/Feature/Access/PermissionCheckerTest.php, tests/Feature/Access/GrantsTest.php
+- Paper: Chapter 3 (system design, data privacy)
