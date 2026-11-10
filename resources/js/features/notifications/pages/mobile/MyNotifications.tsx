@@ -108,7 +108,7 @@ function AlertRow({ alert, fresh }: { alert: MyNotification; fresh: boolean }) {
                     className="flex gap-3 p-4 transition-colors hover:bg-stone-50 active:bg-stone-100"
                 >
                     {body}
-                    <ChevronRightIcon className="mt-2.5 size-5 shrink-0 text-stone-400" />
+                    <ChevronRightIcon className="mt-0.5 size-5 shrink-0 text-stone-400" />
                 </Link>
             ) : (
                 <div className="flex gap-3 p-4">
