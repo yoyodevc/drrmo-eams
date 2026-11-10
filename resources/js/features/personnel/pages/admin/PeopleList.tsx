@@ -1,7 +1,6 @@
-// A-People (S2.1). Everyone with an account: pick a role tab, filter, search, open a profile, add a person.
+// A-People (S2.1). Everyone with an account: filter, search, open a profile, add a person.
 // Desktop first at 1280 px with a table. Under 768 px the rows become a tappable list and the
 // filters fold behind a Filters button. Filters live in the URL, so Back from a profile keeps them.
-// Volunteer availability is changed on the profile, so there is no separate Volunteer status screen.
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -12,16 +11,12 @@ import {
     listTeams,
     type PeopleFilters,
     type Person,
-    type RoleCode,
 } from '@/features/personnel/people';
-import { listRequests } from '@/features/personnel/registration';
 import {
     AvailabilityChip,
     Avatar,
     ChevronIcon,
-    ClockIcon,
     FilterIcon,
-    InfoIcon,
     PeopleIcon,
     PlusIcon,
     SearchIcon,
@@ -31,16 +26,7 @@ import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 
 const PER_PAGE = 25;
-// Role is a tab, not a dropdown, so it does not count toward the folded phone filters.
-const FILTER_KEYS = ['team', 'department', 'status'] as const;
-
-const tabs: { value: RoleCode | ''; label: string; noun: [string, string] }[] = [
-    { value: '', label: 'Everyone', noun: ['person', 'people'] },
-    { value: 'volunteer', label: 'Volunteers', noun: ['volunteer', 'volunteers'] },
-    { value: 'marshal', label: 'Marshals', noun: ['marshal', 'marshals'] },
-    { value: 'coordinator', label: 'Coordinators', noun: ['coordinator', 'coordinators'] },
-    { value: 'admin', label: 'Admins', noun: ['admin', 'admins'] },
-];
+const FILTER_KEYS = ['role', 'team', 'department', 'status'] as const;
 
 const headCell = 'px-5 py-3 text-xs font-semibold tracking-wide text-stone-500 uppercase';
 // 48 px and 16 px text on phones so iOS does not zoom; the denser 40 px admin size from 768 px.
@@ -60,7 +46,7 @@ function Select({
     children: ReactNode;
 }) {
     return (
-        <label className={`${label} block min-w-0 md:w-48`}>
+        <label className={`${label} block min-w-0 md:w-44`}>
             <span className="mb-1.5 block">{name}</span>
             <select className={control} value={value} onChange={(e) => onChange(e.target.value)}>
                 {children}
@@ -92,8 +78,10 @@ function SkeletonRows() {
                         </div>
                     </td>
                     <td className="px-5 py-3.5">
+                        <div className="h-4 w-20 animate-pulse rounded bg-stone-200" />
+                    </td>
+                    <td className="px-5 py-3.5">
                         <div className="h-4 w-24 animate-pulse rounded bg-stone-200" />
-                        <div className="mt-2 h-3 w-20 animate-pulse rounded bg-stone-200" />
                     </td>
                     <td className="px-5 py-3.5">
                         <div className="h-4 w-40 animate-pulse rounded bg-stone-200" />
@@ -104,7 +92,6 @@ function SkeletonRows() {
                     <td className="px-5 py-3.5">
                         <div className="h-4 w-24 animate-pulse rounded bg-stone-200" />
                     </td>
-                    <td className="w-12 px-5 py-3.5" />
                 </tr>
             ))}
         </>
@@ -124,35 +111,6 @@ function SkeletonItems() {
                 </li>
             ))}
         </>
-    );
-}
-
-// Waiting sign ups, so the admin sees there is work on Access requests without opening it.
-function PendingRequests() {
-    const pending = useQuery({
-        queryKey: ['access-requests', 'pending_approval'],
-        queryFn: () => listRequests('pending_approval'),
-    });
-    const count = pending.data?.length ?? 0;
-    if (count === 0) return null;
-
-    return (
-        <Link
-            to="/admin/requests"
-            className="mt-6 flex min-h-12 items-center gap-3 rounded-card bg-amber-50 px-4 py-3 ring-1 ring-amber-200 transition-colors ring-inset hover:bg-amber-100/70"
-        >
-            <ClockIcon className="size-5 shrink-0 text-amber-800" />
-            <span className="min-w-0 flex-1 text-sm text-pretty text-amber-950">
-                <span className="font-semibold">
-                    {count === 1 ? '1 sign up request is' : `${count} sign up requests are`}
-                </span>{' '}
-                waiting for your review.
-            </span>
-            <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-amber-900">
-                Review
-                <ChevronIcon className="size-4" />
-            </span>
-        </Link>
     );
 }
 
@@ -198,22 +156,18 @@ export function PeopleList() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [term]);
 
-    // Clear keeps the role tab. Switching tabs is a separate choice.
     const clear = () => {
         setTerm('');
-        setParams(filters.role ? { role: filters.role } : {}, { replace: true });
+        setParams({}, { replace: true });
     };
 
     const activeFilters = FILTER_KEYS.filter((key) => filters[key] !== '').length;
     const filtered = activeFilters > 0 || filters.search !== '';
     const rows = list.data?.data ?? [];
     const meta = list.data?.meta;
-    const counts = meta?.counts;
-    const tab = tabs.find((t) => t.value === filters.role) ?? tabs[0];
-    const nobodyYet = list.isSuccess && !filtered && !filters.role && (meta?.total ?? 0) === 0;
+    const nobodyYet = list.isSuccess && !filtered && (meta?.total ?? 0) === 0;
     const first = meta ? (meta.page - 1) * PER_PAGE + 1 : 0;
     const last = meta ? Math.min(meta.total, first + rows.length - 1) : 0;
-    const noun = (n: number) => tab.noun[n === 1 ? 0 : 1];
     const back = { from: params.toString() ? `?${params.toString()}` : '' };
 
     const addPerson = (
@@ -235,14 +189,25 @@ export function PeopleList() {
                         People
                     </h1>
                     <p className="mt-1 max-w-xl text-pretty text-stone-600">
-                        Everyone who can sign in. Open a person to see their details, availability
-                        and emergency contacts.
+                        Everyone with an account. New sign ups wait on{' '}
+                        <Link
+                            to="/admin/requests"
+                            className="font-medium text-maroon-700 underline-offset-2 hover:underline"
+                        >
+                            Access requests
+                        </Link>
+                        . Edit the{' '}
+                        <Link
+                            to="/admin/teams"
+                            className="font-medium text-maroon-700 underline-offset-2 hover:underline"
+                        >
+                            teams and departments
+                        </Link>
+                        .
                     </p>
                 </div>
                 {addPerson}
             </header>
-
-            <PendingRequests />
 
             {list.isError ? (
                 <div className="mt-8 max-w-xl space-y-3">
@@ -270,45 +235,12 @@ export function PeopleList() {
                     </p>
                 </div>
             ) : (
-                <section className="mt-6" aria-busy={list.isPending || undefined}>
-                    {/* Role tabs. The number is how many match the other filters. */}
-                    {/* On phones the tabs scroll sideways. The fade on the right shows there is more. */}
-                    <div className="overflow-x-auto border-b border-stone-200 [mask-image:linear-gradient(to_right,black_80%,transparent)] md:[mask-image:none]">
-                        <div
-                            className="flex gap-5 pr-8 md:gap-6 md:pr-0"
-                            role="group"
-                            aria-label="Show role"
-                        >
-                            {tabs.map((t) => {
-                                const selected = t.value === filters.role;
-                                const n = counts?.[t.value || 'all'];
-                                return (
-                                    <button
-                                        key={t.label}
-                                        type="button"
-                                        aria-pressed={selected}
-                                        onClick={() => set('role', t.value)}
-                                        className={`-mb-px inline-flex min-h-12 shrink-0 items-center gap-2 border-b-2 text-base font-semibold whitespace-nowrap transition-colors md:text-sm ${selected ? 'border-maroon-700 text-stone-900' : 'border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900'}`}
-                                    >
-                                        {t.label}
-                                        {n !== undefined && (
-                                            <span
-                                                className={`font-normal tabular-nums ${selected ? 'text-stone-600' : 'text-stone-500'}`}
-                                            >
-                                                {n}
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
+                <section className="mt-8" aria-busy={list.isPending || undefined}>
                     <form
                         role="search"
                         aria-label="Filter people"
                         onSubmit={(e) => e.preventDefault()}
-                        className="mt-5 space-y-3 md:flex md:flex-wrap md:items-end md:gap-3 md:space-y-0"
+                        className="space-y-3 md:flex md:flex-wrap md:items-end md:gap-3 md:space-y-0"
                     >
                         <div className="flex items-end gap-2 md:min-w-64 md:flex-1">
                             <label className={`${label} block min-w-0 flex-1`}>
@@ -344,8 +276,20 @@ export function PeopleList() {
                         </div>
                         <div
                             id="people-filters"
-                            className={`${showFilters ? 'grid' : 'hidden'} grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:contents`}
+                            className={`${showFilters ? 'grid' : 'hidden'} grid-cols-2 gap-3 md:contents`}
                         >
+                            <Select
+                                name="Role"
+                                value={filters.role}
+                                onChange={(v) => set('role', v)}
+                            >
+                                <option value="">All roles</option>
+                                {Object.entries(roleLabels).map(([value, text]) => (
+                                    <option key={value} value={value}>
+                                        {text}
+                                    </option>
+                                ))}
+                            </Select>
                             <Select
                                 name="Team"
                                 value={filters.team}
@@ -375,9 +319,9 @@ export function PeopleList() {
                                 value={filters.status}
                                 onChange={(v) => set('status', v)}
                             >
-                                <option value="">Active and inactive</option>
-                                <option value="active">Active only</option>
-                                <option value="inactive">Inactive only</option>
+                                <option value="">Any</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
                             </Select>
                         </div>
                         {filtered && (
@@ -393,26 +337,14 @@ export function PeopleList() {
                         )}
                     </form>
 
-                    {filters.role === 'volunteer' && (
-                        <p className="mt-4 flex gap-2 text-sm text-pretty text-stone-600">
-                            <InfoIcon className="size-5 shrink-0 text-stone-500" />
-                            <span>
-                                Inactive volunteers are not offered when you assign duties. Open a
-                                volunteer to set them active or inactive.
-                            </span>
-                        </p>
-                    )}
-
-                    <div className="mt-5 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
+                    <div className="mt-6 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
                         <div className="flex items-center justify-between gap-3 border-b border-stone-200 px-4 py-3 md:px-5">
                             <p className="text-sm text-stone-600 tabular-nums" aria-live="polite">
                                 {list.isPending
                                     ? 'Loading people...'
                                     : meta && meta.total > 0
-                                      ? meta.last_page > 1
-                                          ? `Showing ${first} to ${last} of ${meta.total} ${noun(meta.total)}`
-                                          : `${meta.total} ${noun(meta.total)}`
-                                      : `0 ${noun(0)}`}
+                                      ? `Showing ${first} to ${last} of ${meta.total}`
+                                      : '0 people'}
                             </p>
                             {list.isFetching && !list.isPending && (
                                 <p className="text-sm text-stone-500">Updating...</p>
@@ -420,22 +352,15 @@ export function PeopleList() {
                         </div>
 
                         {list.isSuccess && rows.length === 0 && (
-                            <div className="flex flex-col items-center px-5 py-12 text-center">
-                                <SearchIcon className="size-6 text-stone-400" />
-                                <p className="mt-3 text-stone-700">
-                                    {filtered
-                                        ? `No ${noun(0)} match these filters.`
-                                        : `No ${noun(0)} yet.`}
-                                </p>
-                                {filtered && (
-                                    <button
-                                        type="button"
-                                        onClick={clear}
-                                        className="mt-1 inline-flex min-h-12 items-center rounded-sm px-2 text-sm font-semibold text-maroon-700 underline-offset-2 hover:underline md:min-h-10"
-                                    >
-                                        Clear filters
-                                    </button>
-                                )}
+                            <div className="px-5 py-12 text-center">
+                                <p className="text-stone-700">Nobody matches these filters.</p>
+                                <button
+                                    type="button"
+                                    onClick={clear}
+                                    className="mt-2 inline-flex min-h-12 items-center rounded-sm px-2 text-sm font-semibold text-maroon-700 underline-offset-2 hover:underline md:min-h-0"
+                                >
+                                    Clear filters
+                                </button>
                             </div>
                         )}
 
@@ -478,17 +403,20 @@ export function PeopleList() {
                             </ul>
                         )}
 
-                        {/* 768 px and up: the full table. The whole row opens the profile. */}
+                        {/* 768 px and up: the full table. */}
                         {(list.isPending || rows.length > 0) && (
                             <div className="hidden overflow-x-auto md:block">
-                                <table className="w-full min-w-[860px] text-left">
+                                <table className="w-full min-w-[880px] text-left">
                                     <thead className="border-b border-stone-200">
                                         <tr>
                                             <th scope="col" className={headCell}>
                                                 Person
                                             </th>
                                             <th scope="col" className={headCell}>
-                                                Role and team
+                                                Role
+                                            </th>
+                                            <th scope="col" className={headCell}>
+                                                Team
                                             </th>
                                             <th scope="col" className={headCell}>
                                                 Department
@@ -499,9 +427,6 @@ export function PeopleList() {
                                             <th scope="col" className={headCell}>
                                                 Last sign in
                                             </th>
-                                            <th scope="col" className="w-12">
-                                                <span className="sr-only">Open</span>
-                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-stone-100">
@@ -509,7 +434,7 @@ export function PeopleList() {
                                         {rows.map((p) => (
                                             <tr
                                                 key={p.id}
-                                                className="group relative transition-colors hover:bg-stone-50"
+                                                className="transition-colors hover:bg-stone-50"
                                             >
                                                 <td className="px-5 py-3">
                                                     <div className="flex items-center gap-3">
@@ -522,7 +447,7 @@ export function PeopleList() {
                                                             <Link
                                                                 to={`/admin/people/${p.id}`}
                                                                 state={back}
-                                                                className="rounded-sm font-medium text-stone-900 underline-offset-2 transition-colors group-hover:text-maroon-700 after:absolute after:inset-0 hover:underline"
+                                                                className="rounded-sm font-medium text-stone-900 underline-offset-2 transition-colors hover:text-maroon-700 hover:underline"
                                                             >
                                                                 {p.name}
                                                             </Link>
@@ -532,17 +457,19 @@ export function PeopleList() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-5 py-3 text-sm whitespace-nowrap">
-                                                    <p className="text-stone-800">
-                                                        {p.role ? (
-                                                            roleLabels[p.role]
-                                                        ) : (
-                                                            <Muted>No role</Muted>
-                                                        )}
-                                                    </p>
-                                                    <p className="mt-0.5 text-stone-500">
-                                                        {p.team_name ?? 'No team'}
-                                                    </p>
+                                                <td className="px-5 py-3 text-sm whitespace-nowrap text-stone-700">
+                                                    {p.role ? (
+                                                        roleLabels[p.role]
+                                                    ) : (
+                                                        <Muted>None</Muted>
+                                                    )}
+                                                </td>
+                                                <td className="px-5 py-3 text-sm whitespace-nowrap text-stone-700">
+                                                    {p.team_name ? (
+                                                        p.team_name
+                                                    ) : (
+                                                        <Muted>None</Muted>
+                                                    )}
                                                 </td>
                                                 <td className="max-w-64 px-5 py-3 text-sm text-stone-700">
                                                     {p.department?.name ?? <Muted>Not set</Muted>}
@@ -551,10 +478,7 @@ export function PeopleList() {
                                                     <AvailabilityChip status={p.status} />
                                                 </td>
                                                 <td className="px-5 py-3 text-sm whitespace-nowrap text-stone-700 tabular-nums">
-                                                    {day(p.last_login_at) ?? <Muted>Not yet</Muted>}
-                                                </td>
-                                                <td className="w-12 py-3 pr-4 text-right">
-                                                    <ChevronIcon className="inline size-5 text-stone-400 transition-colors group-hover:text-maroon-700" />
+                                                    {day(p.last_login_at) ?? <Muted>Never</Muted>}
                                                 </td>
                                             </tr>
                                         ))}
