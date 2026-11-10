@@ -194,3 +194,29 @@ export function BackLink({ to, children }: { to: string; children: ReactNode }) 
         </Link>
     );
 }
+
+export const DownloadIcon = ({ className }: IconProps) => (
+    <Icon className={className}>
+        <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" />
+    </Icon>
+);
+
+export const UploadIcon = ({ className }: IconProps) => (
+    <Icon className={className}>
+        <path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 19h14" />
+    </Icon>
+);
+
+export const FileIcon = ({ className }: IconProps) => (
+    <Icon className={className}>
+        <path d="M7 3.5h6.5L18 8v12.5H7z" />
+        <path d="M13.5 3.5V8H18" />
+    </Icon>
+);
+
+export const CheckCircleIcon = ({ className }: IconProps) => (
+    <Icon className={className}>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="m8.5 12.3 2.4 2.4 4.6-4.9" />
+    </Icon>
+);
