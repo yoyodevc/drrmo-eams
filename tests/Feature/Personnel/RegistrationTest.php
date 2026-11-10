@@ -203,7 +203,8 @@ it('lets an admin list requests by status', function () {
     User::factory()->create(); // a normal active volunteer is not a request
 
     withAuthCookies(loginCookies($admin))->getJson('/api/admin/registrations')
-        ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $waiting->id);
+        ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $waiting->id)
+        ->assertJsonPath('counts', ['pending_approval' => 1, 'pending_email' => 1, 'active' => 0, 'rejected' => 0, 'all' => 2]);
 
     withAuthCookies(loginCookies($admin))->getJson('/api/admin/registrations?status=pending_email')
         ->assertOk()->assertJsonCount(1, 'data');
