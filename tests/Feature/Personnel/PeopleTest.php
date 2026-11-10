@@ -101,6 +101,11 @@ it('lists people with filters and search', function () {
     $get('?search=maria santos')->assertJsonCount(1, 'data');
     $get('?search=diaz')->assertJsonCount(1, 'data');
     $get('?role=nonsense')->assertUnprocessable();
+
+    // Role tab counts follow the other filters but not the role filter itself.
+    $get('?role=marshal')->assertJsonPath('meta.counts.all', 4)->assertJsonPath('meta.counts.volunteer', 2)
+        ->assertJsonPath('meta.counts.marshal', 1)->assertJsonPath('meta.counts.admin', 1)->assertJsonPath('meta.counts.coordinator', 0);
+    $get('?status=inactive')->assertJsonPath('meta.counts.all', 1)->assertJsonPath('meta.counts.volunteer', 1);
 });
 
 it('shows one person', function () {

@@ -33,10 +33,8 @@ class PeopleController
         $query = User::query()->with(['role', 'department'])
             ->where('account_status', AccountStatus::Active->value);
 
-        if (($role = $this->filter($request, 'role')) !== null) {
-            abort_if(RoleCode::tryFrom($role) === null, 422, 'Unknown role filter.');
-            $query->whereHas('role', fn ($q) => $q->where('code', $role));
-        }
+        $role = $this->filter($request, 'role');
+        abort_if($role !== null && RoleCode::tryFrom($role) === null, 422, 'Unknown role filter.');
         if (($team = $this->filter($request, 'team')) !== null) {
             abort_unless(Team::query()->where('code', $team)->exists(), 422, 'Unknown team filter.');
             $query->where('team', $team);
@@ -58,11 +56,29 @@ class PeopleController
                 ->orWhereRaw("concat(first_name, ' ', last_name) like ?", [$like]));
         }
 
+        // How many match the other filters in each role, for the role tabs above the list.
+        $byRole = (clone $query)->toBase()->select('role_id')->selectRaw('count(*) as total')->groupBy('role_id')->pluck('total', 'role_id');
+        $codes = Role::query()->pluck('code', 'id');
+        $counts = ['all' => (int) $byRole->sum()];
+        foreach (RoleCode::cases() as $case) {
+            $counts[$case->value] = 0;
+        }
+        foreach ($byRole as $roleId => $total) {
+            $code = $codes[$roleId] ?? null;
+            if (is_string($code) && array_key_exists($code, $counts)) {
+                $counts[$code] = (int) $total;
+            }
+        }
+
+        if ($role !== null) {
+            $query->whereHas('role', fn ($q) => $q->where('code', $role));
+        }
+
         $page = $query->orderBy('first_name')->orderBy('last_name')->orderBy('id')->paginate(self::PER_PAGE);
 
         return response()->json([
             'data' => collect($page->items())->map(fn (User $u) => $this->present($u))->values(),
-            'meta' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+            'meta' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(), 'counts' => $counts],
         ]);
     }
 

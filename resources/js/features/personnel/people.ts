@@ -63,9 +63,15 @@ export interface Team {
 
 export type OrgKind = 'teams' | 'departments';
 
-export async function listPeople(
-    filters: PeopleFilters,
-): Promise<{ data: Person[]; meta: { page: number; last_page: number; total: number } }> {
+/** How many people match the other filters in each role. Feeds the role tabs on the list. */
+export type RoleCounts = Record<RoleCode | 'all', number>;
+
+export interface PeoplePage {
+    data: Person[];
+    meta: { page: number; last_page: number; total: number; counts?: RoleCounts };
+}
+
+export async function listPeople(filters: PeopleFilters): Promise<PeoplePage> {
     const params = new URLSearchParams();
     for (const key of ['search', 'role', 'team', 'status', 'department'] as const) {
         if (filters[key].trim() !== '') params.set(key, filters[key].trim());

@@ -95,7 +95,28 @@ export const HistoryIcon = ({ className }: IconProps) => (
     </Icon>
 );
 
-const chipBase =
+export const ClockIcon = ({ className }: IconProps) => (
+    <Icon className={className}>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7.5V12l3 2" />
+    </Icon>
+);
+
+export const TrashIcon = ({ className }: IconProps) => (
+    <Icon className={className}>
+        <path d="M4.5 7h15M10 11v6M14 11v6M9 7V4.5h6V7" />
+        <path d="M6.5 7l.8 12a1.5 1.5 0 0 0 1.5 1.5h6.4a1.5 1.5 0 0 0 1.5-1.5l.8-12" />
+    </Icon>
+);
+
+export const InfoIcon = ({ className }: IconProps) => (
+    <Icon className={className}>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 11v5.5M12 7.8v.2" />
+    </Icon>
+);
+
+export const chipBase =
     'inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset';
 
 export function AvailabilityChip({ status }: { status: Availability }) {
