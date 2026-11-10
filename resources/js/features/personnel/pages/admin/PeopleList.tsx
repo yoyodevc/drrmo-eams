@@ -46,7 +46,7 @@ function Select({
     children: ReactNode;
 }) {
     return (
-        <label className={`${label} block min-w-0 md:w-44`}>
+        <label className={`${label} block min-w-0 md:w-44 md:shrink-0`}>
             <span className="mb-1.5 block">{name}</span>
             <select className={control} value={value} onChange={(e) => onChange(e.target.value)}>
                 {children}
@@ -240,7 +240,7 @@ export function PeopleList() {
                         role="search"
                         aria-label="Filter people"
                         onSubmit={(e) => e.preventDefault()}
-                        className="space-y-3 md:flex md:flex-wrap md:items-end md:gap-3 md:space-y-0"
+                        className="space-y-3 md:flex md:flex-wrap md:items-end md:gap-x-3 md:gap-y-4 md:space-y-0"
                     >
                         <div className="flex items-end gap-2 md:min-w-64 md:flex-1">
                             <label className={`${label} block min-w-0 flex-1`}>
@@ -324,21 +324,10 @@ export function PeopleList() {
                                 <option value="inactive">Inactive</option>
                             </Select>
                         </div>
-                        {filtered && (
-                            <Button
-                                variant="ghost"
-                                size="md"
-                                type="button"
-                                onClick={clear}
-                                className="max-md:min-h-12 max-md:w-full max-md:text-base"
-                            >
-                                Clear filters
-                            </Button>
-                        )}
                     </form>
 
                     <div className="mt-6 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
-                        <div className="flex items-center justify-between gap-3 border-b border-stone-200 px-4 py-3 md:px-5">
+                        <div className="relative flex min-h-14 items-center justify-between gap-3 border-b border-stone-200 px-4 md:min-h-12 md:px-5">
                             <p className="text-sm text-stone-600 tabular-nums" aria-live="polite">
                                 {list.isPending
                                     ? 'Loading people...'
@@ -346,13 +335,27 @@ export function PeopleList() {
                                       ? `Showing ${first} to ${last} of ${meta.total}`
                                       : '0 people'}
                             </p>
-                            {list.isFetching && !list.isPending && (
-                                <p className="text-sm text-stone-500">Updating...</p>
-                            )}
+                            {/* Always in the layout so a filter never moves anything. */}
+                            <button
+                                type="button"
+                                onClick={clear}
+                                disabled={!filtered}
+                                tabIndex={filtered ? 0 : -1}
+                                aria-hidden={!filtered || undefined}
+                                className={`inline-flex min-h-12 items-center rounded-sm px-2 text-sm font-semibold text-maroon-700 underline-offset-2 hover:underline md:min-h-8 ${filtered ? '' : 'invisible'}`}
+                            >
+                                Clear filters{activeFilters > 0 ? ` (${activeFilters})` : ''}
+                            </button>
+                            <div
+                                aria-hidden="true"
+                                className={`absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-maroon-700/10 transition-opacity ${list.isFetching && !list.isPending ? 'opacity-100' : 'opacity-0'}`}
+                            >
+                                <div className="h-full w-1/3 animate-pulse bg-maroon-700/60" />
+                            </div>
                         </div>
 
                         {list.isSuccess && rows.length === 0 && (
-                            <div className="px-5 py-12 text-center">
+                            <div className="flex min-h-72 flex-col items-center justify-center px-5 py-12 text-center">
                                 <p className="text-stone-700">Nobody matches these filters.</p>
                                 <button
                                     type="button"
@@ -405,8 +408,16 @@ export function PeopleList() {
 
                         {/* 768 px and up: the full table. */}
                         {(list.isPending || rows.length > 0) && (
-                            <div className="hidden overflow-x-auto md:block">
-                                <table className="w-full min-w-[880px] text-left">
+                            <div className="hidden min-h-72 overflow-x-auto md:block">
+                                <table className="w-full min-w-[880px] table-fixed text-left">
+                                    <colgroup>
+                                        <col className="w-[30%]" />
+                                        <col className="w-[13%]" />
+                                        <col className="w-[16%]" />
+                                        <col className="w-[19%]" />
+                                        <col className="w-[11%]" />
+                                        <col className="w-[11%]" />
+                                    </colgroup>
                                     <thead className="border-b border-stone-200">
                                         <tr>
                                             <th scope="col" className={headCell}>
@@ -457,27 +468,27 @@ export function PeopleList() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-5 py-3 text-sm whitespace-nowrap text-stone-700">
+                                                <td className="truncate px-5 py-3 text-sm text-stone-700">
                                                     {p.role ? (
                                                         roleLabels[p.role]
                                                     ) : (
                                                         <Muted>None</Muted>
                                                     )}
                                                 </td>
-                                                <td className="px-5 py-3 text-sm whitespace-nowrap text-stone-700">
+                                                <td className="truncate px-5 py-3 text-sm text-stone-700">
                                                     {p.team_name ? (
                                                         p.team_name
                                                     ) : (
                                                         <Muted>None</Muted>
                                                     )}
                                                 </td>
-                                                <td className="max-w-64 px-5 py-3 text-sm text-stone-700">
+                                                <td className="truncate px-5 py-3 text-sm text-stone-700">
                                                     {p.department?.name ?? <Muted>Not set</Muted>}
                                                 </td>
                                                 <td className="px-5 py-3">
                                                     <AvailabilityChip status={p.status} />
                                                 </td>
-                                                <td className="px-5 py-3 text-sm whitespace-nowrap text-stone-700 tabular-nums">
+                                                <td className="truncate px-5 py-3 text-sm text-stone-700 tabular-nums">
                                                     {day(p.last_login_at) ?? <Muted>Never</Muted>}
                                                 </td>
                                             </tr>
