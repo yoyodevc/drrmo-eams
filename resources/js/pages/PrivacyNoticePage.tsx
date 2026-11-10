@@ -2,6 +2,7 @@
 // checkbox and the sign in page can link to it. Same frame as the cookie notice.
 import { Link } from 'react-router';
 import { useMe } from '@/app/auth';
+import { BackLink } from '@/features/personnel/components/ui';
 import {
     PrivacyNoticeBody,
     NOTICE_UPDATED,
@@ -21,16 +22,23 @@ export function PrivacyNoticePage() {
                             DRRMO EAMS
                         </span>
                     </div>
-                    <Link
-                        to={me ? '/me/profile' : '/login'}
-                        className="flex min-h-12 items-center text-sm font-medium text-maroon-700 hover:underline"
-                    >
-                        {me ? 'Back to my profile' : 'Back to sign in'}
-                    </Link>
+                    {!me && (
+                        <Link
+                            to="/login"
+                            className="flex min-h-12 items-center text-sm font-medium text-maroon-700 hover:underline"
+                        >
+                            Back to sign in
+                        </Link>
+                    )}
                 </div>
             </header>
 
             <main className="mx-auto max-w-2xl px-6 py-10 sm:py-14">
+                {me && (
+                    <div className="mb-4">
+                        <BackLink to="/me/profile">Me</BackLink>
+                    </div>
+                )}
                 <h1 className="text-3xl font-semibold tracking-tight text-stone-900">
                     Privacy notice
                 </h1>
