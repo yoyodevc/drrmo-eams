@@ -18,11 +18,11 @@ return new class extends Migration
             $table->foreignId('permission_id')->constrained()->restrictOnDelete();
             // Null means the grant is not tied to one event.
             $table->foreignId('event_id')->nullable()->constrained()->restrictOnDelete();
-            $table->timestamp('starts_at');
-            $table->timestamp('ends_at');
+            $table->dateTime('starts_at');
+            $table->dateTime('ends_at');
             $table->string('reason', 255);
             $table->foreignId('granted_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('revoked_at')->nullable();
+            $table->dateTime('revoked_at')->nullable();
             $table->foreignId('revoked_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
