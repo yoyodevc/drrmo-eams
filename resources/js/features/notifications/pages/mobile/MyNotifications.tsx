@@ -1,5 +1,6 @@
 // M-Notifications. The emails the system sent to this person, newest first, grouped by day.
 // Mobile first at 360 px: one column, one card per day with hairline rows. Read only.
+// Every row keeps a chevron sized slot, so the times form one straight column.
 import { useEffect, useState, type ComponentType } from 'react';
 import { Link } from 'react-router';
 import { useMe } from '@/app/auth';
@@ -68,7 +69,7 @@ function AlertRow({ alert, fresh }: { alert: MyNotification; fresh: boolean }) {
                 <Icon className="size-5" />
             </span>
             <span className="min-w-0 flex-1">
-                <span className="flex items-start justify-between gap-3">
+                <span className="flex items-baseline justify-between gap-3">
                     <span className="font-semibold text-stone-900">
                         {typeSentences[alert.type] ?? 'Notification'}
                         {fresh && (
@@ -81,7 +82,7 @@ function AlertRow({ alert, fresh }: { alert: MyNotification; fresh: boolean }) {
                             </>
                         )}
                     </span>
-                    <span className="shrink-0 pt-0.5 text-sm text-stone-500 tabular-nums">
+                    <span className="shrink-0 text-sm text-stone-500 tabular-nums">
                         {clock(alert.sent_at)}
                     </span>
                 </span>
@@ -110,7 +111,11 @@ function AlertRow({ alert, fresh }: { alert: MyNotification; fresh: boolean }) {
                     <ChevronRightIcon className="mt-2.5 size-5 shrink-0 text-stone-400" />
                 </Link>
             ) : (
-                <div className="flex gap-3 p-4">{body}</div>
+                <div className="flex gap-3 p-4">
+                    {body}
+                    {/* Same width as the chevron, so every time lines up on the right. */}
+                    <span className="w-5 shrink-0" aria-hidden="true" />
+                </div>
             )}
         </li>
     );
