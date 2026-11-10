@@ -1,17 +1,23 @@
-// A-Person profile (S2.1). One person: details, availability with its history, emergency contacts.
-// Desktop first at 1280 px: main column for details and availability, side column for contacts and
-// sign in. On phones it stacks in that order. Changing availability stays on Volunteer status,
-// where the reason is asked.
-import { useMutation, useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+// A-Person profile (S2.1, S2.4). One person: details, availability with its history, emergency contacts.
+// Desktop first at 1280 px: main column for availability and details, side column for contacts and
+// sign in. On phones it stacks in that order. A volunteer is set active or inactive here, with a
+// reason (SCREENS.md: the volunteer toggle is part of the profile, not a separate page).
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { personContacts } from '@/features/personnel/contacts';
 import { getPerson, resendInvite, roleLabels } from '@/features/personnel/people';
-import { statusHistory, type Availability } from '@/features/personnel/volunteers';
+import {
+    setVolunteerStatus,
+    statusHistory,
+    type Availability,
+    type StatusChange,
+} from '@/features/personnel/volunteers';
 import {
     AvailabilityChip,
     Avatar,
     BackLink,
+    chipBase,
     EditIcon,
     HistoryIcon,
     LockIcon,
@@ -23,8 +29,10 @@ import {
 import { ApiError } from '@/shared/api/client';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { TextField } from '@/shared/ui/TextField';
 
-const statusWords: Record<Availability, string> = { active: 'active', inactive: 'inactive' };
+const statusWords: Record<Availability, string> = { active: 'Active', inactive: 'Inactive' };
 
 function Card({
     title,
@@ -158,14 +166,14 @@ export function PersonProfile() {
     }
 
     const p = person.data;
-    const about = [p.role ? roleLabels[p.role] : null, p.team_name].filter(Boolean).join(' · ');
     const neverSignedIn = p.last_login_at === null;
+    const placement = [p.team_name, p.department?.name].filter(Boolean).join(' · ');
 
     return (
         <div className="mx-auto max-w-6xl">
             <BackLink to={listUrl}>People</BackLink>
 
-            <header className="mt-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-5">
+            <header className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-5">
                 <div className="flex min-w-0 items-center gap-4">
                     <Avatar
                         first={p.first_name}
@@ -177,9 +185,21 @@ export function PersonProfile() {
                         <h1 className="text-2xl font-semibold tracking-tight text-balance text-stone-900">
                             {p.name}
                         </h1>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <p className="text-stone-700">{about || 'No role'}</p>
+                        <p className="mt-0.5 text-stone-700">
+                            <span className="font-medium text-stone-900">
+                                {p.role ? roleLabels[p.role] : 'No role'}
+                            </span>
+                            {placement && <span className="text-stone-600"> · {placement}</span>}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
                             <AvailabilityChip status={p.status} />
+                            {neverSignedIn && (
+                                <span
+                                    className={`${chipBase} bg-amber-50 text-amber-900 ring-amber-200`}
+                                >
+                                    Has not signed in yet
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -210,13 +230,23 @@ export function PersonProfile() {
 
             <div className="mt-8 grid items-start gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">
+                    {isVolunteer && (
+                        <AvailabilityCard
+                            personId={p.id}
+                            firstName={p.first_name}
+                            status={p.status}
+                            history={history}
+                        />
+                    )}
+
                     <Card title="Details" id="details-title">
-                        <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                        <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
                             <Fact label="Email">
                                 <a
                                     href={`mailto:${p.email}`}
-                                    className="font-medium text-maroon-700 underline-offset-2 hover:underline"
+                                    className="inline-flex items-center gap-2 font-medium break-all text-maroon-700 underline-offset-2 hover:underline"
                                 >
+                                    <MailIcon className="size-4 shrink-0 text-stone-500" />
                                     {p.email}
                                 </a>
                             </Fact>
@@ -224,8 +254,9 @@ export function PersonProfile() {
                                 {p.contact_number && (
                                     <a
                                         href={`tel:${p.contact_number.replace(/\s+/g, '')}`}
-                                        className="font-medium text-maroon-700 tabular-nums underline-offset-2 hover:underline"
+                                        className="inline-flex items-center gap-2 font-medium text-maroon-700 tabular-nums underline-offset-2 hover:underline"
                                     >
+                                        <PhoneIcon className="size-4 shrink-0 text-stone-500" />
                                         {p.contact_number}
                                     </a>
                                 )}
@@ -233,88 +264,15 @@ export function PersonProfile() {
                             <Fact label="Role">{p.role ? roleLabels[p.role] : null}</Fact>
                             <Fact label="Team">{p.team_name}</Fact>
                             <Fact label="Department">{p.department?.name}</Fact>
+                            {!isVolunteer && (
+                                <Fact label="Availability">
+                                    {p.status === 'active'
+                                        ? 'Active. Can be assigned to duties.'
+                                        : 'Inactive. Not offered for duties.'}
+                                </Fact>
+                            )}
                             <Fact label="Added">{day(p.created_at)}</Fact>
                         </dl>
-                    </Card>
-
-                    <Card
-                        title="Availability"
-                        id="availability-title"
-                        aside={<AvailabilityChip status={p.status} />}
-                    >
-                        <p className="text-pretty text-stone-700">
-                            {p.status === 'active'
-                                ? 'Can be assigned to duties.'
-                                : 'Not offered when you assign people to duty.'}
-                        </p>
-                        {isVolunteer ? (
-                            <>
-                                <p className="mt-1 text-sm text-stone-600">
-                                    Change it on{' '}
-                                    <Link
-                                        to="/admin/volunteers"
-                                        className="font-medium text-maroon-700 underline-offset-2 hover:underline"
-                                    >
-                                        Volunteer status
-                                    </Link>
-                                    , where you give a reason.
-                                </p>
-                                <h3 className="mt-6 text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase">
-                                    History
-                                </h3>
-                                <div className="mt-2">
-                                    {history.isPending && <Placeholder />}
-                                    {history.isError && (
-                                        <div className="flex flex-wrap items-center gap-3">
-                                            <p className="text-sm text-red-700">
-                                                The history did not load.
-                                            </p>
-                                            <Button
-                                                variant="ghost"
-                                                size="md"
-                                                onClick={() => void history.refetch()}
-                                            >
-                                                Retry
-                                            </Button>
-                                        </div>
-                                    )}
-                                    {history.data?.length === 0 && (
-                                        <p className="flex items-center gap-2 text-sm text-stone-600">
-                                            <HistoryIcon className="size-4 text-stone-500" />
-                                            No changes yet.
-                                        </p>
-                                    )}
-                                    {history.data && history.data.length > 0 && (
-                                        <ul className="divide-y divide-stone-100 border-t border-stone-100">
-                                            {history.data.map((row) => (
-                                                <li key={row.id} className="py-3">
-                                                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                                                        <p className="font-semibold text-stone-900">
-                                                            Set to {statusWords[row.new_status]}
-                                                        </p>
-                                                        {row.changed_at && (
-                                                            <p className="text-sm text-stone-500 tabular-nums">
-                                                                {stamp(row.changed_at)}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    <p className="mt-0.5 text-pretty text-stone-700">
-                                                        {row.reason}
-                                                    </p>
-                                                    <p className="mt-0.5 text-sm text-stone-500">
-                                                        By {row.changed_by ?? 'an unknown admin'}
-                                                    </p>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            </>
-                        ) : (
-                            <p className="mt-1 text-sm text-stone-600">
-                                Only volunteers are switched between active and inactive.
-                            </p>
-                        )}
                     </Card>
                 </div>
 
@@ -373,7 +331,7 @@ export function PersonProfile() {
                     <Card title="Sign in" id="signin-title">
                         <dl>
                             <Fact label="Last sign in">
-                                {stamp(p.last_login_at) ?? 'Never signed in'}
+                                {stamp(p.last_login_at) ?? 'Has not signed in yet'}
                             </Fact>
                         </dl>
                         <p className="mt-3 text-sm text-pretty text-stone-600">
@@ -411,5 +369,167 @@ export function PersonProfile() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Volunteers only. Says what the status means, switches it with a reason, and lists every change.
+function AvailabilityCard({
+    personId,
+    firstName,
+    status,
+    history,
+}: {
+    personId: number;
+    firstName: string;
+    status: Availability;
+    history: {
+        isPending: boolean;
+        isError: boolean;
+        data?: StatusChange[];
+        refetch: () => unknown;
+    };
+}) {
+    const queryClient = useQueryClient();
+    const [open, setOpen] = useState(false);
+    const [reason, setReason] = useState('');
+    const next: Availability = status === 'active' ? 'inactive' : 'active';
+    const change = useMutation({
+        mutationFn: () => setVolunteerStatus(personId, next, reason.trim()),
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['person', personId] }),
+                queryClient.invalidateQueries({ queryKey: ['volunteer-history', personId] }),
+                queryClient.invalidateQueries({ queryKey: ['people'] }),
+            ]);
+            setOpen(false);
+        },
+    });
+    const reasonOk = reason.trim().length >= 3;
+    const active = status === 'active';
+
+    return (
+        <Card title="Availability" id="availability-title">
+            <div className="flex flex-col gap-4 rounded-control bg-stone-50 p-4 ring-1 ring-stone-200 ring-inset sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                    <span
+                        aria-hidden="true"
+                        className={`mt-1.5 size-2.5 shrink-0 rounded-full ${active ? 'bg-green-600' : 'bg-stone-400'}`}
+                    />
+                    <div className="min-w-0">
+                        <p className="font-semibold text-stone-900">
+                            {active ? 'Active' : 'Inactive'}
+                        </p>
+                        <p className="text-sm text-pretty text-stone-600">
+                            {active
+                                ? `${firstName} can be assigned to duties.`
+                                : `${firstName} is not offered when you assign duties.`}
+                        </p>
+                    </div>
+                </div>
+                <Button
+                    variant="secondary"
+                    size="md"
+                    className="shrink-0 max-sm:min-h-12 max-sm:w-full max-sm:text-base"
+                    onClick={() => {
+                        change.reset();
+                        setReason('');
+                        setOpen(true);
+                    }}
+                >
+                    {active ? 'Set inactive' : 'Set active'}
+                </Button>
+            </div>
+
+            <h3 className="mt-6 text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase">
+                History
+            </h3>
+            <div className="mt-3">
+                {history.isPending && <Placeholder />}
+                {history.isError && (
+                    <div className="flex flex-wrap items-center gap-3">
+                        <p className="text-sm text-red-700">The history did not load.</p>
+                        <Button variant="ghost" size="md" onClick={() => void history.refetch()}>
+                            Retry
+                        </Button>
+                    </div>
+                )}
+                {history.data?.length === 0 && (
+                    <p className="flex items-center gap-2 text-sm text-stone-600">
+                        <HistoryIcon className="size-4 text-stone-500" />
+                        No changes yet. {firstName} has been {active ? 'active' : 'inactive'} since
+                        joining.
+                    </p>
+                )}
+                {history.data && history.data.length > 0 && (
+                    <ol>
+                        {history.data.map((row) => (
+                            <li key={row.id} className="group relative pb-5 pl-6 last:pb-0">
+                                {/* The line joins this change to the one below it. */}
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute top-4 bottom-0 left-[4.5px] w-px bg-stone-200 group-last:hidden"
+                                />
+                                <span
+                                    aria-hidden="true"
+                                    className={`absolute top-1.5 left-0 size-2.5 rounded-full ${row.new_status === 'active' ? 'bg-green-600' : 'bg-stone-400'}`}
+                                />
+                                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                    <p className="font-semibold text-stone-900">
+                                        Set to {statusWords[row.new_status].toLowerCase()}
+                                    </p>
+                                    {row.changed_at && (
+                                        <p className="text-sm text-stone-500 tabular-nums">
+                                            {stamp(row.changed_at)}
+                                        </p>
+                                    )}
+                                </div>
+                                <p className="mt-0.5 text-pretty text-stone-700">{row.reason}</p>
+                                <p className="mt-0.5 text-sm text-stone-500">
+                                    By {row.changed_by ?? 'an unknown admin'}
+                                </p>
+                            </li>
+                        ))}
+                    </ol>
+                )}
+            </div>
+
+            <ConfirmDialog
+                open={open}
+                title={active ? `Set ${firstName} as inactive?` : `Set ${firstName} as active?`}
+                description={
+                    active
+                        ? 'They will not be offered when you assign duties until someone sets them active again.'
+                        : 'They will be offered again when you assign duties.'
+                }
+                confirmLabel={active ? 'Set inactive' : 'Set active'}
+                loadingLabel="Saving..."
+                loading={change.isPending}
+                confirmDisabled={!reasonOk}
+                error={
+                    change.isError
+                        ? 'That did not save. Check your connection and try again.'
+                        : null
+                }
+                onConfirm={() => change.mutate()}
+                onCancel={() => setOpen(false)}
+            >
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (reasonOk && !change.isPending) change.mutate();
+                    }}
+                >
+                    <TextField
+                        label="Reason"
+                        hint="Kept in the history and the audit log."
+                        placeholder={active ? 'For example, on leave until May' : undefined}
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        maxLength={255}
+                        required
+                    />
+                </form>
+            </ConfirmDialog>
+        </Card>
     );
 }

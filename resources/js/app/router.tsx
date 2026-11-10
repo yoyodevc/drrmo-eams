@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { adminEventRoutes, dashboardRoute, myDutiesRoute } from '@/features/events/routes';
 import { adminNotificationRoutes, myNotificationRoutes } from '@/features/notifications/routes';
 import { AdminLayout } from '@/layouts/AdminLayout';
@@ -10,7 +10,6 @@ import { PeopleList } from '@/features/personnel/pages/admin/PeopleList';
 import { PersonForm } from '@/features/personnel/pages/admin/PersonForm';
 import { PersonProfile } from '@/features/personnel/pages/admin/PersonProfile';
 import { TeamsAndDepartments } from '@/features/personnel/pages/admin/TeamsAndDepartments';
-import { VolunteerStatus } from '@/features/personnel/pages/admin/VolunteerStatus';
 import { MyAvailability } from '@/features/personnel/pages/mobile/MyAvailability';
 import { MyContacts } from '@/features/personnel/pages/mobile/MyContacts';
 import { MyDetails } from '@/features/personnel/pages/mobile/MyDetails';
@@ -50,7 +49,11 @@ export const router = createBrowserRouter([
                     { path: 'people/:id', element: <PersonProfile /> },
                     { path: 'people/:id/edit', element: <PersonForm /> },
                     { path: 'teams', element: <TeamsAndDepartments /> },
-                    { path: 'volunteers', element: <VolunteerStatus /> },
+                    // Volunteer status now lives on the People list and each profile.
+                    {
+                        path: 'volunteers',
+                        element: <Navigate to="/admin/people?role=volunteer" replace />,
+                    },
                     ...adminEventRoutes,
                     ...adminNotificationRoutes,
                 ],

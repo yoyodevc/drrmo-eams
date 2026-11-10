@@ -1,14 +1,7 @@
-// Calls for the admin volunteer availability screen (Personnel module).
+// Calls for volunteer availability: the admin switch on a profile and the volunteer's own view.
 import { api } from '@/shared/api/client';
 
 export type Availability = 'active' | 'inactive';
-
-export interface Volunteer {
-    id: number;
-    name: string;
-    email: string;
-    status: Availability;
-}
 
 export interface StatusChange {
     id: number;
@@ -17,12 +10,6 @@ export interface StatusChange {
     reason: string;
     changed_by: string | null;
     changed_at: string | null;
-}
-
-export async function listVolunteers(status: Availability | 'all'): Promise<Volunteer[]> {
-    const query = status === 'all' ? '' : `?status=${status}`;
-    const body = await api<{ data: Volunteer[] }>(`/api/admin/volunteers${query}`);
-    return body.data;
 }
 
 export async function setVolunteerStatus(
