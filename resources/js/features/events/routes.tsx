@@ -7,10 +7,16 @@ import { EventDetail } from './pages/admin/EventDetail';
 import { NewEvent } from './pages/admin/NewEvent';
 import { MyAssignments } from './pages/mobile/MyAssignments';
 
-// Coordinators see read only event notices; marshals and volunteers see their own duties.
+// People who do duty see their own duties. People who only read department notices, such as
+// coordinators, see those instead.
 function MyHome() {
-    const me = useMe();
-    return me.data?.role === 'coordinator' ? <EventNotices /> : <MyAssignments />;
+    const permissions = useMe().data?.permissions ?? [];
+    return !permissions.includes('assignments.own') &&
+        permissions.includes('events.view_department') ? (
+        <EventNotices />
+    ) : (
+        <MyAssignments />
+    );
 }
 
 export const myDutiesRoute: RouteObject = { index: true, element: <MyHome /> };

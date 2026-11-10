@@ -223,3 +223,92 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: a link always shows the list, not the calendar, because the card is found in the list
 - Evidence: resources/js/features/events/dutyLink.test.ts
 - Paper: Chapter 3 (user interface design)
+
+## 2026-11-10 · S2.1 People list and profile (personnel)
+- What was built: admin People list (`/admin/people`) with search by name or email and filters for role, team, department and availability, 25 per page. Admin can add and edit a person. A person profile page brings details, availability history and emergency contacts together
+- Decision and why: a new person gets a random unknown password and an emailed link to choose their own, using the same reset-password flow as forgot password. The admin never sees or types a password. If the email fails the person is still created and the profile offers Send set-password email again
+- Decision and why: an admin cannot change their own role, so the office cannot lock itself out. Create, edit and resend write audit rows (`person.created`, `person.updated` with before and after, `person.invite_sent`)
+- Decision and why: the list shows only approved accounts. Pending sign ups stay on Access requests
+- Also built (mobile): `/me/details` shows a volunteer what DRRMO has on file and lets them change only their contact number (`PATCH /api/me/profile`, which ignores every other field)
+- Evidence: tests/Feature/Personnel/PeopleTest.php
+- Paper: Chapter 3 (system design, data privacy)
+
+## 2026-11-10 · S2.5 Privacy notice and consent (records)
+- What was built: after sign in, a person who has not agreed to the current privacy notice sees the notice instead of the app, with one "I have read and agree" button and Sign out. A public `/privacy` page shows the same text, linked from Request access and the sign in page
+- Decision and why: the server enforces it. A middleware answers every API call except `/api/me`, the agree call and logout with 403 `consent_required`, so hiding screens is not the only protection. The app reads that code and asks `/api/me` again, so a notice change mid session shows the screen at once
+- Decision and why: consent is checked against `config('privacy.notice_version')`. Changing the version makes everyone agree again, and `/api/me` says `privacy_notice_outdated` so the screen can tell them the notice changed
+- Decision and why: agreeing twice writes one row, and each agreement is audited (`consent.given`)
+- Decision and why: test users made by the factory have already agreed, so API tests reach the endpoint they test. `withoutConsent()` makes one who has not
+- Evidence: tests/Feature/Records/PrivacyConsentTest.php, ConsentCheckerTest.php
+- Paper: Chapter 3 (data privacy, system design)
+
+## 2026-11-10 · S2.4 Volunteer active and inactive toggle (personnel)
+- What was built: an admin screen, Volunteer status, lists approved volunteers with Active and Inactive filters. Switching one needs a reason, and each person has a History view of every change with who made it and when
+- Decision and why: the change, the history row and the audit entry (`volunteer.status_changed`) are written in one transaction, so none can exist without the others
+- Decision and why: the server rejects a switch with no reason or no real change. Assignment candidates and the assign endpoint both skip inactive people, so a direct API call cannot book them either
+- Decision and why: only the Volunteer role can be switched here, and only an account with the `volunteers.toggle` permission (admin)
+- Evidence: tests/Feature/Personnel/VolunteerStatusTest.php
+- Paper: Chapter 3 (system design, data privacy)
+- Also built (mobile): `/me/availability` shows a volunteer their own status and the history of changes with reasons, read only, from `GET /api/me/availability` which only returns their own rows
+- The Me tab (`/me/profile`) shows your name, role and team, then rows for My availability (with an Active or Inactive chip) and the Privacy notice, and a Sign out button. This replaced a footer of plain links that sat under every /me page. My availability got the same look as Alerts and a back link to Me
+- Alerts: every row keeps a slot the width of the chevron, so the times line up in one column
+
+## 2026-11-10 · S2.3 Emergency contacts (personnel)
+- What was built: a volunteer or marshal opens Emergency contacts from the Me tab and adds, edits or deletes their own contacts (name, relationship, phone), up to 5. Admin sees a person's contacts from the Volunteer status screen
+- Decision and why: edit and delete return 403 for anyone else's contact, so a changed id in a request gets nowhere. Creating, editing, deleting and an admin viewing contacts all write an audit row (`emergency_contact.*`)
+- Decision and why: capped at 5 contacts to keep the list useful in an emergency and stop abuse of the field
+- Evidence: tests/Feature/Personnel/EmergencyContactTest.php
+- Paper: Chapter 3 (system design, data privacy)
+
+## 2026-11-10 · Personnel admin screens redesign (personnel)
+- What was built: the profile has an Availability card for volunteers. It says what the status means, has a Set active or Set inactive button with a reason dialog, and shows the history as a timeline
+- What was built: Teams and departments shows each list with its people count (a link to People filtered by it). Add and edit open a small dialog. Delete on a team or department that still has people explains why it cannot go and offers Set inactive instead
+- Decision and why: the separate Volunteer status screen is gone. SCREENS.md already said the volunteer toggle belongs to the People list and profile, and the old screen repeated the list, the history and the contacts that the profile has. `/admin/volunteers` now opens People on the Volunteers tab
+- Fix: the teams table migration was missing, so Teams failed to load. It is added with the three starting teams, departments got their `active` column, and `OrgUnitSeeder` fills in starting teams and departments
+- Evidence: tests/Feature/Personnel/OrgUnitsTest.php
+- Paper: Chapter 3 (system design, user interface)
+- Fix: after the role tabs were reverted, only the name text on a People row opened the profile. The whole row is a link again, with a chevron hint
+- What was built: People filters sit on one fixed grid row, role and team share a column, and dates are no longer cut off. Profile details are grouped under Contact and Placement as label and value rows
+
+## 2026-11-10 · Access request screens redesign (personnel)
+- What was built: Request access, Confirm your email and Waiting for approval show a three step bar (Your details, Confirm email, Approval). First and last name sit side by side from 400 px. The privacy consent is one boxed tap target that turns red when left unticked. The waiting screen lists what happens next
+- What was built: Access requests now looks like People and Notifications. Status tabs with counts, a search box, a table with the person, request and confirm times, status chip and a Decision column. Under 768 px the tabs become a select and rows become a list with full width buttons
+- Decision and why: Approve and Reject both ask first in the shared confirm dialog, because approving lets someone in and a stray click should not do that. Reject keeps the reason field and its 3 character minimum
+- Decision and why: `GET /api/admin/registrations` also returns `counts` per status, so the tabs show numbers without five extra requests. Tabs keep one font weight and a fixed count width, so picking one never moves the others
+- Evidence: resources/js/pages/RequestAccess.test.tsx, tests/Feature/Personnel/RegistrationTest.php
+- Paper: Chapter 3 (user interface)
+
+## 2026-11-10 · S2.2 Import people from CSV (personnel)
+- What was built: People has an Import CSV button. The import screen offers a template download, a Check file step and an Import step. A bad file lists each problem by line and column, and nothing is saved
+- What was built: columns are first_name, last_name, email, contact_number, role, team, department. Team and department are matched by name and must exist and be active. Up to 200 people per file
+- Decision and why: the import is all or nothing inside one database transaction. The set-password emails go out after the save, so a mail failure never undoes the import and the screen lists who still needs an invite
+- Decision and why: the same checks run for Check file and Import, so a file that passed the check cannot fail later for a reason the check missed (an email taken in between aside)
+- Evidence: tests/Feature/Personnel/PeopleImportTest.php
+- Paper: Chapter 3 (system design)
+
+## 2026-11-10 · S2.6 and S2.7 Permission grants (access)
+- What was built: a permission now comes from the person's role or from a time-limited grant. `User::hasPermission()` asks one place, the Access `PermissionChecker`, so every policy honors grants without changing. A grant counts while `starts_at <= now < ends_at` and it is not revoked. A grant tied to one event only answers questions about that event
+- What was built: an admin opens a person's profile and uses the Extra access card to give access (the live map, submit site reports, read site reports) with an event, a start, an end and a reason, or to end a grant early. Admins have all of these already, so their profile hides the card
+- What was built: the Me tab shows a person the extra access they hold or will hold, and when it ends. `GET /api/me` also returns the grants in force, and leaves event grants out of the flat `permissions` list
+- Decision and why: `reports.submit` must name an event, and `location.view` can last 7 days at most. The server also refuses a permission the role already holds, an account that cannot sign in, a start in the past and an overlapping grant for the same permission
+- Decision and why: revoking sets `revoked_at` and `revoked_by`, and nothing is deleted, so the history stays. Giving and revoking both write an audit row (`grant.created`, `grant.revoked`)
+- Decision and why: only permissions marked grantable can be granted, and the checker ignores a grant row for any other permission, so a bad row can never open admin features
+- Evidence: tests/Feature/Access/PermissionCheckerTest.php, tests/Feature/Access/GrantsTest.php
+- Paper: Chapter 3 (system design, data privacy)
+- What was built (follow up): the Access item in the System sidebar group now opens the Grants manager. It lists every grant with Active, Upcoming, Ended and All tabs, a New grant dialog with a person picker, and End access. Nearly every admin permission can now be granted (all except `access.manage` and the ones that only make sense for a role), so the office can lend a screen such as People or Events for a while
+- What was built (follow up): the admin sidebar, the route check and the landing page read one permission list (`app/adminAccess.ts`). A marshal granted `people.view` sees only People and Teams, plus a My duties link back, and opens the admin area from an Admin screens row on the Me tab. A screen without its permission shows a short no access message
+- Decision and why: a person who holds `people.manage` only by a grant cannot create, edit or import an admin, so a grant can never be used to climb to admin. `access.manage` is not grantable for the same reason
+- Evidence: tests/Feature/Access/GrantsTest.php, resources/js/layouts/AdminLayout.test.tsx
+
+
+## 2026-11-10 · S2.9 Roles and permission matrix (access)
+- What was built: an Access control group in the admin sidebar with three screens. Roles lists every role with its people count, how much of the admin side it opens, and a Built-in or Custom chip. A role's page has a Permissions tab (switches grouped by module, each with a plain description) and a People tab (who holds it, and Add people to move people in). Permission matrix shows permissions by roles with tick boxes and saves every role at once. Temporary access is the old grants screen
+- What was built: admins can add custom roles, such as Records officer, from the basics or from a copy of another role, rename them, and delete them once nobody holds them. The People screens read role names from the server, so a custom role shows everywhere and can be picked on the person form and in the role filter
+- What was built: on the phone, the Me tab has a My access page with the person's role, what it lets them do in plain words, any extra access with its end time, and a link to the office screens when they have some
+- Decision and why: permissions stay in code (`PermissionMatrix`) because code checks them. Roles and which permissions they hold became data an admin edits. The docs table is now the default matrix for a fresh install, and the seeder keeps an admin's edits when it runs again
+- Decision and why: some cells are locked. Admin holds everything. Manage access, the live map and event site reports stay admin only, so location data keeps the Data Privacy Act rule and others reach it only through a time-limited grant. Duty stays with Marshal and Volunteer because event requirements staff by those roles. Every role keeps the basics (memos, messages, own profile)
+- Decision and why: a person can give someone a role only when they already hold every admin permission in it (`RoleGuard`). This replaces the older "a grant holder cannot touch an admin" check with one general rule, which also covers custom roles. Nobody can change their own role, and moving the last admin out is refused
+- Decision and why: moving people between roles goes through Personnel's `PersonRoleChanger`, because Personnel owns the users table. Each move, each role change and each permission change writes an audit row
+- Decision and why: unsaved changes collect in a save bar that is always in the layout, only hidden, so the page never jumps when it appears. Changed cells are marked amber until saved
+- Evidence: tests/Feature/Access/RolesTest.php, tests/Feature/Access/PermissionMatrixTest.php, resources/js/features/access/pages/PermissionMatrix.test.tsx, resources/js/layouts/AdminLayout.test.tsx
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (results)

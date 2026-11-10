@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 import { useAlerts } from '@/features/notifications/unread';
 import { SignOutButton } from '@/app/SignOutButton';
+import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 
 function TabIcon({ children }: { children: ReactNode }) {
@@ -21,7 +22,7 @@ function TabIcon({ children }: { children: ReactNode }) {
     );
 }
 
-const tabs = [
+const tabs: { to: string; label: string; icon: ReactNode; also?: string[] }[] = [
     {
         to: '/me',
         label: 'Duties',
@@ -65,6 +66,8 @@ const tabs = [
     {
         to: '/me/profile',
         label: 'Me',
+        // Pages you open from the Me tab keep it highlighted.
+        also: ['/me/availability'],
         icon: (
             <TabIcon>
                 <circle cx="12" cy="8" r="4" />
@@ -94,9 +97,12 @@ function useOnline() {
 // Mobile first (DESIGN_SYSTEM.md section 7): white top bar, stone-50 page, one column,
 // bottom tab bar with 48 px or larger tap targets. From 768 px the tabs move into the top bar
 // and the content gets a wider column, so marshals and volunteers can use a desktop too.
-export function MobileLayout() {
+export function MobileLayout({ children }: { children?: ReactNode }) {
     const online = useOnline();
     const { unread } = useAlerts();
+    const { pathname } = useLocation();
+    const current = (tab: (typeof tabs)[number], isActive: boolean) =>
+        isActive || (tab.also ?? []).some((path) => pathname.startsWith(path));
     // The dot sits on the bell's top right corner. A white ring cuts it out of the icon.
     const dot = (to: string, place: string) =>
         unread && to === '/me/notifications' ? (
@@ -110,12 +116,12 @@ export function MobileLayout() {
         <div className="min-h-dvh bg-stone-50">
             <header className="sticky top-0 z-20 border-b border-stone-200 bg-white pt-[env(safe-area-inset-top)]">
                 <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 pr-2 pl-4 md:gap-8 md:px-10">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <BrandLink to="/me">
                         <BrandLogos size="sm" className="shrink-0 text-stone-900" />
                         <p className="truncate text-base font-bold tracking-tight text-stone-900">
                             DRRMO EAMS
                         </p>
-                    </div>
+                    </BrandLink>
                     <nav aria-label="Main" className="hidden h-full flex-1 md:block">
                         <ul className="flex h-full items-stretch gap-1">
                             {tabs.map((tab) => (
@@ -124,7 +130,7 @@ export function MobileLayout() {
                                         to={tab.to}
                                         end
                                         className={({ isActive }) =>
-                                            `flex h-full items-center gap-2 border-b-2 px-3 text-sm transition-colors [&_svg]:size-5 ${isActive ? 'border-maroon-700 font-semibold text-maroon-700' : 'border-transparent font-medium text-stone-600 hover:border-stone-300 hover:text-stone-900'}`
+                                            `flex h-full items-center gap-2 border-b-2 px-3 text-sm transition-colors [&_svg]:size-5 ${current(tab, isActive) ? 'border-maroon-700 font-semibold text-maroon-700' : 'border-transparent font-medium text-stone-600 hover:border-stone-300 hover:text-stone-900'}`
                                         }
                                     >
                                         <span className="relative">
@@ -157,7 +163,7 @@ export function MobileLayout() {
                 tabIndex={-1}
                 className="mx-auto max-w-6xl px-6 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none md:px-10 md:pt-10 md:pb-16"
             >
-                <Outlet />
+                {children ?? <Outlet />}
             </main>
 
             <nav
@@ -171,13 +177,13 @@ export function MobileLayout() {
                             to={tab.to}
                             end
                             className={({ isActive }) =>
-                                `group flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs transition-colors ${isActive ? 'font-semibold text-maroon-700' : 'font-medium text-stone-600 hover:text-stone-900'}`
+                                `group flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs transition-colors ${current(tab, isActive) ? 'font-semibold text-maroon-700' : 'font-medium text-stone-600 hover:text-stone-900'}`
                             }
                         >
                             {({ isActive }) => (
                                 <>
                                     <span
-                                        className={`relative flex h-8 w-14 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-maroon-100' : 'group-hover:bg-stone-100'}`}
+                                        className={`relative flex h-8 w-14 items-center justify-center rounded-full transition-colors ${current(tab, isActive) ? 'bg-maroon-100' : 'group-hover:bg-stone-100'}`}
                                     >
                                         {tab.icon}
                                         {dot(tab.to, 'top-0.5 left-1/2 ml-1')}

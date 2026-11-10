@@ -28,6 +28,13 @@ class RegistrationReviewController
             // Active accounts only count here when an admin approved them through this flow.
             ->where(fn ($q) => $q->where('account_status', '!=', AccountStatus::Active->value)->orWhereNotNull('reviewed_at'));
 
+        // Counts per status for the filter tabs, taken before the status filter.
+        $counts = (clone $query)
+            ->toBase()
+            ->selectRaw('account_status, count(*) as total')
+            ->groupBy('account_status')
+            ->pluck('total', 'account_status');
+
         $status = AccountStatus::tryFrom($filter);
         if ($status !== null) {
             $query->where('account_status', $status->value);
@@ -37,7 +44,18 @@ class RegistrationReviewController
 
         $rows = $query->latest('created_at')->latest('id')->limit(200)->get();
 
-        return response()->json(['data' => $rows->map(fn (User $u) => $this->present($u))->values()]);
+        $count = fn (AccountStatus $s): int => (int) ($counts[$s->value] ?? 0);
+
+        return response()->json([
+            'data' => $rows->map(fn (User $u) => $this->present($u))->values(),
+            'counts' => [
+                'pending_approval' => $count(AccountStatus::PendingApproval),
+                'pending_email' => $count(AccountStatus::PendingEmail),
+                'active' => $count(AccountStatus::Active),
+                'rejected' => $count(AccountStatus::Rejected),
+                'all' => (int) $counts->sum(),
+            ],
+        ]);
     }
 
     public function approve(Request $request, User $user, RegistrationService $registration): JsonResponse

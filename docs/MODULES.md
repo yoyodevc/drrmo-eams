@@ -92,15 +92,19 @@ Count: 4 + 4 + 5 + 1 + 2 + 2 + 2 = 20 tables. Each appears once.
 
 - **Owns:** ROLE, PERMISSION, ROLE_PERMISSION, PERMISSION_GRANT.
 - **Endpoints:**
-  - `GET /api/roles` (with permissions, read only in v1, roles are seeded)
-  - `GET /api/permissions`
+  - `GET /api/permissions` (catalog with label, group, admin and grantable flags)
+  - `GET /api/roles`, `POST /api/roles`, `GET /api/roles/{role}`, `PATCH /api/roles/{role}`, `DELETE /api/roles/{role}` (custom roles only, once empty)
+  - `PUT /api/roles/permissions` (saves one or more roles at once, all or nothing, refuses locked cells)
+  - `POST /api/roles/{role}/members` (moves people into the role through Personnel's `PersonRoleChanger`)
+  - `GET /api/role-options` (role names for the People screens, with `can_assign` for the signed-in person; needs `people.view` or `people.manage`)
+  - `GET /api/me/access` (the signed-in person's role and its permissions in plain words)
   - `GET /api/grants` (filters: user, event, active), `POST /api/grants`, `POST /api/grants/{grant}/revoke`
 - **Policies:** `GrantPolicy`, `RolePolicy`.
-- **Contracts offered:** `PermissionChecker::allows(User $user, string $code, ?int $eventId = null): bool`. Rule: role has the permission, or there is an active grant (`starts_at <= now < ends_at`, not revoked) for that user and code, where the grant's event is null or matches `$eventId`. Results are cached per request.
+- **Contracts offered:** `RoleGuard::canHandOut(User $actor, Role $role): bool`, the no escalation rule that Personnel calls before it creates, edits or imports a person. `PermissionChecker::allows(User $user, string $code, ?int $eventId = null): bool`. Rule: role has the permission, or there is an active grant (`starts_at <= now < ends_at`, not revoked) for that user and code, where the grant's event is null or matches `$eventId`. Results are cached per request.
 - **Gate wiring:** a `Gate::before` style hook lets every policy call `$user->can('code', $event)` and get this rule.
 - **Events fired:** `PermissionGranted`, `PermissionRevoked`.
-- **Frontend:** `features/access` with admin pages Permission matrix (read only), Grants manager.
-- **Must not touch:** users' role column (Personnel owns it), assignments.
+- **Frontend:** `features/access` with the admin Access control group (Roles, Role detail, Permission matrix, Temporary access) and the phone My access page.
+- **Must not touch:** users' role column (Personnel owns it and offers `PersonRoleChanger`), assignments.
 
 ## Events and Assignments
 

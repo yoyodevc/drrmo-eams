@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Access\AccessServiceProvider;
 use App\Modules\Events\EventsServiceProvider;
 use App\Modules\Monitoring\MonitoringServiceProvider;
 use App\Modules\Notifications\NotificationsServiceProvider;
@@ -11,6 +12,7 @@ use App\Providers\AppServiceProvider;
 
 return [
     AppServiceProvider::class,
+    AccessServiceProvider::class,
     EventsServiceProvider::class,
     MonitoringServiceProvider::class,
     NotificationsServiceProvider::class,

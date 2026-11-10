@@ -168,26 +168,37 @@ describe('admin access requests', () => {
         rejection_reason: null,
     };
 
-    it('lists requests, approves one and needs a reason to reject', async () => {
+    const counts = { pending_approval: 1, pending_email: 0, active: 0, rejected: 0, all: 1 };
+
+    it('lists requests, approves one after asking and needs a reason to reject', async () => {
         const fetchMock = vi.fn((url: string) =>
-            url.includes('/approve') ? json(200, { data: row }) : json(200, { data: [row] }),
+            url.includes('/approve')
+                ? json(200, { data: row })
+                : json(200, { data: [row], counts }),
         );
         vi.stubGlobal('fetch', fetchMock);
         renderAt('/admin/requests');
 
-        expect(await screen.findByText('ana@example.test')).toBeInTheDocument();
+        expect((await screen.findAllByText('ana@example.test')).length).toBeGreaterThan(0);
         expect(fetchMock.mock.calls[0]?.[0]).toBe(
             '/api/admin/registrations?status=pending_approval',
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Approve Ana Reyes' }));
+        // Approve asks first, so a stray click does not let someone in.
+        fireEvent.click(screen.getAllByRole('button', { name: 'Approve Ana Reyes' })[0]);
+        expect(fetchMock.mock.calls.some(([u]) => u.includes('/approve'))).toBe(false);
+        fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
         await waitFor(() =>
             expect(
                 fetchMock.mock.calls.some(([u]) => u === '/api/admin/registrations/7/approve'),
             ).toBe(true),
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Reject Ana Reyes' }));
+        expect(
+            await screen.findByText('Ana Reyes is approved and can sign in now. We emailed them.'),
+        ).toBeInTheDocument();
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'Reject Ana Reyes' })[0]);
         const submit = screen.getByRole('button', { name: 'Reject request' });
         expect(submit).toBeDisabled();
         fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Not a volunteer' } });
@@ -195,11 +206,16 @@ describe('admin access requests', () => {
     });
 
     it('filters by status', async () => {
-        const fetchMock = vi.fn<(url: string) => Promise<Response>>(() => json(200, { data: [] }));
+        const fetchMock = vi.fn<(url: string) => Promise<Response>>(() =>
+            json(200, {
+                data: [],
+                counts: { pending_approval: 0, pending_email: 0, active: 0, rejected: 0, all: 0 },
+            }),
+        );
         vi.stubGlobal('fetch', fetchMock);
         renderAt('/admin/requests');
 
-        fireEvent.click(await screen.findByRole('button', { name: 'Rejected' }));
+        fireEvent.click(await screen.findByRole('button', { name: /^Rejected/ }));
         await waitFor(() =>
             expect(
                 fetchMock.mock.calls.some(
@@ -207,6 +223,6 @@ describe('admin access requests', () => {
                 ),
             ).toBe(true),
         );
-        expect(await screen.findByText('No requests here.')).toBeInTheDocument();
+        expect((await screen.findAllByText('No rejected requests')).length).toBeGreaterThan(0);
     });
 });

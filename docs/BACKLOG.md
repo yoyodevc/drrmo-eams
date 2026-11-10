@@ -32,14 +32,15 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S1.3 | Admin adds a duty requirement | Done |
 | S1.4 | Admin assigns a person | Done |
 | S1.5 | Person sees the assignment on a phone | Done |
-| S2.1 | People list and profile | Not started |
-| S2.2 | Import people from CSV | Not started |
-| S2.3 | Emergency contacts | Partial |
-| S2.4 | Volunteer active and inactive toggle | Partial |
-| S2.5 | Privacy notice and consent | Partial |
-| S2.6 | Permission check with grants | Not started |
-| S2.7 | Grants manager | Not started |
+| S2.1 | People list and profile | Done |
+| S2.2 | Import people from CSV | Done |
+| S2.3 | Emergency contacts | Done |
+| S2.4 | Volunteer active and inactive toggle | Done |
+| S2.5 | Privacy notice and consent | Done |
+| S2.6 | Permission check with grants | Done |
+| S2.7 | Grants manager | Done |
 | S2.8 | Coordinator event notices | Done |
+| S2.9 | Roles and permission matrix | Done |
 | S3.1 | Assignment conflict checks | Done |
 | S3.2 | Acknowledge | Done |
 | S3.3 | Edit and cancel assignments | Done |
@@ -69,7 +70,6 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S6.5 | Production deployment | Not started |
 | S6.6 | Field test | Not started |
 
-Partial notes: S2.3 and S2.4 have models only. S2.5 has contracts but no consent screen or `consent_required` 403.
 
 ---
 
@@ -124,14 +124,16 @@ Partial notes: S2.3 and S2.4 have models only. S2.5 has contracts but no consent
 - Filter by role, team, status, department, and search by name or email.
 - Admin creates and edits a person. Email is unique.
 - New person gets a set-password email.
+- Mobile: a person sees their own details and edits their contact number from the Me tab (`/me/details`).
+- Admin opens a person profile (`/admin/people/:id`) with details, availability history and emergency contacts. Viewing contacts is audited.
 
 **S2.2 Import people from CSV** `personnel` `desktop` **M**
 - Template CSV download. Upload validates every row and shows errors per row before anything is saved.
 - Import is all or nothing.
 
 **S2.3 Emergency contacts** `personnel` `mobile` **M**
-- A person adds, edits and deletes their own contacts from My profile.
-- Admin sees them on the person profile.
+- A person adds, edits and deletes their own contacts from the Me tab (`/me/contacts`), up to 5.
+- Admin sees them on the person profile. Viewing and deleting are audited.
 
 **S2.4 Volunteer active and inactive toggle** `personnel` `desktop` **M**
 - Switch requires a reason. A VOLUNTEER_STATUS_LOG row is written with old, new, reason, changed_by.
@@ -154,6 +156,12 @@ Partial notes: S2.3 and S2.4 have models only. S2.5 has contracts but no consent
 
 **S2.8 Coordinator event notices** `events` `mobile` **S**
 - Coordinators see published events for their department or campus wide, read only.
+
+**S2.9 Roles and permission matrix** `access` `both` **L**
+- Access control group in the admin sidebar: Roles, Permission matrix, Temporary access.
+- Admin adds custom roles, edits role permissions with switches or the matrix, and moves people between roles.
+- Locked cells (admin only, duty roles only, everyone) cannot change. Nobody hands out a role with more access than they hold.
+- Every change is audited. People see their own role and permissions on My access.
 
 ## M3 Assignments and notifications
 

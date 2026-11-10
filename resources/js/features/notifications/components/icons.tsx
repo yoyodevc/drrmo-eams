@@ -83,6 +83,14 @@ export function SearchIcon({ className }: IconProps) {
     );
 }
 
+export function ChevronDownIcon({ className }: IconProps) {
+    return (
+        <Icon className={className}>
+            <path d="m6 9 6 6 6-6" />
+        </Icon>
+    );
+}
+
 export function ChevronRightIcon({ className }: IconProps) {
     return (
         <Icon className={className}>

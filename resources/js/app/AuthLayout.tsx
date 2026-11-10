@@ -161,7 +161,13 @@ export function AuthLayout({
                                 10173). Location is only shared while you are on duty.
                             </p>
                         </div>
-                        <p className="mt-3 pl-7 text-[0.8125rem]">
+                        <p className="mt-3 flex gap-4 pl-7 text-[0.8125rem]">
+                            <Link
+                                to="/privacy"
+                                className="text-stone-500 underline underline-offset-2 hover:text-stone-700"
+                            >
+                                Privacy notice
+                            </Link>
                             <Link
                                 to="/cookies"
                                 className="text-stone-500 underline underline-offset-2 hover:text-stone-700"

@@ -219,11 +219,11 @@ These are the ten "day in the life" flows. Each one lists the device, the steps,
 ## Flow 10. Exceptional access (Admin, desktop)
 
 **Steps**
-1. Admin opens Grants and clicks New grant.
+1. Admin opens Access control, Temporary access, and clicks Give access.
 2. Picks the person, the permission (`reports.submit`), the event, start and end time, and a reason ("Designated reporter, gate 2").
 3. Saves. The person sees the Reports tab during the grant window.
 
-**Screens:** A-Grants manager.
+**Screens:** A-Temporary access.
 
 **API:** `POST /api/grants`, `POST /api/grants/{id}/revoke`.
 
@@ -236,3 +236,30 @@ These are the ten "day in the life" flows. Each one lists the device, the steps,
 - `location.view` longer than 7 days: validation error.
 - Person has no assignment in that event: warning "This person cannot submit reports until assigned". Allowed, because the assignment may come later.
 - Grant expires mid-session: the next API call is refused and the tab disappears after the next `/api/me` refresh (every 5 minutes or on navigation).
+
+---
+
+## Flow 11. Roles and permissions (Admin, desktop)
+
+**Steps**
+1. Admin opens Access control, Roles, and clicks New role.
+2. Names it ("Records officer"), adds a short description and picks what it starts with: the basics, or a copy of another role.
+3. On the role's Permissions tab the admin turns on "View audit log" and "Export lists", then presses Save changes in the save bar.
+4. On the People tab the admin clicks Add people, picks one or more people and moves them into the role.
+5. To compare roles, the admin opens Permission matrix, ticks boxes across several roles and saves once.
+6. The people in the role see the new screens the next time their app loads.
+
+**Screens:** A-Roles, A-Role detail, A-Permission matrix. The person sees M-My access.
+
+**API:** `POST /api/roles`, `PUT /api/roles/permissions`, `POST /api/roles/{role}/members`, `PATCH /api/roles/{role}`, `DELETE /api/roles/{role}`.
+
+**Permission:** `access.manage` (Admin only, never granted).
+
+**Written:** ROLE, ROLE_PERMISSION, USER (role_id, through Personnel), AUDIT_LOG.
+
+**What can go wrong**
+- A locked cell is sent anyway (for example the map for Marshal): the whole save is refused and nothing changes.
+- Two roles with the same name: validation error.
+- Deleting a custom role that people still hold: refused until they are moved.
+- The admin tries to move themselves: refused, so nobody locks themselves out.
+- A person with `people.manage` but not `audit.view` tries to give someone the Records officer role: 403.

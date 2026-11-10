@@ -1,0 +1,217 @@
+// M-My profile, the "Me" tab. Who you are, then the pages about your own account.
+// Mobile first at 360 px: one column, hairline list rows like Alerts. Emergency contacts (S2.3) go here too.
+import type { ReactNode } from 'react';
+import { Link } from 'react-router';
+import { hasAdminAccess } from '@/app/adminAccess';
+import { useMe } from '@/app/auth';
+import { SignOutButton } from '@/app/SignOutButton';
+
+function Icon({ children, className = 'size-5' }: { children: ReactNode; className?: string }) {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            {children}
+        </svg>
+    );
+}
+
+function Row({
+    to,
+    icon,
+    title,
+    hint,
+    aside,
+}: {
+    to: string;
+    icon: ReactNode;
+    title: string;
+    hint: string;
+    aside?: ReactNode;
+}) {
+    return (
+        <li>
+            <Link
+                to={to}
+                className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-stone-50 active:bg-stone-100"
+            >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-control border border-stone-200 text-maroon-700">
+                    {icon}
+                </span>
+                <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-stone-900">{title}</span>
+                    <span className="block text-sm text-pretty text-stone-600">{hint}</span>
+                </span>
+                {aside}
+                <Icon className="size-5 shrink-0 text-stone-400">
+                    <path d="m9 6 6 6-6 6" />
+                </Icon>
+            </Link>
+        </li>
+    );
+}
+
+function Skeleton() {
+    return (
+        <div aria-busy="true">
+            <p role="status" className="sr-only">
+                Loading your profile...
+            </p>
+            <div aria-hidden="true">
+                <div className="h-7 w-48 animate-pulse rounded bg-stone-200" />
+                <div className="mt-3 h-4 w-40 animate-pulse rounded bg-stone-200" />
+                <div className="mt-2 h-4 w-56 animate-pulse rounded bg-stone-200" />
+            </div>
+        </div>
+    );
+}
+
+export function MyProfile() {
+    const me = useMe().data;
+    const active = me?.status !== 'inactive';
+    const about = me ? [me.role_name, me.team_name ?? null] : [];
+
+    return (
+        <div className="mx-auto max-w-2xl">
+            <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
+            <div className="mt-4">
+                {me ? (
+                    <>
+                        <h1 className="text-2xl font-semibold tracking-tight text-balance text-stone-900">
+                            {me.name}
+                        </h1>
+                        {about.some(Boolean) && (
+                            <p className="mt-1 text-base text-stone-700">
+                                {about.filter(Boolean).join(', ')}
+                            </p>
+                        )}
+                        <p className="mt-0.5 text-sm break-all text-stone-500">{me.email}</p>
+                    </>
+                ) : (
+                    <Skeleton />
+                )}
+            </div>
+
+            <section aria-labelledby="me-account" className="mt-8">
+                <h2
+                    id="me-account"
+                    className="text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase"
+                >
+                    Your account
+                </h2>
+                <ul className="mt-2 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
+                    <Row
+                        to="/me/availability"
+                        title="My availability"
+                        hint={
+                            active
+                                ? 'You can be assigned to duties.'
+                                : 'You are not offered for duty right now.'
+                        }
+                        icon={
+                            <Icon>
+                                <rect x="4" y="5" width="16" height="15" rx="2" />
+                                <path d="M8 3v4M16 3v4M4 10h16M9.5 15l2 2 3.5-3.5" />
+                            </Icon>
+                        }
+                        aside={
+                            me && (
+                                <span
+                                    className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${active ? 'bg-green-50 text-green-800 ring-green-200' : 'bg-stone-100 text-stone-600 ring-stone-200'}`}
+                                >
+                                    {active ? 'Active' : 'Inactive'}
+                                </span>
+                            )
+                        }
+                    />
+                    <Row
+                        to="/me/details"
+                        title="My details"
+                        hint="Your contact number and what DRRMO has on file."
+                        icon={
+                            <Icon>
+                                <circle cx="12" cy="8" r="3.5" />
+                                <path d="M5 20a7 7 0 0 1 14 0" />
+                            </Icon>
+                        }
+                    />
+                    <Row
+                        to="/me/contacts"
+                        title="Emergency contacts"
+                        hint="Who DRRMO can call if something happens."
+                        icon={
+                            <Icon>
+                                <path d="M6.5 4h3l1.5 4-2 1.5a11 11 0 0 0 5.5 5.5L16 13l4 1.5v3a2 2 0 0 1-2 2A14 14 0 0 1 4.5 6a2 2 0 0 1 2-2Z" />
+                            </Icon>
+                        }
+                    />
+                    <Row
+                        to="/me/access"
+                        title="My access"
+                        hint={
+                            me?.role_name
+                                ? `What you can do as ${me.role_name}.`
+                                : 'What your account can do.'
+                        }
+                        icon={
+                            <Icon>
+                                <rect x="4.5" y="10.5" width="15" height="10" rx="2" />
+                                <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5M12 14.5v2" />
+                            </Icon>
+                        }
+                        aside={
+                            me?.grants && me.grants.length > 0 ? (
+                                <span className="inline-flex shrink-0 items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-800 ring-1 ring-sky-200 ring-inset">
+                                    {me.grants.length} extra
+                                </span>
+                            ) : undefined
+                        }
+                    />
+                    <Row
+                        to="/privacy"
+                        title="Privacy notice"
+                        hint="What DRRMO keeps about you and why."
+                        icon={
+                            <Icon>
+                                <path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9V6Z" />
+                                <path d="m9.5 12 1.8 1.8 3.2-3.3" />
+                            </Icon>
+                        }
+                    />
+                </ul>
+            </section>
+
+            {me && hasAdminAccess(me) && (
+                <ul className="mt-4 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
+                    <Row
+                        to="/admin"
+                        title="Admin screens"
+                        hint="The office screens your extra access opens."
+                        icon={
+                            <Icon>
+                                <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+                                <rect x="13.5" y="3.5" width="7" height="4.5" rx="1.5" />
+                                <rect x="13.5" y="11" width="7" height="9.5" rx="1.5" />
+                                <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+                            </Icon>
+                        }
+                    />
+                </ul>
+            )}
+
+            <SignOutButton className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control border border-stone-300 bg-white px-5 text-base font-semibold text-stone-800 transition-colors hover:bg-stone-50 active:bg-stone-100">
+                <Icon>
+                    <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10" />
+                </Icon>
+                Sign out
+            </SignOutButton>
+        </div>
+    );
+}

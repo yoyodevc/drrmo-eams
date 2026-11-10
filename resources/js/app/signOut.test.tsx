@@ -18,7 +18,7 @@ const marshal = {
     team: null,
     status: 'active',
     permissions: [],
-    consent: { privacy_notice: true, location_tracking: false },
+    consent: { privacy_notice: true, privacy_notice_outdated: false, location_tracking: false },
     home: '/me',
 };
 

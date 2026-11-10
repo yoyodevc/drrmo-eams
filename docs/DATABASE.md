@@ -60,7 +60,7 @@ Each module gets a fixed timestamp prefix so parallel sessions never collide and
 | Order | Prefix | Module | Tables |
 |---|---|---|---|
 | 0 | `0001_01_01_*` | Core | Laravel defaults: cache, jobs, failed_jobs, sessions, password_reset_tokens |
-| 1 | `2026_01_01_1000xx` | Access | roles, permissions, role_permission |
+| 1 | `2026_01_01_1000xx` | Access | roles, permissions, role_permission, and `100004` adds `description` and `is_system` to roles (custom roles have `is_system` false) |
 | 2 | `2026_01_01_2000xx` | Personnel | departments, users (FK roles, departments), emergency_contacts, volunteer_status_logs, and `200005` adds the sign up columns to users (account_status, email code fields, reviewed_by, reviewed_at, rejection_reason), and `200006` replaces `users.name` with `first_name` and `last_name` |
 | 3 | `2026_01_01_3000xx` | Events | duty_types, campus_locations, events, event_duty_requirements, assignments |
 | 4 | `2026_01_01_3500xx` | Access | refresh_tokens (needs users), permission_grants (needs events) |

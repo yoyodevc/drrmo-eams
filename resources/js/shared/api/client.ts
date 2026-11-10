@@ -42,6 +42,16 @@ export function onSessionEnded(listener: SessionEndedListener): () => void {
     return () => sessionEndedListeners.delete(listener);
 }
 
+// Called when the server answers 403 `consent_required`: the privacy notice changed mid session.
+// The app then asks /api/me again and the consent screen shows itself.
+type ConsentListener = () => void;
+const consentListeners = new Set<ConsentListener>();
+
+export function onConsentRequired(listener: ConsentListener): () => void {
+    consentListeners.add(listener);
+    return () => consentListeners.delete(listener);
+}
+
 function signalSessionEnded(): void {
     sessionEndedListeners.forEach((listener) => listener());
 }
@@ -85,6 +95,12 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 
     const body = response.status === 204 ? null : await response.json().catch(() => null);
     if (!response.ok) {
+        if (
+            response.status === 403 &&
+            (body as { code?: string } | null)?.code === 'consent_required'
+        ) {
+            consentListeners.forEach((listener) => listener());
+        }
         const retry = Number(response.headers.get('Retry-After'));
         throw new ApiError(
             response.status,

@@ -9,6 +9,8 @@ use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Enums\AvailabilityStatus;
 use App\Modules\Personnel\Models\User;
+use App\Modules\Records\Contracts\ConsentRecorder;
+use App\Modules\Records\Enums\ConsentPurpose;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -32,7 +34,7 @@ class UserFactory extends Factory
             'contact_number' => '09'.fake()->numerify('#########'),
             'role_id' => fn () => Role::query()->firstOrCreate(
                 ['code' => RoleCode::Volunteer->value],
-                ['name' => RoleCode::Volunteer->label()],
+                ['name' => RoleCode::Volunteer->label(), 'is_system' => true],
             )->id,
             'status' => AvailabilityStatus::Active,
             'account_status' => AccountStatus::Active,
@@ -42,12 +44,27 @@ class UserFactory extends Factory
         ];
     }
 
+    /** Test people have already agreed to the privacy notice, so API tests reach the endpoint they test. */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            if (! $user->relationLoaded('skipConsent')) {
+                app(ConsentRecorder::class)->give($user, ConsentPurpose::PrivacyNotice, '127.0.0.1');
+            }
+        });
+    }
+
+    public function withoutConsent(): static
+    {
+        return $this->afterMaking(fn (User $user) => $user->setRelation('skipConsent', true));
+    }
+
     public function role(RoleCode $role): static
     {
         return $this->state(fn () => [
             'role_id' => Role::query()->firstOrCreate(
                 ['code' => $role->value],
-                ['name' => $role->label()],
+                ['name' => $role->label(), 'is_system' => true],
             )->id,
         ]);
     }

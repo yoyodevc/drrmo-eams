@@ -1,7 +1,9 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
+import { canOpen, permissionFor } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
 import { SignOutButton } from '@/app/SignOutButton';
+import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 
 function NavIcon({ children }: { children: ReactNode }) {
@@ -28,6 +30,22 @@ interface Item {
     // Dashboard is the index route, so it should only light up on /admin itself.
     end?: boolean;
 }
+
+// Shown to people who reached the admin area through a grant, so they can go back to their duties.
+const backGroup: { label: string; items: Item[] } = {
+    label: 'Me',
+    items: [
+        {
+            to: '/me',
+            label: 'My duties',
+            icon: (
+                <NavIcon>
+                    <path d="M15 5 8 12l7 7" />
+                </NavIcon>
+            ),
+        },
+    ],
+};
 
 const groups: { label: string; items: Item[] }[] = [
     {
@@ -94,6 +112,16 @@ const groups: { label: string; items: Item[] }[] = [
                 ),
             },
             {
+                to: '/admin/teams',
+                label: 'Teams and departments',
+                icon: (
+                    <NavIcon>
+                        <rect x="4" y="3.5" width="16" height="17" rx="1.5" />
+                        <path d="M9 8h1M14 8h1M9 12h1M14 12h1M10 20.5v-4h4v4" />
+                    </NavIcon>
+                ),
+            },
+            {
                 to: '/admin/requests',
                 label: 'Access requests',
                 icon: (
@@ -141,11 +169,31 @@ const groups: { label: string; items: Item[] }[] = [
         ],
     },
     {
-        label: 'System',
+        label: 'Access control',
         items: [
             {
-                to: '/admin/access',
-                label: 'Access',
+                to: '/admin/access/roles',
+                label: 'Roles',
+                icon: (
+                    <NavIcon>
+                        <path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9V6Z" />
+                        <path d="m9.5 12 1.8 1.8 3.2-3.3" />
+                    </NavIcon>
+                ),
+            },
+            {
+                to: '/admin/access/matrix',
+                label: 'Permission matrix',
+                icon: (
+                    <NavIcon>
+                        <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+                        <path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17" />
+                    </NavIcon>
+                ),
+            },
+            {
+                to: '/admin/access/grants',
+                label: 'Temporary access',
                 icon: (
                     <NavIcon>
                         <circle cx="8" cy="15" r="4.5" />
@@ -153,6 +201,11 @@ const groups: { label: string; items: Item[] }[] = [
                     </NavIcon>
                 ),
             },
+        ],
+    },
+    {
+        label: 'System',
+        items: [
             {
                 to: '/admin/records',
                 label: 'Records',
@@ -182,10 +235,23 @@ function Tip({ children, always = false }: { children: ReactNode; always?: boole
 // rail: the sidebar, which turns into an icon rail below 1024 px. Otherwise the phone menu.
 function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: () => void }) {
     const id = useId();
+    const me = useMe().data;
+    // Admins see everything. Anyone else sees only the screens their grants open, plus a way back.
+    const visible = (
+        me
+            ? [
+                  ...(me.role === 'admin' ? [] : [backGroup]),
+                  ...groups.map((g) => ({
+                      ...g,
+                      items: g.items.filter((item) => canOpen(me, permissionFor(item.to))),
+                  })),
+              ]
+            : []
+    ).filter((g) => g.items.length > 0);
 
     return (
         <nav aria-label="Admin" className="px-3 py-4">
-            {groups.map((group, index) => (
+            {visible.map((group, index) => (
                 <div key={group.label} className={index > 0 ? 'mt-6' : ''}>
                     {rail && index > 0 && (
                         <hr className="mx-3 mb-4 border-white/10 lg:hidden" aria-hidden="true" />
@@ -236,13 +302,6 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
     );
 }
 
-const roleNames = {
-    admin: 'Administrator',
-    marshal: 'Marshal',
-    volunteer: 'Volunteer',
-    coordinator: 'Coordinator',
-};
-
 const signOutIcon = (
     <NavIcon>
         <path d="M14 4.5h3.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H14" />
@@ -266,7 +325,7 @@ function Account({ rail = false }: { rail?: boolean }) {
             <div className={`min-w-0 flex-1 ${rail ? 'max-lg:sr-only' : ''}`}>
                 <p className="truncate text-sm font-semibold text-white">{me.name}</p>
                 <p className="truncate text-xs text-white/60">
-                    {me.role ? roleNames[me.role] : 'Signed in'}
+                    {me.role === 'admin' ? 'Administrator' : (me.role_name ?? 'Signed in')}
                 </p>
             </div>
         </>
@@ -298,6 +357,26 @@ function Account({ rail = false }: { rail?: boolean }) {
     );
 }
 
+// Shows the page only when the person holds the permission it needs. The server checks again.
+function Guarded() {
+    const me = useMe().data;
+    const { pathname } = useLocation();
+
+    if (me && !canOpen(me, permissionFor(pathname))) {
+        return (
+            <div className="mx-auto max-w-xl rounded-card bg-white p-8 text-center ring-1 ring-stone-200">
+                <h1 className="text-xl font-semibold text-stone-900">No access to this screen</h1>
+                <p className="mt-2 text-stone-600">
+                    Your account does not have the permission this screen needs. Ask an admin if you
+                    think this is a mistake.
+                </p>
+            </div>
+        );
+    }
+
+    return <Outlet />;
+}
+
 // Desktop first (DESIGN_SYSTEM.md section 7): maroon-900 sidebar plus wide stone-50 content.
 // From 768 to 1023 px the sidebar is an icon rail. Below 768 px it becomes a top bar with a menu.
 export function AdminLayout() {
@@ -323,10 +402,10 @@ export function AdminLayout() {
 
             <header className="on-dark sticky top-0 z-30 bg-maroon-900 text-white md:hidden">
                 <div className="flex h-16 items-center justify-between gap-3 pr-2 pl-4">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <BrandLink to="/admin">
                         <BrandLogos size="sm" className="shrink-0" />
                         <p className="truncate text-base font-bold tracking-tight">DRRMO EAMS</p>
-                    </div>
+                    </BrandLink>
                     <button
                         type="button"
                         aria-expanded={menuOpen}
@@ -357,17 +436,19 @@ export function AdminLayout() {
 
             <aside className="on-dark sticky top-0 hidden h-dvh w-20 shrink-0 flex-col bg-maroon-900 text-white md:flex lg:w-64">
                 <div className="flex flex-col items-center border-b border-white/10 px-4 pt-6 pb-5 lg:items-start lg:px-6">
-                    <BrandLogos
-                        size="sm"
-                        className="flex-col gap-2 lg:hidden! [&>span]:h-px [&>span]:w-6"
-                    />
-                    <BrandLogos size="md" className="hidden! lg:flex!" />
-                    <div className="mt-4 hidden lg:block">
-                        <p className="text-base leading-tight font-bold tracking-tight text-white">
-                            DRRMO EAMS
-                        </p>
-                        <p className="mt-0.5 text-xs text-white/60">Administration</p>
-                    </div>
+                    <BrandLink to="/admin" className="flex-col items-center lg:items-start">
+                        <BrandLogos
+                            size="sm"
+                            className="flex-col gap-2 lg:hidden! [&>span]:h-px [&>span]:w-6"
+                        />
+                        <BrandLogos size="md" className="hidden! lg:flex!" />
+                        <div className="mt-4 hidden lg:block">
+                            <p className="text-base leading-tight font-bold tracking-tight text-white">
+                                DRRMO EAMS
+                            </p>
+                            <p className="mt-0.5 text-xs text-white/60">Administration</p>
+                        </div>
+                    </BrandLink>
                 </div>
                 <div className="flex-1 lg:overflow-y-auto">
                     <AdminNav rail />
@@ -380,7 +461,7 @@ export function AdminLayout() {
                 tabIndex={-1}
                 className="min-w-0 flex-1 px-6 py-6 outline-none lg:px-10 lg:py-8"
             >
-                <Outlet />
+                <Guarded />
             </main>
         </div>
     );

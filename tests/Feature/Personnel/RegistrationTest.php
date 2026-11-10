@@ -136,7 +136,7 @@ it('tells a pending or rejected person why they cannot sign in, but only after t
 
     $this->postJson('/api/login', ['email' => $user->email, 'password' => 'password'])
         ->assertStatus(403)->assertExactJson(['message' => $message, 'code' => $code]);
-    $this->getJson('/api/me')->assertUnauthorized();
+    $this->withAuthCookies([])->getJson('/api/me')->assertUnauthorized();
 })->with([
     'email not confirmed' => [AccountStatus::PendingEmail, 'email_not_confirmed', 'Confirm your email first. Enter the 6 digit code we sent you.'],
     'waiting for approval' => [AccountStatus::PendingApproval, 'awaiting_approval', 'Your account is waiting for admin approval. We will email you when it is approved.'],
@@ -203,7 +203,8 @@ it('lets an admin list requests by status', function () {
     User::factory()->create(); // a normal active volunteer is not a request
 
     withAuthCookies(loginCookies($admin))->getJson('/api/admin/registrations')
-        ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $waiting->id);
+        ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $waiting->id)
+        ->assertJsonPath('counts', ['pending_approval' => 1, 'pending_email' => 1, 'active' => 0, 'rejected' => 0, 'all' => 2]);
 
     withAuthCookies(loginCookies($admin))->getJson('/api/admin/registrations?status=pending_email')
         ->assertOk()->assertJsonCount(1, 'data');
@@ -266,7 +267,7 @@ it('forbids everyone but an admin from the review endpoints', function (RoleCode
 })->with([RoleCode::Volunteer, RoleCode::Marshal, RoleCode::Coordinator]);
 
 it('needs a signed in user for the review endpoints', function () {
-    $this->getJson('/api/admin/registrations')->assertUnauthorized();
+    $this->withAuthCookies([])->getJson('/api/admin/registrations')->assertUnauthorized();
 });
 
 it('needs a first name and a last name, trims them and limits them to 100 characters', function () {

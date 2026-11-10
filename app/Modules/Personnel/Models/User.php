@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Personnel\Models;
 
+use App\Modules\Access\Contracts\PermissionChecker;
 use App\Modules\Access\Enums\Role as RoleCode;
+use App\Modules\Access\Models\PermissionGrant;
 use App\Modules\Access\Models\Role;
 use App\Modules\Notifications\Contracts\EmailMessage;
 use App\Modules\Notifications\Contracts\MailSender;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Enums\AvailabilityStatus;
-use App\Modules\Personnel\Enums\Team;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -24,7 +25,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 
 /**
- * @property Team|null $team
+ * @property string|null $team
  * @property AvailabilityStatus $status
  * @property string $first_name
  * @property string $last_name
@@ -35,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $verification_expires_at
  * @property Carbon|null $verification_sent_at
  * @property Carbon|null $reviewed_at
+ * @property Carbon|null $last_login_at
  */
 #[Fillable(['first_name', 'last_name', 'email', 'contact_number', 'role_id', 'department_id', 'team', 'status', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -55,7 +57,6 @@ class User extends Authenticatable
             'verification_sent_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'password' => 'hashed',
-            'team' => Team::class,
             'status' => AvailabilityStatus::class,
             'account_status' => AccountStatus::class,
         ];
@@ -109,6 +110,12 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
+    /** The display name of this person's team, or null when they have none. */
+    public function teamName(): ?string
+    {
+        return $this->team === null ? null : Team::query()->where('code', $this->team)->value('name');
+    }
+
     /** @return HasMany<EmergencyContact, $this> */
     public function emergencyContacts(): HasMany
     {
@@ -138,8 +145,28 @@ class User extends Authenticatable
         return ! $this->isDisabled() && $this->account_status === AccountStatus::Active;
     }
 
-    public function hasPermission(string $code): bool
+    /**
+     * Role permission or an active grant, answered by the Access module's PermissionChecker.
+     * Pass the event id when the question is about one event, so event grants can match.
+     */
+    public function hasPermission(string $code, ?int $eventId = null): bool
     {
-        return $this->role?->permissions->contains('code', $code) ?? false;
+        return app(PermissionChecker::class)->allows($this, $code, $eventId);
+    }
+
+    /**
+     * Grants that are in force right now, with their permission. Cached on this object once loaded.
+     *
+     * @return HasMany<PermissionGrant, $this>
+     */
+    public function activeGrants(): HasMany
+    {
+        return $this->hasMany(PermissionGrant::class)->active()->with('permission');
+    }
+
+    /** @return HasMany<PermissionGrant, $this> */
+    public function grants(): HasMany
+    {
+        return $this->hasMany(PermissionGrant::class);
     }
 }

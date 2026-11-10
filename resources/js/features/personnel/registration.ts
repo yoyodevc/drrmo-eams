@@ -42,9 +42,16 @@ export interface AccessRequest {
     rejection_reason: string | null;
 }
 
-export async function listRequests(status: RequestStatus | 'all'): Promise<AccessRequest[]> {
-    const body = await api<{ data: AccessRequest[] }>(`/api/admin/registrations?status=${status}`);
-    return body.data;
+export type RequestFilter = RequestStatus | 'all';
+
+export interface RequestList {
+    data: AccessRequest[];
+    // How many requests sit under each filter, for the tab counts.
+    counts: Record<RequestFilter, number>;
+}
+
+export async function listRequests(status: RequestFilter): Promise<RequestList> {
+    return api<RequestList>(`/api/admin/registrations?status=${status}`);
 }
 
 export async function approveRequest(id: number): Promise<void> {
