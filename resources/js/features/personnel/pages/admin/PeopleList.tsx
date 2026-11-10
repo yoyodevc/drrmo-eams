@@ -15,6 +15,7 @@ import {
 import {
     AvailabilityChip,
     Avatar,
+    ChevronDownIcon,
     ChevronIcon,
     FilterIcon,
     PeopleIcon,
@@ -49,9 +50,16 @@ function Select({
     return (
         <label className={`${label} block min-w-0`}>
             <span className="mb-1.5 block">{name}</span>
-            <select className={control} value={value} onChange={(e) => onChange(e.target.value)}>
-                {children}
-            </select>
+            <span className="relative block">
+                <select
+                    className={`${control} cursor-pointer appearance-none pr-10`}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                >
+                    {children}
+                </select>
+                <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-stone-500 md:size-4" />
+            </span>
         </label>
     );
 }

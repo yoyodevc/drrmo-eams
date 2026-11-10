@@ -15,7 +15,7 @@ import {
     type PersonInput,
     type RoleCode,
 } from '@/features/personnel/people';
-import { BackLink } from '@/features/personnel/components/ui';
+import { BackLink, ChevronDownIcon } from '@/features/personnel/components/ui';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { TextField } from '@/shared/ui/TextField';
@@ -43,7 +43,7 @@ function fromPerson(p: Person): PersonInput {
 }
 
 const selectClass =
-    'block min-h-12 w-full rounded-control border border-stone-300 bg-white px-3.5 text-base text-stone-900 hover:border-stone-400 focus:border-maroon-700 focus:ring-3 focus:ring-maroon-700/15 focus:outline-none';
+    'block min-h-12 w-full rounded-control border border-stone-300 cursor-pointer appearance-none bg-white pr-11 pl-3.5 text-base text-stone-900 hover:border-stone-400 focus:border-maroon-700 focus:ring-3 focus:ring-maroon-700/15 focus:outline-none';
 
 function SelectField({
     label,
@@ -58,9 +58,12 @@ function SelectField({
     return (
         <label className="block text-sm font-medium text-stone-800">
             <span className="mb-1.5 block">{label}</span>
-            <select className={selectClass} aria-invalid={error ? true : undefined} {...rest}>
-                {children}
-            </select>
+            <span className="relative block">
+                <select className={selectClass} aria-invalid={error ? true : undefined} {...rest}>
+                    {children}
+                </select>
+                <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3.5 size-5 -translate-y-1/2 text-stone-500" />
+            </span>
             {error && (
                 <span className="mt-1.5 block text-sm font-medium text-red-700">{error}</span>
             )}
