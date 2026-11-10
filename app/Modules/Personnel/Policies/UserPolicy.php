@@ -13,4 +13,10 @@ class UserPolicy
     {
         return $actor->hasPermission('registrations.review');
     }
+
+    /** Listing volunteers, switching them active or inactive and reading their status history. */
+    public function toggleVolunteers(User $actor): bool
+    {
+        return $actor->hasPermission('volunteers.toggle');
+    }
 }

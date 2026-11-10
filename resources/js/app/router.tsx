@@ -6,6 +6,7 @@ import { MobileLayout } from '@/layouts/MobileLayout';
 import { CookieNotice } from '@/pages/CookieNotice';
 import { ForgotPassword } from '@/pages/ForgotPassword';
 import { AccessRequests } from '@/features/personnel/pages/admin/AccessRequests';
+import { VolunteerStatus } from '@/features/personnel/pages/admin/VolunteerStatus';
 import { Login } from '@/pages/Login';
 import { PrivacyNoticePage } from '@/pages/PrivacyNoticePage';
 import { RequestAccess } from '@/pages/RequestAccess';
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
                 children: [
                     dashboardRoute,
                     { path: 'requests', element: <AccessRequests /> },
+                    { path: 'volunteers', element: <VolunteerStatus /> },
                     ...adminEventRoutes,
                     ...adminNotificationRoutes,
                 ],

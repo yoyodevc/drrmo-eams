@@ -35,7 +35,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S2.1 | People list and profile | Not started |
 | S2.2 | Import people from CSV | Not started |
 | S2.3 | Emergency contacts | Partial |
-| S2.4 | Volunteer active and inactive toggle | Partial |
+| S2.4 | Volunteer active and inactive toggle | Done |
 | S2.5 | Privacy notice and consent | Done |
 | S2.6 | Permission check with grants | Not started |
 | S2.7 | Grants manager | Not started |
@@ -69,7 +69,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S6.5 | Production deployment | Not started |
 | S6.6 | Field test | Not started |
 
-Partial notes: S2.3 and S2.4 have models only.
+Partial notes: S2.3 has models only.
 
 ---
 

@@ -232,3 +232,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: test users made by the factory have already agreed, so API tests reach the endpoint they test. `withoutConsent()` makes one who has not
 - Evidence: tests/Feature/Records/PrivacyConsentTest.php, ConsentCheckerTest.php
 - Paper: Chapter 3 (data privacy, system design)
+
+## 2026-11-10 · S2.4 Volunteer active and inactive toggle (personnel)
+- What was built: an admin screen, Volunteer status, lists approved volunteers with Active and Inactive filters. Switching one needs a reason, and each person has a History view of every change with who made it and when
+- Decision and why: the change, the history row and the audit entry (`volunteer.status_changed`) are written in one transaction, so none can exist without the others
+- Decision and why: the server rejects a switch with no reason or no real change. Assignment candidates and the assign endpoint both skip inactive people, so a direct API call cannot book them either
+- Decision and why: only the Volunteer role can be switched here, and only an account with the `volunteers.toggle` permission (admin)
+- Evidence: tests/Feature/Personnel/VolunteerStatusTest.php
+- Paper: Chapter 3 (system design, data privacy)

@@ -28,7 +28,7 @@ class StoreAssignmentRequest extends FormRequest
         return [
             // Only approved people with the role the requirement needs, not yet on this event.
             'user_id' => ['required', 'integer', Rule::exists('users', 'id')->where(
-                fn ($q) => $q->where('account_status', 'active')->whereNull('disabled_at')
+                fn ($q) => $q->where('account_status', 'active')->where('status', 'active')->whereNull('disabled_at')
                     ->whereIn('role_id', fn ($r) => $r->select('id')->from('roles')->where('code', $requirement->role)),
             ), Rule::unique('assignments', 'user_id')->where(fn ($q) => $q->where('event_id', $requirement->event_id)->where('status', '!=', 'cancelled'))],
             // Needed only when the duty is already full.

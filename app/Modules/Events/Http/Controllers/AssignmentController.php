@@ -30,6 +30,7 @@ class AssignmentController
         $people = User::query()
             ->with('role:id,code')
             ->where('account_status', 'active')
+            ->where('status', 'active')
             ->whereNull('disabled_at')
             ->whereHas('role', fn ($q) => $q->where('code', $requirement->role))
             ->whereNotIn('id', Assignment::query()->where('event_id', $requirement->event_id)->where('status', '!=', 'cancelled')->select('user_id'))
