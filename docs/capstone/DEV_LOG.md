@@ -269,3 +269,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Paper: Chapter 3 (system design, user interface)
 - Fix: after the role tabs were reverted, only the name text on a People row opened the profile. The whole row is a link again, with a chevron hint
 - What was built: People filters sit on one fixed grid row, role and team share a column, and dates are no longer cut off. Profile details are grouped under Contact and Placement as label and value rows
+
+## 2026-11-10 · Access request screens redesign (personnel)
+- What was built: Request access, Confirm your email and Waiting for approval show a three step bar (Your details, Confirm email, Approval). First and last name sit side by side from 400 px. The privacy consent is one boxed tap target that turns red when left unticked. The waiting screen lists what happens next
+- What was built: Access requests now looks like People and Notifications. Status tabs with counts, a search box, a table with the person, request and confirm times, status chip and a Decision column. Under 768 px the tabs become a select and rows become a list with full width buttons
+- Decision and why: Approve and Reject both ask first in the shared confirm dialog, because approving lets someone in and a stray click should not do that. Reject keeps the reason field and its 3 character minimum
+- Decision and why: `GET /api/admin/registrations` also returns `counts` per status, so the tabs show numbers without five extra requests. Tabs keep one font weight and a fixed count width, so picking one never moves the others
+- Evidence: resources/js/pages/RequestAccess.test.tsx, tests/Feature/Personnel/RegistrationTest.php
+- Paper: Chapter 3 (user interface)
