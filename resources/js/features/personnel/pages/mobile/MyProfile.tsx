@@ -29,12 +29,6 @@ const roles: Record<NonNullable<Me['role']>, string> = {
     coordinator: 'Coordinator',
 };
 
-const teams: Record<string, string> = {
-    security: 'Security team',
-    ert: 'ERT',
-    fire_suppression: 'Fire suppression team',
-};
-
 function Row({
     to,
     icon,
@@ -88,7 +82,7 @@ function Skeleton() {
 export function MyProfile() {
     const me = useMe().data;
     const active = me?.status !== 'inactive';
-    const about = me ? [me.role ? roles[me.role] : null, me.team ? teams[me.team] : null] : [];
+    const about = me ? [me.role ? roles[me.role] : null, me.team_name ?? null] : [];
 
     return (
         <div className="mx-auto max-w-2xl">

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Personnel\Http\Requests;
 
 use App\Modules\Access\Enums\Role as RoleCode;
-use App\Modules\Personnel\Enums\Team;
 use App\Modules\Personnel\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -44,7 +43,7 @@ class PersonRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($person instanceof User ? $person->id : null)],
             'contact_number' => ['nullable', 'string', 'regex:/^\+?[0-9][0-9 \-]{6,30}$/'],
             'role' => ['required', Rule::enum(RoleCode::class)],
-            'team' => ['nullable', Rule::enum(Team::class)],
+            'team' => ['nullable', 'string', Rule::exists('teams', 'code')],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ];
     }

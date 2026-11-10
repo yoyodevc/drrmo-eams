@@ -3,19 +3,12 @@ import { ApiError, api } from '@/shared/api/client';
 import type { Availability } from '@/features/personnel/volunteers';
 
 export type RoleCode = 'admin' | 'marshal' | 'volunteer' | 'coordinator';
-export type TeamCode = 'security' | 'ert' | 'fire_suppression';
 
 export const roleLabels: Record<RoleCode, string> = {
     admin: 'Admin',
     marshal: 'Marshal',
     volunteer: 'Volunteer',
     coordinator: 'Coordinator',
-};
-
-export const teamLabels: Record<TeamCode, string> = {
-    security: 'Security team',
-    ert: 'ERT',
-    fire_suppression: 'Fire suppression team',
 };
 
 export interface Person {
@@ -26,7 +19,8 @@ export interface Person {
     email: string;
     contact_number: string | null;
     role: RoleCode | null;
-    team: TeamCode | null;
+    team: string | null;
+    team_name: string | null;
     department: { id: number; name: string } | null;
     status: Availability;
     account_status: string;
@@ -40,7 +34,7 @@ export interface PersonInput {
     email: string;
     contact_number: string;
     role: RoleCode;
-    team: TeamCode | '';
+    team: string;
     department_id: string;
 }
 
@@ -56,7 +50,18 @@ export interface PeopleFilters {
 export interface Department {
     id: number;
     name: string;
+    active: boolean;
+    people_count: number;
 }
+
+export interface Team {
+    code: string;
+    name: string;
+    active: boolean;
+    people_count: number;
+}
+
+export type OrgKind = 'teams' | 'departments';
 
 export async function listPeople(
     filters: PeopleFilters,
@@ -102,12 +107,34 @@ export async function listDepartments(): Promise<Department[]> {
     return body.data;
 }
 
+export async function listTeams(): Promise<Team[]> {
+    const body = await api<{ data: Team[] }>('/api/teams');
+    return body.data;
+}
+
+/** Add (key null) or edit a team or department. A team is keyed by its code, a department by its id. */
+export async function saveOrgUnit(
+    kind: OrgKind,
+    key: string | number | null,
+    input: { name: string; active: boolean },
+): Promise<void> {
+    await api(key === null ? `/api/${kind}` : `/api/${kind}/${key}`, {
+        method: key === null ? 'POST' : 'PATCH',
+        body: JSON.stringify(input),
+    });
+}
+
+export async function deleteOrgUnit(kind: OrgKind, key: string | number): Promise<void> {
+    await api(`/api/${kind}/${key}`, { method: 'DELETE' });
+}
+
 export interface MyProfileData {
     name: string;
     email: string;
     contact_number: string | null;
     role: RoleCode | null;
-    team: TeamCode | null;
+    team: string | null;
+    team_name: string | null;
     department: string | null;
 }
 

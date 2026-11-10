@@ -9,7 +9,7 @@ use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Actions\PersonInviter;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Enums\AvailabilityStatus;
-use App\Modules\Personnel\Enums\Team;
+use App\Modules\Personnel\Models\Team;
 use App\Modules\Personnel\Http\Requests\PersonRequest;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
@@ -38,7 +38,7 @@ class PeopleController
             $query->whereHas('role', fn ($q) => $q->where('code', $role));
         }
         if (($team = $this->filter($request, 'team')) !== null) {
-            abort_if(Team::tryFrom($team) === null, 422, 'Unknown team filter.');
+            abort_unless(Team::query()->where('code', $team)->exists(), 422, 'Unknown team filter.');
             $query->where('team', $team);
         }
         if (($status = $this->filter($request, 'status')) !== null) {
@@ -153,7 +153,7 @@ class PeopleController
             'email' => $user->email,
             'contact_number' => $user->contact_number,
             'role' => $user->load('role')->roleCode()?->value,
-            'team' => $user->team?->value,
+            'team' => $user->team,
             'department_id' => $user->department_id,
         ];
     }
@@ -169,7 +169,8 @@ class PeopleController
             'email' => $user->email,
             'contact_number' => $user->contact_number,
             'role' => $user->roleCode()?->value,
-            'team' => $user->team?->value,
+            'team' => $user->team,
+            'team_name' => $user->teamName(),
             'department' => $user->department ? ['id' => $user->department->id, 'name' => $user->department->name] : null,
             'status' => $user->status->value,
             'account_status' => $user->account_status->value,

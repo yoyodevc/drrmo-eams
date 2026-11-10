@@ -6,7 +6,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { personContacts } from '@/features/personnel/contacts';
-import { getPerson, resendInvite, roleLabels, teamLabels } from '@/features/personnel/people';
+import { getPerson, resendInvite, roleLabels } from '@/features/personnel/people';
 import { statusHistory, type Availability } from '@/features/personnel/volunteers';
 import {
     AvailabilityChip,
@@ -158,9 +158,7 @@ export function PersonProfile() {
     }
 
     const p = person.data;
-    const about = [p.role ? roleLabels[p.role] : null, p.team ? teamLabels[p.team] : null]
-        .filter(Boolean)
-        .join(' · ');
+    const about = [p.role ? roleLabels[p.role] : null, p.team_name].filter(Boolean).join(' · ');
     const neverSignedIn = p.last_login_at === null;
 
     return (
@@ -233,7 +231,7 @@ export function PersonProfile() {
                                 )}
                             </Fact>
                             <Fact label="Role">{p.role ? roleLabels[p.role] : null}</Fact>
-                            <Fact label="Team">{p.team ? teamLabels[p.team] : null}</Fact>
+                            <Fact label="Team">{p.team_name}</Fact>
                             <Fact label="Department">{p.department?.name}</Fact>
                             <Fact label="Added">{day(p.created_at)}</Fact>
                         </dl>

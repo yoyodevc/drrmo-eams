@@ -9,7 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Department extends Model
 {
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'active'];
+
+    protected function casts(): array
+    {
+        return ['active' => 'boolean'];
+    }
 
     /** @return HasMany<User, $this> */
     public function users(): HasMany

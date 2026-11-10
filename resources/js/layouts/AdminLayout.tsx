@@ -94,6 +94,16 @@ const groups: { label: string; items: Item[] }[] = [
                 ),
             },
             {
+                to: '/admin/teams',
+                label: 'Teams and departments',
+                icon: (
+                    <NavIcon>
+                        <rect x="4" y="3.5" width="16" height="17" rx="1.5" />
+                        <path d="M9 8h1M14 8h1M9 12h1M14 12h1M10 20.5v-4h4v4" />
+                    </NavIcon>
+                ),
+            },
+            {
                 to: '/admin/requests',
                 label: 'Access requests',
                 icon: (

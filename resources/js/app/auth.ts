@@ -18,6 +18,7 @@ export interface Me {
     email: string;
     role: 'admin' | 'marshal' | 'volunteer' | 'coordinator' | null;
     team: string | null;
+    team_name?: string | null;
     status: 'active' | 'inactive';
     permissions: string[];
     consent: {

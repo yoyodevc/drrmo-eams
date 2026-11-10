@@ -10,7 +10,7 @@ import {
     listDepartments,
     roleLabels,
     savePerson,
-    teamLabels,
+    listTeams,
     type Person,
     type PersonInput,
     type RoleCode,
@@ -82,6 +82,7 @@ export function PersonForm() {
         enabled: personId !== null,
     });
     const departments = useQuery({ queryKey: ['departments'], queryFn: listDepartments });
+    const teams = useQuery({ queryKey: ['teams'], queryFn: listTeams });
     const values = draft ?? (person.data ? fromPerson(person.data) : empty);
 
     const save = useMutation({
@@ -228,11 +229,13 @@ export function PersonForm() {
                                 error={errors.team}
                             >
                                 <option value="">No team</option>
-                                {Object.entries(teamLabels).map(([value, label]) => (
-                                    <option key={value} value={value}>
-                                        {label}
-                                    </option>
-                                ))}
+                                {teams.data
+                                    ?.filter((t) => t.active || t.code === values.team)
+                                    .map((t) => (
+                                        <option key={t.code} value={t.code}>
+                                            {t.name}
+                                        </option>
+                                    ))}
                             </SelectField>
                         </div>
                         <SelectField
@@ -242,11 +245,13 @@ export function PersonForm() {
                             error={errors.department_id}
                         >
                             <option value="">No department</option>
-                            {departments.data?.map((d) => (
-                                <option key={d.id} value={d.id}>
-                                    {d.name}
-                                </option>
-                            ))}
+                            {departments.data
+                                ?.filter((d) => d.active || String(d.id) === values.department_id)
+                                .map((d) => (
+                                    <option key={d.id} value={d.id}>
+                                        {d.name}
+                                    </option>
+                                ))}
                         </SelectField>
                     </fieldset>
 

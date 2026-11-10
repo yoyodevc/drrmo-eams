@@ -10,7 +10,6 @@ use App\Modules\Notifications\Contracts\EmailMessage;
 use App\Modules\Notifications\Contracts\MailSender;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Enums\AvailabilityStatus;
-use App\Modules\Personnel\Enums\Team;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -24,7 +23,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 
 /**
- * @property Team|null $team
+ * @property string|null $team
  * @property AvailabilityStatus $status
  * @property string $first_name
  * @property string $last_name
@@ -55,7 +54,6 @@ class User extends Authenticatable
             'verification_sent_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'password' => 'hashed',
-            'team' => Team::class,
             'status' => AvailabilityStatus::class,
             'account_status' => AccountStatus::class,
         ];
@@ -107,6 +105,12 @@ class User extends Authenticatable
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /** The display name of this person's team, or null when they have none. */
+    public function teamName(): ?string
+    {
+        return $this->team === null ? null : Team::query()->where('code', $this->team)->value('name');
     }
 
     /** @return HasMany<EmergencyContact, $this> */

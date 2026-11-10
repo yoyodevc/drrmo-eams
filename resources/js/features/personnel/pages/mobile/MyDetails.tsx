@@ -9,7 +9,6 @@ import {
     getMyProfile,
     roleLabels,
     saveMyContactNumber,
-    teamLabels,
 } from '@/features/personnel/people';
 import { BackLink, LockIcon } from '@/features/personnel/components/ui';
 import { Alert } from '@/shared/ui/Alert';
@@ -120,7 +119,7 @@ export function MyDetails() {
                             <Fact label="Name" value={p.name} />
                             <Fact label="Email" value={p.email} />
                             <Fact label="Role" value={p.role ? roleLabels[p.role] : null} />
-                            <Fact label="Team" value={p.team ? teamLabels[p.team] : null} />
+                            <Fact label="Team" value={p.team_name} />
                             <Fact label="Department" value={p.department} />
                         </dl>
                         <p className="mt-2 flex gap-2 px-1 text-sm text-pretty text-stone-600">

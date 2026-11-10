@@ -33,7 +33,8 @@ class MeResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $role?->value,
-            'team' => $this->team?->value,
+            'team' => $this->team,
+            'team_name' => $this->teamName(),
             'status' => $this->status->value,
             'permissions' => $this->role->permissions->pluck('code')->sort()->values()->all(),
             'consent' => [

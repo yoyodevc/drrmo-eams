@@ -11,6 +11,7 @@ use App\Modules\Personnel\Http\Controllers\RegisterController;
 use App\Modules\Personnel\Http\Controllers\RegistrationReviewController;
 use App\Modules\Personnel\Http\Controllers\ResendCodeController;
 use App\Modules\Personnel\Http\Controllers\VerifyRegistrationController;
+use App\Modules\Personnel\Http\Controllers\TeamController;
 use App\Modules\Personnel\Http\Controllers\VolunteerStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,4 +60,11 @@ Route::middleware('auth:api')->group(function () {
     Route::patch('/people/{user}', [PeopleController::class, 'update']);
     Route::post('/people/{user}/invite', [PeopleController::class, 'invite']);
     Route::get('/departments', [DepartmentController::class, 'index']);
+    Route::post('/departments', [DepartmentController::class, 'store']);
+    Route::patch('/departments/{department}', [DepartmentController::class, 'update']);
+    Route::delete('/departments/{department}', [DepartmentController::class, 'destroy']);
+    Route::get('/teams', [TeamController::class, 'index']);
+    Route::post('/teams', [TeamController::class, 'store']);
+    Route::patch('/teams/{team}', [TeamController::class, 'update']);
+    Route::delete('/teams/{team}', [TeamController::class, 'destroy']);
 });

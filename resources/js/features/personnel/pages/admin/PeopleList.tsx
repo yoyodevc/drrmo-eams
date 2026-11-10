@@ -8,7 +8,7 @@ import {
     listDepartments,
     listPeople,
     roleLabels,
-    teamLabels,
+    listTeams,
     type PeopleFilters,
     type Person,
 } from '@/features/personnel/people';
@@ -56,9 +56,7 @@ function Select({
 }
 
 function roleAndTeam(p: Person): string {
-    return [p.role ? roleLabels[p.role] : null, p.team ? teamLabels[p.team] : null]
-        .filter(Boolean)
-        .join(' · ');
+    return [p.role ? roleLabels[p.role] : null, p.team_name].filter(Boolean).join(' · ');
 }
 
 function Muted({ children }: { children: ReactNode }) {
@@ -132,6 +130,7 @@ export function PeopleList() {
         placeholderData: keepPreviousData,
     });
     const departments = useQuery({ queryKey: ['departments'], queryFn: listDepartments });
+    const teams = useQuery({ queryKey: ['teams'], queryFn: listTeams });
 
     const [term, setTerm] = useState(filters.search);
     const [showFilters, setShowFilters] = useState(false);
@@ -196,6 +195,13 @@ export function PeopleList() {
                             className="font-medium text-maroon-700 underline-offset-2 hover:underline"
                         >
                             Access requests
+                        </Link>
+                        . Edit the{' '}
+                        <Link
+                            to="/admin/teams"
+                            className="font-medium text-maroon-700 underline-offset-2 hover:underline"
+                        >
+                            teams and departments
                         </Link>
                         .
                     </p>
@@ -290,9 +296,9 @@ export function PeopleList() {
                                 onChange={(v) => set('team', v)}
                             >
                                 <option value="">All teams</option>
-                                {Object.entries(teamLabels).map(([value, text]) => (
-                                    <option key={value} value={value}>
-                                        {text}
+                                {teams.data?.map((t) => (
+                                    <option key={t.code} value={t.code}>
+                                        {t.name}
                                     </option>
                                 ))}
                             </Select>
@@ -459,8 +465,8 @@ export function PeopleList() {
                                                     )}
                                                 </td>
                                                 <td className="px-5 py-3 text-sm whitespace-nowrap text-stone-700">
-                                                    {p.team ? (
-                                                        teamLabels[p.team]
+                                                    {p.team_name ? (
+                                                        p.team_name
                                                     ) : (
                                                         <Muted>None</Muted>
                                                     )}

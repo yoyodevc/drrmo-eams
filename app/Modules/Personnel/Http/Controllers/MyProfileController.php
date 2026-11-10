@@ -46,7 +46,8 @@ class MyProfileController
             'email' => $user->email,
             'contact_number' => $user->contact_number,
             'role' => $user->roleCode()?->value,
-            'team' => $user->team?->value,
+            'team' => $user->team,
+            'team_name' => $user->teamName(),
             'department' => $user->department?->name,
         ];
     }
