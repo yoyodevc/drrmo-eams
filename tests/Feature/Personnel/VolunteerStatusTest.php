@@ -83,3 +83,15 @@ it('does not offer or assign an inactive volunteer', function () {
     withAuthCookies(loginCookies($admin))->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $gone->id])
         ->assertUnprocessable();
 });
+
+it('lets a person read only their own availability and history', function () {
+    $mine = User::factory()->role(RoleCode::Volunteer)->inactive()->create();
+    $other = User::factory()->role(RoleCode::Volunteer)->create();
+    VolunteerStatusLog::query()->create(['user_id' => $mine->id, 'old_status' => 'active', 'new_status' => 'inactive', 'reason' => 'On leave', 'changed_by' => null]);
+    VolunteerStatusLog::query()->create(['user_id' => $other->id, 'old_status' => 'inactive', 'new_status' => 'active', 'reason' => 'Back', 'changed_by' => null]);
+
+    withAuthCookies(loginCookies($mine))->getJson('/api/me/availability')
+        ->assertOk()->assertJsonPath('data.status', 'inactive')
+        ->assertJsonCount(1, 'data.history')->assertJsonPath('data.history.0.reason', 'On leave');
+    test()->withHeaders([])->getJson('/api/me/availability')->assertUnauthorized();
+});

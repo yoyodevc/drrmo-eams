@@ -40,3 +40,13 @@ export async function statusHistory(id: number): Promise<StatusChange[]> {
     const body = await api<{ data: StatusChange[] }>(`/api/admin/volunteers/${id}/status-history`);
     return body.data;
 }
+
+export interface MyAvailability {
+    status: Availability;
+    history: StatusChange[];
+}
+
+export async function myAvailability(): Promise<MyAvailability> {
+    const body = await api<{ data: MyAvailability }>('/api/me/availability');
+    return body.data;
+}

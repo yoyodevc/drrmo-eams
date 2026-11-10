@@ -240,3 +240,4 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: only the Volunteer role can be switched here, and only an account with the `volunteers.toggle` permission (admin)
 - Evidence: tests/Feature/Personnel/VolunteerStatusTest.php
 - Paper: Chapter 3 (system design, data privacy)
+- Also built (mobile): `/me/availability` shows a volunteer their own status and the history of changes with reasons, read only, from `GET /api/me/availability` which only returns their own rows

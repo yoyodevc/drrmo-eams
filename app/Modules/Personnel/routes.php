@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Personnel\Http\Controllers\MyAvailabilityController;
 use App\Modules\Personnel\Http\Controllers\RegisterController;
 use App\Modules\Personnel\Http\Controllers\RegistrationReviewController;
 use App\Modules\Personnel\Http\Controllers\ResendCodeController;
@@ -27,3 +28,6 @@ Route::middleware('auth:api')->prefix('admin/volunteers')->group(function () {
     Route::put('/{user}/status', [VolunteerStatusController::class, 'update']);
     Route::get('/{user}/status-history', [VolunteerStatusController::class, 'history']);
 });
+
+// A person reads their own availability and its history.
+Route::get('/me/availability', MyAvailabilityController::class)->middleware('auth:api');

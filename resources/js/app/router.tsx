@@ -7,6 +7,7 @@ import { CookieNotice } from '@/pages/CookieNotice';
 import { ForgotPassword } from '@/pages/ForgotPassword';
 import { AccessRequests } from '@/features/personnel/pages/admin/AccessRequests';
 import { VolunteerStatus } from '@/features/personnel/pages/admin/VolunteerStatus';
+import { MyAvailability } from '@/features/personnel/pages/mobile/MyAvailability';
 import { Login } from '@/pages/Login';
 import { PrivacyNoticePage } from '@/pages/PrivacyNoticePage';
 import { RequestAccess } from '@/pages/RequestAccess';
@@ -50,7 +51,11 @@ export const router = createBrowserRouter([
             {
                 path: '/me',
                 element: <MobileLayout />,
-                children: [myDutiesRoute, ...myNotificationRoutes],
+                children: [
+                    myDutiesRoute,
+                    { path: 'availability', element: <MyAvailability /> },
+                    ...myNotificationRoutes,
+                ],
             },
         ],
     },
