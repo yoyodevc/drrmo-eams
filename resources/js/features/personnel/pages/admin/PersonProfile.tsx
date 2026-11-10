@@ -56,18 +56,30 @@ function Card({
                 </h2>
                 {aside}
             </div>
-            <div className="mt-4">{children}</div>
+            <div className="mt-3">{children}</div>
         </section>
     );
 }
 
+// One label and value per line, split by hairlines. The label sits beside the value from 640 px.
 function Fact({ label, children }: { label: string; children: ReactNode }) {
     return (
-        <div className="min-w-0">
-            <dt className="text-sm text-stone-500">{label}</dt>
-            <dd className="mt-0.5 break-words text-stone-900">
+        <div className="grid min-w-0 gap-0.5 py-3 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+            <dt className="text-sm text-stone-500 sm:pt-px">{label}</dt>
+            <dd className="min-w-0 break-words text-stone-900">
                 {children || <span className="text-stone-500">Not set</span>}
             </dd>
+        </div>
+    );
+}
+
+function FactGroup({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <div>
+            <h3 className="text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase">
+                {title}
+            </h3>
+            <dl className="mt-1 divide-y divide-stone-100">{children}</dl>
         </div>
     );
 }
@@ -240,39 +252,43 @@ export function PersonProfile() {
                     )}
 
                     <Card title="Details" id="details-title">
-                        <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                            <Fact label="Email">
-                                <a
-                                    href={`mailto:${p.email}`}
-                                    className="inline-flex items-center gap-2 font-medium break-all text-maroon-700 underline-offset-2 hover:underline"
-                                >
-                                    <MailIcon className="size-4 shrink-0 text-stone-500" />
-                                    {p.email}
-                                </a>
-                            </Fact>
-                            <Fact label="Contact number">
-                                {p.contact_number && (
+                        <div className="space-y-6">
+                            <FactGroup title="Contact">
+                                <Fact label="Email">
                                     <a
-                                        href={`tel:${p.contact_number.replace(/\s+/g, '')}`}
-                                        className="inline-flex items-center gap-2 font-medium text-maroon-700 tabular-nums underline-offset-2 hover:underline"
+                                        href={`mailto:${p.email}`}
+                                        className="inline-flex items-center gap-2 font-medium break-all text-maroon-700 underline-offset-2 hover:underline"
                                     >
-                                        <PhoneIcon className="size-4 shrink-0 text-stone-500" />
-                                        {p.contact_number}
+                                        <MailIcon className="size-4 shrink-0 text-stone-500" />
+                                        {p.email}
                                     </a>
-                                )}
-                            </Fact>
-                            <Fact label="Role">{p.role ? roleLabels[p.role] : null}</Fact>
-                            <Fact label="Team">{p.team_name}</Fact>
-                            <Fact label="Department">{p.department?.name}</Fact>
-                            {!isVolunteer && (
-                                <Fact label="Availability">
-                                    {p.status === 'active'
-                                        ? 'Active. Can be assigned to duties.'
-                                        : 'Inactive. Not offered for duties.'}
                                 </Fact>
-                            )}
-                            <Fact label="Added">{day(p.created_at)}</Fact>
-                        </dl>
+                                <Fact label="Contact number">
+                                    {p.contact_number && (
+                                        <a
+                                            href={`tel:${p.contact_number.replace(/\s+/g, '')}`}
+                                            className="inline-flex items-center gap-2 font-medium text-maroon-700 tabular-nums underline-offset-2 hover:underline"
+                                        >
+                                            <PhoneIcon className="size-4 shrink-0 text-stone-500" />
+                                            {p.contact_number}
+                                        </a>
+                                    )}
+                                </Fact>
+                            </FactGroup>
+                            <FactGroup title="Placement">
+                                <Fact label="Role">{p.role ? roleLabels[p.role] : null}</Fact>
+                                <Fact label="Team">{p.team_name}</Fact>
+                                <Fact label="Department">{p.department?.name}</Fact>
+                                {!isVolunteer && (
+                                    <Fact label="Availability">
+                                        {p.status === 'active'
+                                            ? 'Active. Can be assigned to duties.'
+                                            : 'Inactive. Not offered for duties.'}
+                                    </Fact>
+                                )}
+                                <Fact label="Added">{day(p.created_at)}</Fact>
+                            </FactGroup>
+                        </div>
                     </Card>
                 </div>
 
@@ -329,11 +345,10 @@ export function PersonProfile() {
                     </Card>
 
                     <Card title="Sign in" id="signin-title">
-                        <dl>
-                            <Fact label="Last sign in">
-                                {stamp(p.last_login_at) ?? 'Has not signed in yet'}
-                            </Fact>
-                        </dl>
+                        <p className="text-sm text-stone-500">Last sign in</p>
+                        <p className="mt-0.5 font-medium text-stone-900 tabular-nums">
+                            {stamp(p.last_login_at) ?? 'Has not signed in yet'}
+                        </p>
                         <p className="mt-3 text-sm text-pretty text-stone-600">
                             {neverSignedIn
                                 ? 'If the first email got lost or expired, send a new link to set a password.'
