@@ -14,6 +14,7 @@ import {
     AssignedIcon,
     CancelledIcon,
     ChangedIcon,
+    ChevronDownIcon,
     ClockIcon,
     MailIcon,
     RefreshIcon,
@@ -252,18 +253,21 @@ export function NotificationLog() {
                         </div>
                         <label className={label}>
                             <span className="mb-1.5 block">Email type</span>
-                            <select
-                                className={control}
-                                value={filters.type}
-                                onChange={(e) => set('type', e.target.value)}
-                            >
-                                <option value="">All types</option>
-                                {Object.entries(typeLabels).map(([value, text]) => (
-                                    <option key={value} value={value}>
-                                        {text}
-                                    </option>
-                                ))}
-                            </select>
+                            <span className="relative block">
+                                <select
+                                    className={`${control} cursor-pointer appearance-none pr-10`}
+                                    value={filters.type}
+                                    onChange={(e) => set('type', e.target.value)}
+                                >
+                                    <option value="">All types</option>
+                                    {Object.entries(typeLabels).map(([value, text]) => (
+                                        <option key={value} value={value}>
+                                            {text}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-stone-500 md:size-4" />
+                            </span>
                         </label>
                         <label className={label}>
                             <span className="mb-1.5 block">From</span>

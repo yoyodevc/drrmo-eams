@@ -5,7 +5,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useId, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
-import { Avatar, SearchIcon, chipBase } from '@/features/personnel/components/ui';
+import { Avatar, ChevronDownIcon, SearchIcon, chipBase } from '@/features/personnel/components/ui';
 import {
     approveRequest,
     listRequests,
@@ -375,18 +375,21 @@ export function AccessRequests() {
                         {/* Phones: a select, so every status fits without sideways scrolling. */}
                         <label className="block w-full text-sm font-medium text-stone-800 md:hidden">
                             <span className="mb-1.5 block">Show</span>
-                            <select
-                                className={control}
-                                value={filter}
-                                onChange={(e) => show(e.target.value as RequestFilter)}
-                            >
-                                {filters.map((f) => (
-                                    <option key={f.value} value={f.value}>
-                                        {f.label}
-                                        {counts ? ` (${counts[f.value]})` : ''}
-                                    </option>
-                                ))}
-                            </select>
+                            <span className="relative block">
+                                <select
+                                    className={`${control} cursor-pointer appearance-none pr-10`}
+                                    value={filter}
+                                    onChange={(e) => show(e.target.value as RequestFilter)}
+                                >
+                                    {filters.map((f) => (
+                                        <option key={f.value} value={f.value}>
+                                            {f.label}
+                                            {counts ? ` (${counts[f.value]})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDownIcon className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-stone-500" />
+                            </span>
                         </label>
 
                         {/* From 768 px: tabs. Every tab keeps the same weight and a fixed count

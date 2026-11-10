@@ -277,3 +277,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: `GET /api/admin/registrations` also returns `counts` per status, so the tabs show numbers without five extra requests. Tabs keep one font weight and a fixed count width, so picking one never moves the others
 - Evidence: resources/js/pages/RequestAccess.test.tsx, tests/Feature/Personnel/RegistrationTest.php
 - Paper: Chapter 3 (user interface)
+
+## 2026-11-10 · S2.2 Import people from CSV (personnel)
+- What was built: People has an Import CSV button. The import screen offers a template download, a Check file step and an Import step. A bad file lists each problem by line and column, and nothing is saved
+- What was built: columns are first_name, last_name, email, contact_number, role, team, department. Team and department are matched by name and must exist and be active. Up to 200 people per file
+- Decision and why: the import is all or nothing inside one database transaction. The set-password emails go out after the save, so a mail failure never undoes the import and the screen lists who still needs an invite
+- Decision and why: the same checks run for Check file and Import, so a file that passed the check cannot fail later for a reason the check missed (an email taken in between aside)
+- Evidence: tests/Feature/Personnel/PeopleImportTest.php
+- Paper: Chapter 3 (system design)

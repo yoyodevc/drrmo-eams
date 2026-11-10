@@ -7,6 +7,7 @@ use App\Modules\Personnel\Http\Controllers\EmergencyContactController;
 use App\Modules\Personnel\Http\Controllers\MyAvailabilityController;
 use App\Modules\Personnel\Http\Controllers\MyProfileController;
 use App\Modules\Personnel\Http\Controllers\PeopleController;
+use App\Modules\Personnel\Http\Controllers\PeopleImportController;
 use App\Modules\Personnel\Http\Controllers\RegisterController;
 use App\Modules\Personnel\Http\Controllers\RegistrationReviewController;
 use App\Modules\Personnel\Http\Controllers\ResendCodeController;
@@ -56,6 +57,8 @@ Route::middleware('auth:api')->group(function () {
 Route::middleware('auth:api')->group(function () {
     Route::get('/people', [PeopleController::class, 'index']);
     Route::post('/people', [PeopleController::class, 'store']);
+    Route::get('/people/import/template', [PeopleImportController::class, 'template']);
+    Route::post('/people/import', [PeopleImportController::class, 'store']);
     Route::get('/people/{user}', [PeopleController::class, 'show']);
     Route::patch('/people/{user}', [PeopleController::class, 'update']);
     Route::post('/people/{user}/invite', [PeopleController::class, 'invite']);

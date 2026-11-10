@@ -33,7 +33,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S1.4 | Admin assigns a person | Done |
 | S1.5 | Person sees the assignment on a phone | Done |
 | S2.1 | People list and profile | Done |
-| S2.2 | Import people from CSV | Not started |
+| S2.2 | Import people from CSV | Done |
 | S2.3 | Emergency contacts | Done |
 | S2.4 | Volunteer active and inactive toggle | Done |
 | S2.5 | Privacy notice and consent | Done |

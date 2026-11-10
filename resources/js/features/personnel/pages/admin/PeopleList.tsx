@@ -214,7 +214,15 @@ export function PeopleList() {
                         .
                     </p>
                 </div>
-                {addPerson}
+                <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+                    <Link
+                        to="/admin/people/import"
+                        className="inline-flex min-h-12 items-center justify-center rounded-control border border-stone-300 bg-white px-4 text-base font-semibold text-stone-800 transition-colors hover:bg-stone-50 md:min-h-10 md:text-sm"
+                    >
+                        Import CSV
+                    </Link>
+                    {addPerson}
+                </div>
             </header>
 
             {list.isError ? (

@@ -166,3 +166,51 @@ export function errorMessage(error: unknown): string {
     }
     return 'That did not save. Check your connection and try again.';
 }
+
+export interface ImportIssue {
+    /** Line in the file. The header is line 1, and 0 means the whole file. */
+    row: number;
+    field: string;
+    message: string;
+}
+
+export interface ImportResult {
+    count: number;
+    imported: boolean;
+    invites_failed?: string[];
+}
+
+/** Check a people CSV (check true) or save it. A file with any bad row saves nothing. */
+export async function importPeople(
+    file: File,
+    check: boolean,
+): Promise<
+    { ok: true; result: ImportResult } | { ok: false; issues: ImportIssue[]; message: string }
+> {
+    const body = new FormData();
+    body.append('file', file);
+    if (check) body.append('check', '1');
+    try {
+        return {
+            ok: true,
+            result: await api<ImportResult>('/api/people/import', { method: 'POST', body }),
+        };
+    } catch (error) {
+        if (error instanceof ApiError && error.status === 422) {
+            const data = error.body as { message?: string; errors?: unknown } | null;
+            const raw = data?.errors;
+            // Row problems are a list. A plain validation error (wrong file type) is an object.
+            const issues: ImportIssue[] = Array.isArray(raw)
+                ? (raw as ImportIssue[])
+                : Object.values((raw as Record<string, string[]>) ?? {}).flatMap((m) =>
+                      m.map((message) => ({ row: 0, field: 'file', message })),
+                  );
+            return {
+                ok: false,
+                issues,
+                message: data?.message ?? 'The file could not be imported.',
+            };
+        }
+        throw error;
+    }
+}

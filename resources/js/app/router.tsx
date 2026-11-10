@@ -7,6 +7,7 @@ import { CookieNotice } from '@/pages/CookieNotice';
 import { ForgotPassword } from '@/pages/ForgotPassword';
 import { AccessRequests } from '@/features/personnel/pages/admin/AccessRequests';
 import { PeopleList } from '@/features/personnel/pages/admin/PeopleList';
+import { PeopleImport } from '@/features/personnel/pages/admin/PeopleImport';
 import { PersonForm } from '@/features/personnel/pages/admin/PersonForm';
 import { PersonProfile } from '@/features/personnel/pages/admin/PersonProfile';
 import { TeamsAndDepartments } from '@/features/personnel/pages/admin/TeamsAndDepartments';
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
                     { path: 'requests', element: <AccessRequests /> },
                     { path: 'people', element: <PeopleList /> },
                     { path: 'people/new', element: <PersonForm /> },
+                    { path: 'people/import', element: <PeopleImport /> },
                     { path: 'people/:id', element: <PersonProfile /> },
                     { path: 'people/:id/edit', element: <PersonForm /> },
                     { path: 'teams', element: <TeamsAndDepartments /> },
