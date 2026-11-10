@@ -11,8 +11,8 @@ use App\Modules\Personnel\Http\Controllers\PeopleImportController;
 use App\Modules\Personnel\Http\Controllers\RegisterController;
 use App\Modules\Personnel\Http\Controllers\RegistrationReviewController;
 use App\Modules\Personnel\Http\Controllers\ResendCodeController;
-use App\Modules\Personnel\Http\Controllers\VerifyRegistrationController;
 use App\Modules\Personnel\Http\Controllers\TeamController;
+use App\Modules\Personnel\Http\Controllers\VerifyRegistrationController;
 use App\Modules\Personnel\Http\Controllers\VolunteerStatusController;
 use Illuminate\Support\Facades\Route;
 

@@ -6,7 +6,6 @@ namespace App\Modules\Access\Http\Requests;
 
 use App\Modules\Access\Models\Permission;
 use App\Modules\Access\Models\PermissionGrant;
-use App\Modules\Access\Policies\GrantPolicy;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Models\User;
 use Carbon\CarbonImmutable;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Personnel\Models;
 
-use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Access\Contracts\PermissionChecker;
+use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Access\Models\PermissionGrant;
 use App\Modules\Access\Models\Role;
 use App\Modules\Notifications\Contracts\EmailMessage;
@@ -36,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $verification_expires_at
  * @property Carbon|null $verification_sent_at
  * @property Carbon|null $reviewed_at
+ * @property Carbon|null $last_login_at
  */
 #[Fillable(['first_name', 'last_name', 'email', 'contact_number', 'role_id', 'department_id', 'team', 'status', 'password'])]
 #[Hidden(['password', 'remember_token'])]
