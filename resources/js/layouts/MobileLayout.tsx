@@ -96,7 +96,7 @@ function useOnline() {
 // Mobile first (DESIGN_SYSTEM.md section 7): white top bar, stone-50 page, one column,
 // bottom tab bar with 48 px or larger tap targets. From 768 px the tabs move into the top bar
 // and the content gets a wider column, so marshals and volunteers can use a desktop too.
-export function MobileLayout() {
+export function MobileLayout({ children }: { children?: ReactNode }) {
     const online = useOnline();
     const { unread } = useAlerts();
     const { pathname } = useLocation();
@@ -162,7 +162,7 @@ export function MobileLayout() {
                 tabIndex={-1}
                 className="mx-auto max-w-6xl px-6 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none md:px-10 md:pt-10 md:pb-16"
             >
-                <Outlet />
+                {children ?? <Outlet />}
             </main>
 
             <nav

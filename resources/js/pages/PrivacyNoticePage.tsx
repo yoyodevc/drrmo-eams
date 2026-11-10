@@ -8,10 +8,31 @@ import {
     NOTICE_UPDATED,
     NOTICE_VERSION,
 } from '@/features/records/PrivacyNotice';
+import { MobileLayout } from '@/layouts/MobileLayout';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 
 export function PrivacyNoticePage() {
     const { data: me } = useMe();
+
+    // Signed in on the phone side: same shell as /me/access.
+    if (me?.home === '/me') {
+        return (
+            <MobileLayout>
+                <div className="mx-auto max-w-2xl">
+                    <BackLink to="/me/profile">Me</BackLink>
+                    <div className="brand-stripe mt-2 h-1 w-12 rounded-full" aria-hidden="true" />
+                    <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
+                        Privacy notice
+                    </h1>
+                    <p className="mt-1 text-sm text-stone-500">
+                        Updated {NOTICE_UPDATED} · Version {NOTICE_VERSION}
+                    </p>
+                    <PrivacyNoticeBody />
+                </div>
+            </MobileLayout>
+        );
+    }
+
     return (
         <div className="min-h-dvh bg-white">
             <header className="border-b border-stone-200">
