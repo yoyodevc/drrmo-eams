@@ -1,6 +1,7 @@
 // The public privacy notice. Anyone can read it, signed in or not, so the "Request access"
 // checkbox and the sign in page can link to it. Same frame as the cookie notice.
 import { Link } from 'react-router';
+import { useMe } from '@/app/auth';
 import {
     PrivacyNoticeBody,
     NOTICE_UPDATED,
@@ -9,6 +10,7 @@ import {
 import { BrandLogos } from '@/shared/ui/BrandLogos';
 
 export function PrivacyNoticePage() {
+    const { data: me } = useMe();
     return (
         <div className="min-h-dvh bg-white">
             <header className="border-b border-stone-200">
@@ -20,10 +22,10 @@ export function PrivacyNoticePage() {
                         </span>
                     </div>
                     <Link
-                        to="/login"
+                        to={me ? '/me/profile' : '/login'}
                         className="flex min-h-12 items-center text-sm font-medium text-maroon-700 hover:underline"
                     >
-                        Back to sign in
+                        {me ? 'Back to my profile' : 'Back to sign in'}
                     </Link>
                 </div>
             </header>
