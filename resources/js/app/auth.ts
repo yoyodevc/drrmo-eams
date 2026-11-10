@@ -1,7 +1,13 @@
 // Who is signed in. Calls /api/me, /api/login and /api/logout (Core).
 import { useEffect } from 'react';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { api, ApiError, blockRefresh, onSessionEnded } from '@/shared/api/client';
+import {
+    api,
+    ApiError,
+    blockRefresh,
+    onConsentRequired,
+    onSessionEnded,
+} from '@/shared/api/client';
 
 export interface Me {
     id: number;
@@ -14,7 +20,12 @@ export interface Me {
     team: string | null;
     status: 'active' | 'inactive';
     permissions: string[];
-    consent: { privacy_notice: boolean; location_tracking: boolean };
+    consent: {
+        privacy_notice: boolean;
+        // True when they agreed to an older notice version.
+        privacy_notice_outdated: boolean;
+        location_tracking: boolean;
+    };
     home: '/admin' | '/me';
 }
 
@@ -47,7 +58,11 @@ export function useSessionWatcher(): void {
     const queryClient = useQueryClient();
 
     useEffect(() => {
-        const stop = onSessionEnded(() => endSession(queryClient));
+        const stopSession = onSessionEnded(() => endSession(queryClient));
+        // The privacy notice changed while the app was open. Ask /api/me again.
+        const stopConsent = onConsentRequired(() => {
+            void queryClient.invalidateQueries({ queryKey: meKey });
+        });
 
         const channel =
             typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(channelName);
@@ -70,7 +85,8 @@ export function useSessionWatcher(): void {
         window.addEventListener('pageshow', onPageShow);
 
         return () => {
-            stop();
+            stopSession();
+            stopConsent();
             channel?.close();
             window.removeEventListener('pageshow', onPageShow);
         };

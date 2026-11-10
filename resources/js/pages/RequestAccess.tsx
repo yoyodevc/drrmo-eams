@@ -1,7 +1,7 @@
 // Request access (M-Request access in SCREENS.md). Public sign up for volunteers.
 // The account stays pending until the email is confirmed and an admin approves it.
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { AuthLayout, AuthLink } from '@/app/AuthLayout';
 import { requestAccess } from '@/features/personnel/registration';
 import { ApiError } from '@/shared/api/client';
@@ -135,8 +135,12 @@ export function RequestAccess() {
                             className="mt-0.5 size-5 shrink-0 accent-maroon-700"
                         />
                         <span>
-                            I have read the privacy notice and agree that the DRRMO keeps my name,
-                            email and duty records under the Data Privacy Act of 2012.
+                            I have read the{' '}
+                            <Link to="/privacy" className="font-medium text-maroon-700 underline">
+                                privacy notice
+                            </Link>{' '}
+                            and agree that the DRRMO keeps my name, email and duty records under the
+                            Data Privacy Act of 2012.
                         </span>
                     </label>
                     {errors.privacy_consent && (

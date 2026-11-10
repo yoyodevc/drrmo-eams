@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Personnel\Models\User;
-use App\Modules\Records\Enums\ConsentPurpose;
 use App\Modules\Records\Models\AuditLog;
-use App\Modules\Records\Models\ConsentRecord;
 use Database\Seeders\PermissionSeeder;
 
 // Requests must look like they come from the app (VerifyApiRequestOrigin).
@@ -80,15 +78,12 @@ it('resets the failure count after a good login', function () {
 
 it('returns the user with permissions and consent from /api/me', function () {
     $user = User::factory()->role(RoleCode::Marshal)->create();
-    ConsentRecord::query()->create([
-        'user_id' => $user->id, 'purpose' => ConsentPurpose::PrivacyNotice,
-        'notice_version' => 'v1', 'consented_at' => now(),
-    ]);
 
     $this->actingAs($user)->getJson('/api/me')
         ->assertOk()
         ->assertJsonPath('data.role', 'marshal')
         ->assertJsonPath('data.consent.privacy_notice', true)
+        ->assertJsonPath('data.consent.privacy_notice_outdated', false)
         ->assertJsonPath('data.consent.location_tracking', false)
         ->assertJsonFragment(['permissions' => ['assignments.own', 'location.send_own', 'memos.view', 'messages.use', 'profile.own']])
         ->assertJsonMissingPath('data.password');

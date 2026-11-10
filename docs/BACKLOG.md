@@ -36,7 +36,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S2.2 | Import people from CSV | Not started |
 | S2.3 | Emergency contacts | Partial |
 | S2.4 | Volunteer active and inactive toggle | Partial |
-| S2.5 | Privacy notice and consent | Partial |
+| S2.5 | Privacy notice and consent | Done |
 | S2.6 | Permission check with grants | Not started |
 | S2.7 | Grants manager | Not started |
 | S2.8 | Coordinator event notices | Done |
@@ -69,7 +69,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S6.5 | Production deployment | Not started |
 | S6.6 | Field test | Not started |
 
-Partial notes: S2.3 and S2.4 have models only. S2.5 has contracts but no consent screen or `consent_required` 403.
+Partial notes: S2.3 and S2.4 have models only.
 
 ---
 

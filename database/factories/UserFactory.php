@@ -9,6 +9,8 @@ use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Enums\AvailabilityStatus;
 use App\Modules\Personnel\Models\User;
+use App\Modules\Records\Contracts\ConsentRecorder;
+use App\Modules\Records\Enums\ConsentPurpose;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -21,6 +23,8 @@ use Illuminate\Support\Str;
 class UserFactory extends Factory
 {
     protected static ?string $password;
+
+    private bool $withoutConsent = false;
 
     /** @return array<string, mixed> */
     public function definition(): array
@@ -40,6 +44,27 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /** Test people have already agreed to the privacy notice, so API tests reach the endpoint they test. */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            if (! $this->withoutConsent) {
+                app(ConsentRecorder::class)->give($user, ConsentPurpose::PrivacyNotice, '127.0.0.1');
+            }
+        });
+    }
+
+    public function withoutConsent(): static
+    {
+        return tap($this->newInstance(), fn (self $factory) => $factory->withoutConsent = true);
+    }
+
+    /** @param  array<string, mixed>  $arguments */
+    protected function newInstance(array $arguments = []): static
+    {
+        return tap(parent::newInstance($arguments), fn (self $factory) => $factory->withoutConsent = $this->withoutConsent);
     }
 
     public function role(RoleCode $role): static

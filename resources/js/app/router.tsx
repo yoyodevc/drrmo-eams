@@ -7,6 +7,7 @@ import { CookieNotice } from '@/pages/CookieNotice';
 import { ForgotPassword } from '@/pages/ForgotPassword';
 import { AccessRequests } from '@/features/personnel/pages/admin/AccessRequests';
 import { Login } from '@/pages/Login';
+import { PrivacyNoticePage } from '@/pages/PrivacyNoticePage';
 import { RequestAccess } from '@/pages/RequestAccess';
 import { VerifyEmail } from '@/pages/VerifyEmail';
 import { WaitingForApproval } from '@/pages/WaitingForApproval';
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
     { path: '/', element: <HomeRedirect /> },
     { path: '/login', element: <Login /> },
     { path: '/cookies', element: <CookieNotice /> },
+    { path: '/privacy', element: <PrivacyNoticePage /> },
     { path: '/register', element: <RequestAccess /> },
     { path: '/register/verify', element: <VerifyEmail /> },
     { path: '/register/pending', element: <WaitingForApproval /> },

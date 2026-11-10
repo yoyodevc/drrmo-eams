@@ -13,13 +13,36 @@ class DatabaseConsentChecker implements ConsentChecker
 {
     public function has(User $user, ConsentPurpose $purpose): bool
     {
-        $latest = ConsentRecord::query()
+        $latest = $this->latest($user, $purpose);
+
+        return $latest !== null
+            && $latest->withdrawn_at === null
+            && $this->isCurrent($latest, $purpose);
+    }
+
+    public function outdated(User $user, ConsentPurpose $purpose): bool
+    {
+        $latest = $this->latest($user, $purpose);
+
+        return $latest !== null
+            && $latest->withdrawn_at === null
+            && ! $this->isCurrent($latest, $purpose);
+    }
+
+    private function latest(User $user, ConsentPurpose $purpose): ?ConsentRecord
+    {
+        return ConsentRecord::query()
             ->where('user_id', $user->getKey())
             ->where('purpose', $purpose->value)
             ->latest('consented_at')
             ->latest('id')
             ->first();
+    }
 
-        return $latest !== null && $latest->withdrawn_at === null;
+    /** Only the privacy notice is versioned. Changing its version asks everyone again. */
+    private function isCurrent(ConsentRecord $record, ConsentPurpose $purpose): bool
+    {
+        return $purpose !== ConsentPurpose::PrivacyNotice
+            || $record->notice_version === (string) config('privacy.notice_version');
     }
 }

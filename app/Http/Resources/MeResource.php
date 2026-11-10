@@ -38,6 +38,8 @@ class MeResource extends JsonResource
             'permissions' => $this->role->permissions->pluck('code')->sort()->values()->all(),
             'consent' => [
                 'privacy_notice' => $consent->has($this->resource, ConsentPurpose::PrivacyNotice),
+                // True when they agreed to an older notice version, so the screen can say it changed.
+                'privacy_notice_outdated' => $consent->outdated($this->resource, ConsentPurpose::PrivacyNotice),
                 'location_tracking' => $consent->has($this->resource, ConsentPurpose::LocationTracking),
             ],
             // Admins land on the desktop area, everyone else on the phone area.

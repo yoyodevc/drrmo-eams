@@ -223,3 +223,12 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: a link always shows the list, not the calendar, because the card is found in the list
 - Evidence: resources/js/features/events/dutyLink.test.ts
 - Paper: Chapter 3 (user interface design)
+
+## 2026-11-10 · S2.5 Privacy notice and consent (records)
+- What was built: after sign in, a person who has not agreed to the current privacy notice sees the notice instead of the app, with one "I have read and agree" button and Sign out. A public `/privacy` page shows the same text, linked from Request access and the sign in page
+- Decision and why: the server enforces it. A middleware answers every API call except `/api/me`, the agree call and logout with 403 `consent_required`, so hiding screens is not the only protection. The app reads that code and asks `/api/me` again, so a notice change mid session shows the screen at once
+- Decision and why: consent is checked against `config('privacy.notice_version')`. Changing the version makes everyone agree again, and `/api/me` says `privacy_notice_outdated` so the screen can tell them the notice changed
+- Decision and why: agreeing twice writes one row, and each agreement is audited (`consent.given`)
+- Decision and why: test users made by the factory have already agreed, so API tests reach the endpoint they test. `withoutConsent()` makes one who has not
+- Evidence: tests/Feature/Records/PrivacyConsentTest.php, ConsentCheckerTest.php
+- Paper: Chapter 3 (data privacy, system design)
