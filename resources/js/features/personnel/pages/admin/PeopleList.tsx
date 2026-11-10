@@ -1,5 +1,5 @@
 // A-People (S2.1). Everyone with an account: filter, search, open a profile, add a person.
-// Desktop first at 1280 px with a table. Under 768 px the rows become a tappable list and the
+// Desktop first at 1280 px with a table where the whole row opens the profile. Under 768 px the rows become a tappable list and the
 // filters fold behind a Filters button. Filters live in the URL, so Back from a profile keeps them.
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -28,7 +28,8 @@ import { Button } from '@/shared/ui/Button';
 const PER_PAGE = 25;
 const FILTER_KEYS = ['role', 'team', 'department', 'status'] as const;
 
-const headCell = 'px-5 py-3 text-xs font-semibold tracking-wide text-stone-500 uppercase';
+const headCell =
+    'px-5 py-3 whitespace-nowrap text-xs font-semibold tracking-wide text-stone-500 uppercase';
 // 48 px and 16 px text on phones so iOS does not zoom; the denser 40 px admin size from 768 px.
 const control =
     'block min-h-12 w-full rounded-control border border-stone-300 bg-white px-3 text-base text-stone-900 transition-colors hover:border-stone-400 focus:border-maroon-700 focus:ring-3 focus:ring-maroon-700/15 focus:outline-none md:min-h-10 md:text-sm';
@@ -46,7 +47,7 @@ function Select({
     children: ReactNode;
 }) {
     return (
-        <label className={`${label} block min-w-0 md:w-44 md:shrink-0`}>
+        <label className={`${label} block min-w-0`}>
             <span className="mb-1.5 block">{name}</span>
             <select className={control} value={value} onChange={(e) => onChange(e.target.value)}>
                 {children}
@@ -79,9 +80,7 @@ function SkeletonRows() {
                     </td>
                     <td className="px-5 py-3.5">
                         <div className="h-4 w-20 animate-pulse rounded bg-stone-200" />
-                    </td>
-                    <td className="px-5 py-3.5">
-                        <div className="h-4 w-24 animate-pulse rounded bg-stone-200" />
+                        <div className="mt-2 h-3 w-24 animate-pulse rounded bg-stone-200" />
                     </td>
                     <td className="px-5 py-3.5">
                         <div className="h-4 w-40 animate-pulse rounded bg-stone-200" />
@@ -90,8 +89,9 @@ function SkeletonRows() {
                         <div className="h-5 w-16 animate-pulse rounded-full bg-stone-200" />
                     </td>
                     <td className="px-5 py-3.5">
-                        <div className="h-4 w-24 animate-pulse rounded bg-stone-200" />
+                        <div className="ml-auto h-4 w-24 animate-pulse rounded bg-stone-200" />
                     </td>
+                    <td />
                 </tr>
             ))}
         </>
@@ -240,9 +240,9 @@ export function PeopleList() {
                         role="search"
                         aria-label="Filter people"
                         onSubmit={(e) => e.preventDefault()}
-                        className="space-y-3 md:flex md:flex-wrap md:items-end md:gap-x-3 md:gap-y-4 md:space-y-0"
+                        className="space-y-3 md:grid md:grid-cols-4 md:items-end md:gap-3 md:space-y-0 lg:grid-cols-[minmax(13rem,1fr)_repeat(4,minmax(0,10rem))]"
                     >
-                        <div className="flex items-end gap-2 md:min-w-64 md:flex-1">
+                        <div className="flex items-end gap-2 md:col-span-4 lg:col-span-1">
                             <label className={`${label} block min-w-0 flex-1`}>
                                 <span className="mb-1.5 block">Search</span>
                                 <span className="relative block">
@@ -409,14 +409,14 @@ export function PeopleList() {
                         {/* 768 px and up: the full table. */}
                         {(list.isPending || rows.length > 0) && (
                             <div className="hidden min-h-72 overflow-x-auto md:block">
-                                <table className="w-full min-w-[880px] table-fixed text-left">
+                                <table className="w-full min-w-[760px] table-fixed text-left">
                                     <colgroup>
-                                        <col className="w-[30%]" />
+                                        <col className="w-[32%]" />
+                                        <col className="w-[19%]" />
+                                        <col className="w-[20%]" />
                                         <col className="w-[13%]" />
                                         <col className="w-[16%]" />
-                                        <col className="w-[19%]" />
-                                        <col className="w-[11%]" />
-                                        <col className="w-[11%]" />
+                                        <col className="w-12" />
                                     </colgroup>
                                     <thead className="border-b border-stone-200">
                                         <tr>
@@ -424,10 +424,7 @@ export function PeopleList() {
                                                 Person
                                             </th>
                                             <th scope="col" className={headCell}>
-                                                Role
-                                            </th>
-                                            <th scope="col" className={headCell}>
-                                                Team
+                                                Role and team
                                             </th>
                                             <th scope="col" className={headCell}>
                                                 Department
@@ -435,17 +432,24 @@ export function PeopleList() {
                                             <th scope="col" className={headCell}>
                                                 Availability
                                             </th>
-                                            <th scope="col" className={headCell}>
+                                            <th
+                                                scope="col"
+                                                className={`${headCell} pr-1 text-right`}
+                                            >
                                                 Last sign in
+                                            </th>
+                                            <th scope="col" className="w-12">
+                                                <span className="sr-only">Open</span>
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-stone-100">
                                         {list.isPending && <SkeletonRows />}
                                         {rows.map((p) => (
+                                            // The name link stretches over the whole row, so a click anywhere opens the profile.
                                             <tr
                                                 key={p.id}
-                                                className="transition-colors hover:bg-stone-50"
+                                                className="group relative cursor-pointer transition-colors focus-within:bg-stone-50 hover:bg-stone-50"
                                             >
                                                 <td className="px-5 py-3">
                                                     <div className="flex items-center gap-3">
@@ -458,7 +462,7 @@ export function PeopleList() {
                                                             <Link
                                                                 to={`/admin/people/${p.id}`}
                                                                 state={back}
-                                                                className="rounded-sm font-medium text-stone-900 underline-offset-2 transition-colors hover:text-maroon-700 hover:underline"
+                                                                className="block truncate font-medium text-stone-900 underline-offset-2 transition-colors group-hover:text-maroon-700 group-hover:underline after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-maroon-600 focus-visible:after:ring-inset"
                                                             >
                                                                 {p.name}
                                                             </Link>
@@ -468,19 +472,17 @@ export function PeopleList() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="truncate px-5 py-3 text-sm text-stone-700">
-                                                    {p.role ? (
-                                                        roleLabels[p.role]
-                                                    ) : (
-                                                        <Muted>None</Muted>
-                                                    )}
-                                                </td>
-                                                <td className="truncate px-5 py-3 text-sm text-stone-700">
-                                                    {p.team_name ? (
-                                                        p.team_name
-                                                    ) : (
-                                                        <Muted>None</Muted>
-                                                    )}
+                                                <td className="px-5 py-3 text-sm">
+                                                    <p className="truncate text-stone-800">
+                                                        {p.role ? (
+                                                            roleLabels[p.role]
+                                                        ) : (
+                                                            <Muted>No role</Muted>
+                                                        )}
+                                                    </p>
+                                                    <p className="mt-0.5 truncate text-stone-500">
+                                                        {p.team_name ?? 'No team'}
+                                                    </p>
                                                 </td>
                                                 <td className="truncate px-5 py-3 text-sm text-stone-700">
                                                     {p.department?.name ?? <Muted>Not set</Muted>}
@@ -488,8 +490,11 @@ export function PeopleList() {
                                                 <td className="px-5 py-3">
                                                     <AvailabilityChip status={p.status} />
                                                 </td>
-                                                <td className="truncate px-5 py-3 text-sm text-stone-700 tabular-nums">
+                                                <td className="truncate py-3 pr-1 pl-5 text-right text-sm text-stone-700 tabular-nums">
                                                     {day(p.last_login_at) ?? <Muted>Never</Muted>}
+                                                </td>
+                                                <td className="py-3 pr-4 pl-3">
+                                                    <ChevronIcon className="size-4 text-stone-300 transition-colors group-hover:text-maroon-700" />
                                                 </td>
                                             </tr>
                                         ))}
