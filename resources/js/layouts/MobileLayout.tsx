@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 import { useAlerts } from '@/features/notifications/unread';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -21,7 +21,7 @@ function TabIcon({ children }: { children: ReactNode }) {
     );
 }
 
-const tabs = [
+const tabs: { to: string; label: string; icon: ReactNode; also?: string[] }[] = [
     {
         to: '/me',
         label: 'Duties',
@@ -65,6 +65,8 @@ const tabs = [
     {
         to: '/me/profile',
         label: 'Me',
+        // Pages you open from the Me tab keep it highlighted.
+        also: ['/me/availability'],
         icon: (
             <TabIcon>
                 <circle cx="12" cy="8" r="4" />
@@ -97,6 +99,9 @@ function useOnline() {
 export function MobileLayout() {
     const online = useOnline();
     const { unread } = useAlerts();
+    const { pathname } = useLocation();
+    const current = (tab: (typeof tabs)[number], isActive: boolean) =>
+        isActive || (tab.also ?? []).some((path) => pathname.startsWith(path));
     // The dot sits on the bell's top right corner. A white ring cuts it out of the icon.
     const dot = (to: string, place: string) =>
         unread && to === '/me/notifications' ? (
@@ -124,7 +129,7 @@ export function MobileLayout() {
                                         to={tab.to}
                                         end
                                         className={({ isActive }) =>
-                                            `flex h-full items-center gap-2 border-b-2 px-3 text-sm transition-colors [&_svg]:size-5 ${isActive ? 'border-maroon-700 font-semibold text-maroon-700' : 'border-transparent font-medium text-stone-600 hover:border-stone-300 hover:text-stone-900'}`
+                                            `flex h-full items-center gap-2 border-b-2 px-3 text-sm transition-colors [&_svg]:size-5 ${current(tab, isActive) ? 'border-maroon-700 font-semibold text-maroon-700' : 'border-transparent font-medium text-stone-600 hover:border-stone-300 hover:text-stone-900'}`
                                         }
                                     >
                                         <span className="relative">
@@ -158,20 +163,6 @@ export function MobileLayout() {
                 className="mx-auto max-w-6xl px-6 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none md:px-10 md:pt-10 md:pb-16"
             >
                 <Outlet />
-                <footer className="mt-10 flex flex-wrap gap-x-6 gap-y-1 border-t border-stone-200 pt-4 text-sm">
-                    <Link
-                        to="/me/availability"
-                        className="inline-flex min-h-11 items-center font-medium text-stone-700 underline hover:text-stone-900"
-                    >
-                        My availability
-                    </Link>
-                    <Link
-                        to="/privacy"
-                        className="inline-flex min-h-11 items-center font-medium text-stone-700 underline hover:text-stone-900"
-                    >
-                        Privacy notice
-                    </Link>
-                </footer>
             </main>
 
             <nav
@@ -185,13 +176,13 @@ export function MobileLayout() {
                             to={tab.to}
                             end
                             className={({ isActive }) =>
-                                `group flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs transition-colors ${isActive ? 'font-semibold text-maroon-700' : 'font-medium text-stone-600 hover:text-stone-900'}`
+                                `group flex min-h-16 flex-col items-center justify-center gap-0.5 text-xs transition-colors ${current(tab, isActive) ? 'font-semibold text-maroon-700' : 'font-medium text-stone-600 hover:text-stone-900'}`
                             }
                         >
                             {({ isActive }) => (
                                 <>
                                     <span
-                                        className={`relative flex h-8 w-14 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-maroon-100' : 'group-hover:bg-stone-100'}`}
+                                        className={`relative flex h-8 w-14 items-center justify-center rounded-full transition-colors ${current(tab, isActive) ? 'bg-maroon-100' : 'group-hover:bg-stone-100'}`}
                                     >
                                         {tab.icon}
                                         {dot(tab.to, 'top-0.5 left-1/2 ml-1')}

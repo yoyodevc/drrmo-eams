@@ -241,4 +241,5 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Evidence: tests/Feature/Personnel/VolunteerStatusTest.php
 - Paper: Chapter 3 (system design, data privacy)
 - Also built (mobile): `/me/availability` shows a volunteer their own status and the history of changes with reasons, read only, from `GET /api/me/availability` which only returns their own rows
-- Mobile footer on every /me page links to My availability and the Privacy notice (/privacy)
+- The Me tab (`/me/profile`) shows your name, role and team, then rows for My availability (with an Active or Inactive chip) and the Privacy notice, and a Sign out button. This replaced a footer of plain links that sat under every /me page. My availability got the same look as Alerts and a back link to Me
+- Alerts: every row keeps a slot the width of the chevron, so the times line up in one column
