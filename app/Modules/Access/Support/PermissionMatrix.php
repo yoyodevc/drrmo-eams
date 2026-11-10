@@ -112,11 +112,14 @@ final class PermissionMatrix
      */
     public static function forced(string $code, string $roleCode): ?bool
     {
+        $lock = self::permissions()[$code]['lock'] ?? null;
+
         if ($roleCode === Role::Admin->value) {
-            return true;
+            // Admin never goes on duty, so the field lock keeps duty permissions off it.
+            return $lock !== self::LOCK_FIELD;
         }
 
-        return match (self::permissions()[$code]['lock'] ?? null) {
+        return match ($lock) {
             self::LOCK_ADMIN => false,
             self::LOCK_EVERYONE => true,
             self::LOCK_FIELD => in_array($roleCode, [Role::Marshal->value, Role::Volunteer->value], true),
@@ -130,7 +133,7 @@ final class PermissionMatrix
         if (self::forced($code, $roleCode) === null) {
             return null;
         }
-        if ($roleCode === Role::Admin->value) {
+        if ($roleCode === Role::Admin->value && self::forced($code, $roleCode) === true) {
             return 'The Admin role always has every permission.';
         }
 

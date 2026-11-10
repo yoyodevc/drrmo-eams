@@ -30,7 +30,7 @@ class RolePermissionController
             'roles' => ['required', 'array', 'min:1', 'max:50'],
             'roles.*.id' => ['required', 'integer', 'distinct', 'exists:roles,id'],
             'roles.*.permissions' => ['present', 'array'],
-            'roles.*.permissions.*' => ['string', 'distinct', Rule::in(array_keys(PermissionMatrix::permissions()))],
+            'roles.*.permissions.*' => ['string', Rule::in(array_keys(PermissionMatrix::permissions()))],
         ]);
 
         /** @var list<array{id: int, permissions: list<string>}> $input */

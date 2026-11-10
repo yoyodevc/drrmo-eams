@@ -120,19 +120,20 @@ it('saves role permissions from the matrix and the role gains them at once', fun
     expect($log->meta['added'])->toBe(['reports.view', 'audit.view'])->and($log->meta['removed'])->toBe([]);
 
     withAuthCookies(loginCookies($coordinator))->getJson('/api/me')->assertOk()
-        ->assertJsonPath('permissions', fn ($p) => in_array('audit.view', $p, true));
+        ->assertJsonPath('data.permissions', fn ($p) => in_array('audit.view', $p, true));
 });
 
 it('rejects a change to a locked cell and saves nothing', function (string $role, array $change) {
-    $before = codesOf('coordinator');
+    $other = $role === 'coordinator' ? 'marshal' : 'coordinator';
+    $before = codesOf($other);
     $codes = array_values(array_diff([...codesOf($role), ...$change['add']], $change['remove']));
 
     withAuthCookies(adminSession())->putJson('/api/roles/permissions', ['roles' => [
-        ['id' => roleId('coordinator'), 'permissions' => [...$before, 'reports.view']],
+        ['id' => roleId($other), 'permissions' => $before],
         ['id' => roleId($role), 'permissions' => $codes],
     ]])->assertUnprocessable()->assertJsonValidationErrors('roles.1.permissions');
 
-    expect(codesOf('coordinator'))->toBe($before);
+    expect(codesOf($other))->toBe($before);
 })->with([
     'map to a non admin' => ['marshal', ['add' => ['location.view'], 'remove' => []]],
     'access.manage to a non admin' => ['volunteer', ['add' => ['access.manage'], 'remove' => []]],
@@ -187,8 +188,8 @@ it('sends a custom office role to the admin side and shows people their own acce
     $helper->forceFill(['role_id' => customRole('Helper', [])->id])->save();
 
     withAuthCookies(loginCookies($clerk))->getJson('/api/me')->assertOk()
-        ->assertJsonPath('home', '/admin')->assertJsonPath('role', 'records_officer')->assertJsonPath('role_name', 'Records officer');
-    withAuthCookies(loginCookies($helper))->getJson('/api/me')->assertOk()->assertJsonPath('home', '/me');
+        ->assertJsonPath('data.home', '/admin')->assertJsonPath('data.role', 'records_officer')->assertJsonPath('data.role_name', 'Records officer');
+    withAuthCookies(loginCookies($helper))->getJson('/api/me')->assertOk()->assertJsonPath('data.home', '/me');
 
     $access = withAuthCookies(loginCookies($clerk))->getJson('/api/me/access')->assertOk()->json('data');
     expect($access['role']['name'])->toBe('Records officer')
@@ -227,5 +228,5 @@ it('keeps an admin edit and custom roles when the seeder runs again', function (
     expect(codesOf('coordinator'))->toContain('reports.view')
         ->and(codesOf('records_officer'))->toContain('audit.view')
         ->and(Role::query()->find($custom->id))->not->toBeNull()
-        ->and(codesOf('admin'))->toHaveCount(Permission::query()->count());
+        ->and(codesOf('admin'))->toHaveCount(Permission::query()->count() - 2); // all but the two duty permissions
 });

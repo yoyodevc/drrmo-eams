@@ -23,7 +23,7 @@ use Illuminate\Support\Carbon;
  */
 class PermissionGrant extends Model
 {
-    protected $fillable = ['user_id', 'permission_id', 'event_id', 'starts_at', 'ends_at', 'reason', 'granted_by'];
+    protected $fillable = ['user_id', 'permission_id', 'event_id', 'starts_at', 'ends_at', 'reason', 'granted_by', 'revoked_at', 'revoked_by'];
 
     /** @return array<string, string> */
     protected function casts(): array

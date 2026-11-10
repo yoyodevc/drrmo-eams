@@ -43,8 +43,8 @@ it('lets an admin give a grant, audits it and the person gains the permission', 
     expect($log->entity_id)->toBe($id)->and($log->meta['reason'])->toBe('Covering the foundation day desk');
 
     withAuthCookies(loginCookies($marshal))->getJson('/api/me')
-        ->assertOk()->assertJsonPath('permissions', fn ($p) => in_array('reports.view', $p, true))
-        ->assertJsonCount(1, 'grants');
+        ->assertOk()->assertJsonPath('data.permissions', fn ($p) => in_array('reports.view', $p, true))
+        ->assertJsonCount(1, 'data.grants');
 });
 
 it('refuses everyone but an admin on every grant endpoint', function (RoleCode $role) {
@@ -171,8 +171,8 @@ it('leaves event scoped grants out of /me permissions but lists them under grant
     withAuthCookies(adminCookies())->postJson('/api/grants', newGrant($marshal, ['permission' => 'reports.submit', 'event_id' => $event->id]))->assertCreated();
 
     $me = withAuthCookies(loginCookies($marshal))->getJson('/api/me')->assertOk();
-    expect($me->json('permissions'))->not->toContain('reports.submit');
-    $me->assertJsonPath('grants.0.permission', 'reports.submit')->assertJsonPath('grants.0.event_title', 'Foundation Day');
+    expect($me->json('data.permissions'))->not->toContain('reports.submit');
+    $me->assertJsonPath('data.grants.0.permission', 'reports.submit')->assertJsonPath('data.grants.0.event_title', 'Foundation Day');
 });
 
 it('lets a granted person use an admin screen only while the grant lasts', function () {
