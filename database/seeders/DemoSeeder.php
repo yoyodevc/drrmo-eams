@@ -20,7 +20,7 @@ class DemoSeeder extends Seeder
             throw new RuntimeException('DemoSeeder must not run in production.');
         }
 
-        $this->call(PermissionSeeder::class);
+        $this->call([PermissionSeeder::class, OrgUnitSeeder::class]);
 
         foreach ([
             ['Demo', 'Admin', 'admin@example.test', RoleCode::Admin],
