@@ -243,3 +243,10 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Also built (mobile): `/me/availability` shows a volunteer their own status and the history of changes with reasons, read only, from `GET /api/me/availability` which only returns their own rows
 - The Me tab (`/me/profile`) shows your name, role and team, then rows for My availability (with an Active or Inactive chip) and the Privacy notice, and a Sign out button. This replaced a footer of plain links that sat under every /me page. My availability got the same look as Alerts and a back link to Me
 - Alerts: every row keeps a slot the width of the chevron, so the times line up in one column
+
+## 2026-11-10 · S2.3 Emergency contacts (personnel)
+- What was built: a volunteer or marshal opens Emergency contacts from the Me tab and adds, edits or deletes their own contacts (name, relationship, phone), up to 5. Admin sees a person's contacts from the Volunteer status screen
+- Decision and why: edit and delete return 403 for anyone else's contact, so a changed id in a request gets nowhere. Creating, editing, deleting and an admin viewing contacts all write an audit row (`emergency_contact.*`)
+- Decision and why: capped at 5 contacts to keep the list useful in an emergency and stop abuse of the field
+- Evidence: tests/Feature/Personnel/EmergencyContactTest.php
+- Paper: Chapter 3 (system design, data privacy)

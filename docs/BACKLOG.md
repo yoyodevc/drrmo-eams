@@ -34,7 +34,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S1.5 | Person sees the assignment on a phone | Done |
 | S2.1 | People list and profile | Not started |
 | S2.2 | Import people from CSV | Not started |
-| S2.3 | Emergency contacts | Partial |
+| S2.3 | Emergency contacts | Done |
 | S2.4 | Volunteer active and inactive toggle | Done |
 | S2.5 | Privacy notice and consent | Done |
 | S2.6 | Permission check with grants | Not started |
@@ -69,7 +69,6 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S6.5 | Production deployment | Not started |
 | S6.6 | Field test | Not started |
 
-Partial notes: S2.3 has models only.
 
 ---
 
@@ -130,8 +129,8 @@ Partial notes: S2.3 has models only.
 - Import is all or nothing.
 
 **S2.3 Emergency contacts** `personnel` `mobile` **M**
-- A person adds, edits and deletes their own contacts from My profile.
-- Admin sees them on the person profile.
+- A person adds, edits and deletes their own contacts from the Me tab (`/me/contacts`), up to 5.
+- Admin sees them from the Volunteer status screen (Contacts button). Viewing and deleting are audited.
 
 **S2.4 Volunteer active and inactive toggle** `personnel` `desktop` **M**
 - Switch requires a reason. A VOLUNTEER_STATUS_LOG row is written with old, new, reason, changed_by.

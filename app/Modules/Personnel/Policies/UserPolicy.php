@@ -19,4 +19,16 @@ class UserPolicy
     {
         return $actor->hasPermission('volunteers.toggle');
     }
+
+    /** A person adding, editing and deleting their own emergency contacts. */
+    public function manageOwnProfile(User $actor): bool
+    {
+        return $actor->hasPermission('profile.own');
+    }
+
+    /** Admin reading another person's emergency contacts. */
+    public function viewPeople(User $actor): bool
+    {
+        return $actor->hasPermission('people.view');
+    }
 }

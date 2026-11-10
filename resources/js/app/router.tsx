@@ -8,6 +8,7 @@ import { ForgotPassword } from '@/pages/ForgotPassword';
 import { AccessRequests } from '@/features/personnel/pages/admin/AccessRequests';
 import { VolunteerStatus } from '@/features/personnel/pages/admin/VolunteerStatus';
 import { MyAvailability } from '@/features/personnel/pages/mobile/MyAvailability';
+import { MyContacts } from '@/features/personnel/pages/mobile/MyContacts';
 import { MyProfile } from '@/features/personnel/pages/mobile/MyProfile';
 import { Login } from '@/pages/Login';
 import { PrivacyNoticePage } from '@/pages/PrivacyNoticePage';
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
                     myDutiesRoute,
                     { path: 'profile', element: <MyProfile /> },
                     { path: 'availability', element: <MyAvailability /> },
+                    { path: 'contacts', element: <MyContacts /> },
                     ...myNotificationRoutes,
                 ],
             },

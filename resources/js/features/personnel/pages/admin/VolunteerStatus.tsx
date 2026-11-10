@@ -1,6 +1,7 @@
 // A-Volunteer status (S2.4). Admin sets a volunteer active or inactive with a reason and reads the history.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
+import { personContacts } from '@/features/personnel/contacts';
 import {
     listVolunteers,
     setVolunteerStatus,
@@ -65,11 +66,53 @@ function History({ volunteer, onClose }: { volunteer: Volunteer; onClose: () => 
     );
 }
 
+function Contacts({ volunteer, onClose }: { volunteer: Volunteer; onClose: () => void }) {
+    const contacts = useQuery({
+        queryKey: ['person-contacts', volunteer.id],
+        queryFn: () => personContacts(volunteer.id),
+    });
+
+    return (
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contacts-title"
+            className="fixed inset-0 z-10 flex items-center justify-center bg-stone-900/50 p-4"
+        >
+            <div className="max-h-[80vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-control bg-white p-6">
+                <h2 id="contacts-title" className="text-lg font-semibold text-stone-900">
+                    Emergency contacts for {volunteer.name}
+                </h2>
+                {contacts.isPending && <p className="text-stone-500">Loading...</p>}
+                {contacts.isError && <p className="text-red-700">Could not load the contacts.</p>}
+                {contacts.data?.length === 0 && (
+                    <p className="text-stone-500">This person has not added any contacts.</p>
+                )}
+                <ul className="divide-y divide-stone-100">
+                    {contacts.data?.map((c) => (
+                        <li key={c.id} className="py-3 text-sm">
+                            <p className="font-medium text-stone-900">{c.name}</p>
+                            <p className="text-stone-700">{c.relationship}</p>
+                            <p className="text-stone-700 tabular-nums">{c.phone}</p>
+                        </li>
+                    ))}
+                </ul>
+                <div className="flex justify-end">
+                    <Button variant="secondary" onClick={onClose}>
+                        Close
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function VolunteerStatus() {
     const queryClient = useQueryClient();
     const [filter, setFilter] = useState<Availability | 'all'>('all');
     const [changing, setChanging] = useState<Volunteer | null>(null);
     const [viewing, setViewing] = useState<Volunteer | null>(null);
+    const [contactsOf, setContactsOf] = useState<Volunteer | null>(null);
     const [reason, setReason] = useState('');
     const [error, setError] = useState<string | null>(null);
 
@@ -179,6 +222,14 @@ export function VolunteerStatus() {
                                         <Button
                                             size="md"
                                             variant="secondary"
+                                            onClick={() => setContactsOf(row)}
+                                            aria-label={`Emergency contacts for ${row.name}`}
+                                        >
+                                            Contacts
+                                        </Button>
+                                        <Button
+                                            size="md"
+                                            variant="secondary"
                                             onClick={() => setViewing(row)}
                                             aria-label={`History for ${row.name}`}
                                         >
@@ -205,6 +256,8 @@ export function VolunteerStatus() {
                     </tbody>
                 </table>
             </div>
+
+            {contactsOf && <Contacts volunteer={contactsOf} onClose={() => setContactsOf(null)} />}
 
             {viewing && <History volunteer={viewing} onClose={() => setViewing(null)} />}
 
