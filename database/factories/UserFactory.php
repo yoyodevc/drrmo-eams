@@ -36,7 +36,7 @@ class UserFactory extends Factory
             'contact_number' => '09'.fake()->numerify('#########'),
             'role_id' => fn () => Role::query()->firstOrCreate(
                 ['code' => RoleCode::Volunteer->value],
-                ['name' => RoleCode::Volunteer->label()],
+                ['name' => RoleCode::Volunteer->label(), 'is_system' => true],
             )->id,
             'status' => AvailabilityStatus::Active,
             'account_status' => AccountStatus::Active,
@@ -72,7 +72,7 @@ class UserFactory extends Factory
         return $this->state(fn () => [
             'role_id' => Role::query()->firstOrCreate(
                 ['code' => $role->value],
-                ['name' => $role->label()],
+                ['name' => $role->label(), 'is_system' => true],
             )->id,
         ]);
     }

@@ -7,7 +7,6 @@ import {
     errorMessage,
     fieldErrors,
     getMyProfile,
-    roleLabels,
     saveMyContactNumber,
 } from '@/features/personnel/people';
 import { BackLink, LockIcon } from '@/features/personnel/components/ui';
@@ -118,7 +117,7 @@ export function MyDetails() {
                         <dl className="mt-2 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
                             <Fact label="Name" value={p.name} />
                             <Fact label="Email" value={p.email} />
-                            <Fact label="Role" value={p.role ? roleLabels[p.role] : null} />
+                            <Fact label="Role" value={p.role_name} />
                             <Fact label="Team" value={p.team_name} />
                             <Fact label="Department" value={p.department} />
                         </dl>

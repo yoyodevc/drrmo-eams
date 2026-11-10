@@ -8,13 +8,12 @@ import {
     fieldErrors,
     getPerson,
     listDepartments,
-    roleLabels,
     savePerson,
     listTeams,
     type Person,
     type PersonInput,
-    type RoleCode,
 } from '@/features/personnel/people';
+import { roleOptions } from '@/features/access/api';
 import { BackLink, ChevronDownIcon } from '@/features/personnel/components/ui';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
@@ -86,6 +85,7 @@ export function PersonForm() {
     });
     const departments = useQuery({ queryKey: ['departments'], queryFn: listDepartments });
     const teams = useQuery({ queryKey: ['teams'], queryFn: listTeams });
+    const roles = useQuery({ queryKey: ['role-options'], queryFn: roleOptions });
     const values = draft ?? (person.data ? fromPerson(person.data) : empty);
 
     const save = useMutation({
@@ -219,9 +219,19 @@ export function PersonForm() {
                                 onChange={set('role')}
                                 error={errors.role}
                             >
-                                {(Object.keys(roleLabels) as RoleCode[]).map((value) => (
-                                    <option key={value} value={value}>
-                                        {roleLabels[value]}
+                                {/* Until the list loads, keep the current role so nothing jumps. */}
+                                {!roles.data && (
+                                    <option value={values.role}>
+                                        {person.data?.role_name ?? 'Volunteer'}
+                                    </option>
+                                )}
+                                {roles.data?.map((r) => (
+                                    <option
+                                        key={r.code}
+                                        value={r.code}
+                                        disabled={!r.can_assign && r.code !== values.role}
+                                    >
+                                        {r.can_assign ? r.name : `${r.name} (needs more access)`}
                                     </option>
                                 ))}
                             </SelectField>

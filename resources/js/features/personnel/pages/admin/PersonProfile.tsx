@@ -5,9 +5,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
+import { useMe } from '@/app/auth';
 import { GrantsCard } from '@/features/access/components/GrantsCard';
 import { personContacts } from '@/features/personnel/contacts';
-import { getPerson, resendInvite, roleLabels } from '@/features/personnel/people';
+import { getPerson, resendInvite } from '@/features/personnel/people';
 import {
     setVolunteerStatus,
     statusHistory,
@@ -129,6 +130,8 @@ export function PersonProfile() {
 
     const person = useQuery({ queryKey: ['person', personId], queryFn: () => getPerson(personId) });
     const isVolunteer = person.data?.role === 'volunteer';
+    // Roles and grants are admin only (access.manage), so other viewers do not see those parts.
+    const managesAccess = useMe().data?.permissions.includes('access.manage') ?? false;
     const history = useQuery({
         queryKey: ['volunteer-history', personId],
         queryFn: () => statusHistory(personId),
@@ -200,7 +203,7 @@ export function PersonProfile() {
                         </h1>
                         <p className="mt-0.5 text-stone-700">
                             <span className="font-medium text-stone-900">
-                                {p.role ? roleLabels[p.role] : 'No role'}
+                                {p.role_name ?? 'No role'}
                             </span>
                             {placement && <span className="text-stone-600"> · {placement}</span>}
                         </p>
@@ -252,7 +255,9 @@ export function PersonProfile() {
                         />
                     )}
 
-                    {p.role !== 'admin' && <GrantsCard personId={p.id} firstName={p.first_name} />}
+                    {managesAccess && p.role !== 'admin' && (
+                        <GrantsCard personId={p.id} firstName={p.first_name} />
+                    )}
 
                     <Card title="Details" id="details-title">
                         <div className="space-y-6">
@@ -279,7 +284,18 @@ export function PersonProfile() {
                                 </Fact>
                             </FactGroup>
                             <FactGroup title="Placement">
-                                <Fact label="Role">{p.role ? roleLabels[p.role] : null}</Fact>
+                                <Fact label="Role">
+                                    {managesAccess && p.role_id ? (
+                                        <Link
+                                            to={`/admin/access/roles/${p.role_id}`}
+                                            className="font-medium text-maroon-700 underline-offset-2 hover:underline"
+                                        >
+                                            {p.role_name}
+                                        </Link>
+                                    ) : (
+                                        p.role_name
+                                    )}
+                                </Fact>
                                 <Fact label="Team">{p.team_name}</Fact>
                                 <Fact label="Department">{p.department?.name}</Fact>
                                 {!isVolunteer && (

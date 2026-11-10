@@ -1,10 +1,11 @@
-// A-Grants manager (S2.7). Every grant of extra access, with status tabs. An admin gives new access
-// here or ends a grant early. The same actions live on each person's profile.
+// A-Temporary access (S2.7). Every grant of extra access, with status tabs. An admin gives new
+// access here or ends a grant early. The same actions live on each person's profile.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { listGrants, revokeGrant, type Grant, type GrantStatus } from '@/features/access/api';
 import { GiveDialog } from '@/features/access/components/GrantsCard';
+import { PageHeader } from '@/features/access/components/ui';
 import { PlusIcon, chipBase, stamp } from '@/features/personnel/components/ui';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -54,19 +55,26 @@ export function GrantsManager() {
     const count = (t: Tab) => all.filter((g) => matches(g, t)).length;
 
     return (
-        <div className="mx-auto max-w-6xl">
-            <header className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Access</h1>
-                    <p className="mt-1 text-stone-600">
-                        Time-limited access on top of a role. It stops by itself when it ends.
-                    </p>
-                </div>
-                <Button variant="primary" size="md" onClick={() => setGiving(true)}>
-                    <PlusIcon className="size-4" />
-                    New grant
-                </Button>
-            </header>
+        <div className="mx-auto max-w-[1440px]">
+            <PageHeader
+                title="Temporary access"
+                actions={
+                    <Button variant="primary" size="md" onClick={() => setGiving(true)}>
+                        <PlusIcon className="size-4" />
+                        Give access
+                    </Button>
+                }
+            >
+                One permission for one person, on top of their{' '}
+                <Link
+                    to="/admin/access/roles"
+                    className="font-medium text-maroon-700 underline-offset-2 hover:underline"
+                >
+                    role
+                </Link>
+                , for a set time. It stops by itself when it ends. Use it for one event or a short
+                cover, not for someone's everyday job.
+            </PageHeader>
 
             <div role="tablist" aria-label="Grant status" className="mt-6 flex flex-wrap gap-2">
                 {tabs.map((t) => (
@@ -105,7 +113,7 @@ export function GrantsManager() {
                     <div className="rounded-card bg-white p-8 text-center ring-1 ring-stone-200">
                         <p className="font-semibold text-stone-900">No grants here</p>
                         <p className="mt-1 text-sm text-stone-600">
-                            Use New grant to give someone extra access for a while.
+                            Use Give access to let someone do one more thing for a while.
                         </p>
                     </div>
                 )}
@@ -137,6 +145,9 @@ export function GrantsManager() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <p className="font-medium text-stone-900">
+                                                {g.permission.label}
+                                            </p>
+                                            <p className="text-stone-600">
                                                 {g.permission.description}
                                             </p>
                                             {g.event && (
@@ -203,7 +214,7 @@ export function GrantsManager() {
                 title="End this access now?"
                 description={
                     ending
-                        ? `${ending.person.name} loses "${ending.permission.description.toLowerCase()}" straight away. The grant stays in the history.`
+                        ? `${ending.person.name} loses "${ending.permission.label}" straight away. The grant stays in the history.`
                         : ''
                 }
                 confirmLabel="End access"

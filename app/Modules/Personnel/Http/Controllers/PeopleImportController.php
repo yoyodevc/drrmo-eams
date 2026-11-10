@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Personnel\Http\Controllers;
 
-use App\Modules\Access\Enums\Role as RoleCode;
+use App\Modules\Access\Contracts\RoleGuard;
 use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Actions\PeopleCsvReader;
 use App\Modules\Personnel\Actions\PersonInviter;
@@ -51,7 +51,11 @@ class PeopleImportController
 
         /** @var User $actor */
         $actor = $request->user();
-        abort_if($actor->roleCode() !== RoleCode::Admin && collect($rows)->contains(fn ($row) => ($row['role'] ?? null) === RoleCode::Admin->value), 403, 'Only an admin can import admins.');
+        // Nobody hands out more access than they hold, so a grant holder cannot import admins.
+        $guard = app(RoleGuard::class);
+        $blocked = Role::query()->with('permissions')->whereIn('code', collect($rows)->pluck('role')->unique()->all())->get()
+            ->reject(fn (Role $role) => $guard->canHandOut($actor, $role));
+        abort_if($blocked->isNotEmpty(), 403, 'You cannot import people into the '.$blocked->pluck('name')->join(', ', ' or ').' role.');
 
         if ($request->boolean('check')) {
             return response()->json(['count' => count($rows), 'imported' => false]);

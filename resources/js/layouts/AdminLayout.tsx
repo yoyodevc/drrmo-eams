@@ -168,11 +168,31 @@ const groups: { label: string; items: Item[] }[] = [
         ],
     },
     {
-        label: 'System',
+        label: 'Access control',
         items: [
             {
-                to: '/admin/access',
-                label: 'Access',
+                to: '/admin/access/roles',
+                label: 'Roles',
+                icon: (
+                    <NavIcon>
+                        <path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9V6Z" />
+                        <path d="m9.5 12 1.8 1.8 3.2-3.3" />
+                    </NavIcon>
+                ),
+            },
+            {
+                to: '/admin/access/matrix',
+                label: 'Permission matrix',
+                icon: (
+                    <NavIcon>
+                        <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+                        <path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17" />
+                    </NavIcon>
+                ),
+            },
+            {
+                to: '/admin/access/grants',
+                label: 'Temporary access',
                 icon: (
                     <NavIcon>
                         <circle cx="8" cy="15" r="4.5" />
@@ -180,6 +200,11 @@ const groups: { label: string; items: Item[] }[] = [
                     </NavIcon>
                 ),
             },
+        ],
+    },
+    {
+        label: 'System',
+        items: [
             {
                 to: '/admin/records',
                 label: 'Records',
@@ -276,13 +301,6 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
     );
 }
 
-const roleNames = {
-    admin: 'Administrator',
-    marshal: 'Marshal',
-    volunteer: 'Volunteer',
-    coordinator: 'Coordinator',
-};
-
 const signOutIcon = (
     <NavIcon>
         <path d="M14 4.5h3.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H14" />
@@ -306,7 +324,7 @@ function Account({ rail = false }: { rail?: boolean }) {
             <div className={`min-w-0 flex-1 ${rail ? 'max-lg:sr-only' : ''}`}>
                 <p className="truncate text-sm font-semibold text-white">{me.name}</p>
                 <p className="truncate text-xs text-white/60">
-                    {me.role ? roleNames[me.role] : 'Signed in'}
+                    {me.role === 'admin' ? 'Administrator' : (me.role_name ?? 'Signed in')}
                 </p>
             </div>
         </>

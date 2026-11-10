@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Personnel\Http\Requests;
 
-use App\Modules\Access\Enums\Role as RoleCode;
+use App\Modules\Access\Contracts\RoleGuard;
+use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -17,18 +18,20 @@ class PersonRequest extends FormRequest
     public function authorize(): bool
     {
         $actor = $this->user();
-        if ($actor === null || ! $actor->can('managePeople', User::class)) {
+        if (! $actor instanceof User || ! $actor->can('managePeople', User::class)) {
             return false;
         }
 
-        // Someone who got people.manage by a grant must not make or change an admin.
-        if ($actor instanceof User && $actor->roleCode() === RoleCode::Admin) {
-            return true;
-        }
+        // Nobody hands out more access than they hold. So someone who got people.manage by a grant
+        // or a custom role cannot make or change an admin, or anyone in a role above their own.
+        $guard = app(RoleGuard::class);
         $person = $this->route('user');
+        if ($person instanceof User && $person->role !== null && ! $guard->canHandOut($actor, $person->role)) {
+            return false;
+        }
+        $role = is_string($this->input('role')) ? Role::query()->where('code', $this->input('role'))->first() : null;
 
-        return $this->input('role') !== RoleCode::Admin->value
-            && ! ($person instanceof User && $person->roleCode() === RoleCode::Admin);
+        return $role === null || $guard->canHandOut($actor, $role);
     }
 
     protected function prepareForValidation(): void
@@ -54,7 +57,7 @@ class PersonRequest extends FormRequest
             'last_name' => ['required', 'string', 'min:1', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($person instanceof User ? $person->id : null)],
             'contact_number' => ['nullable', 'string', 'regex:/^\+?[0-9][0-9 \-]{6,30}$/'],
-            'role' => ['required', Rule::enum(RoleCode::class)],
+            'role' => ['required', 'string', Rule::exists('roles', 'code')],
             'team' => ['nullable', 'string', Rule::exists('teams', 'code')],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
         ];

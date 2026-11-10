@@ -7,7 +7,6 @@ import { Link, useSearchParams } from 'react-router';
 import {
     listDepartments,
     listPeople,
-    roleLabels,
     listTeams,
     type PeopleFilters,
     type Person,
@@ -23,6 +22,7 @@ import {
     SearchIcon,
     day,
 } from '@/features/personnel/components/ui';
+import { roleOptions } from '@/features/access/api';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 
@@ -65,7 +65,7 @@ function Select({
 }
 
 function roleAndTeam(p: Person): string {
-    return [p.role ? roleLabels[p.role] : null, p.team_name].filter(Boolean).join(' · ');
+    return [p.role_name, p.team_name].filter(Boolean).join(' · ');
 }
 
 function Muted({ children }: { children: ReactNode }) {
@@ -139,6 +139,7 @@ export function PeopleList() {
     });
     const departments = useQuery({ queryKey: ['departments'], queryFn: listDepartments });
     const teams = useQuery({ queryKey: ['teams'], queryFn: listTeams });
+    const roles = useQuery({ queryKey: ['role-options'], queryFn: roleOptions });
 
     const [term, setTerm] = useState(filters.search);
     const [showFilters, setShowFilters] = useState(false);
@@ -300,9 +301,9 @@ export function PeopleList() {
                                 onChange={(v) => set('role', v)}
                             >
                                 <option value="">All roles</option>
-                                {Object.entries(roleLabels).map(([value, text]) => (
-                                    <option key={value} value={value}>
-                                        {text}
+                                {roles.data?.map((r) => (
+                                    <option key={r.code} value={r.code}>
+                                        {r.name}
                                     </option>
                                 ))}
                             </Select>
@@ -490,8 +491,8 @@ export function PeopleList() {
                                                 </td>
                                                 <td className="px-5 py-3 text-sm">
                                                     <p className="truncate text-stone-800">
-                                                        {p.role ? (
-                                                            roleLabels[p.role]
+                                                        {p.role_name ? (
+                                                            p.role_name
                                                         ) : (
                                                             <Muted>No role</Muted>
                                                         )}

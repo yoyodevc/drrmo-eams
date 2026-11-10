@@ -21,9 +21,9 @@ export function MyGrants() {
             <ul className="mt-2 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
                 {current.map((g) => (
                     <li key={g.id} className="px-4 py-3">
-                        <p className="font-semibold text-stone-900">{g.permission.description}</p>
+                        <p className="font-semibold text-stone-900">{g.permission.label}</p>
                         <p className="text-sm text-pretty text-stone-600">
-                            {g.event ? `For ${g.event.title}. ` : ''}
+                            {g.permission.description}. {g.event ? `For ${g.event.title}. ` : ''}
                             {g.status === 'upcoming'
                                 ? `Starts ${stamp(g.starts_at)}, ends ${stamp(g.ends_at)}.`
                                 : `Until ${stamp(g.ends_at)}.`}

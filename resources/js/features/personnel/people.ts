@@ -2,14 +2,8 @@
 import { ApiError, api } from '@/shared/api/client';
 import type { Availability } from '@/features/personnel/volunteers';
 
-export type RoleCode = 'admin' | 'marshal' | 'volunteer' | 'coordinator';
-
-export const roleLabels: Record<RoleCode, string> = {
-    admin: 'Admin',
-    marshal: 'Marshal',
-    volunteer: 'Volunteer',
-    coordinator: 'Coordinator',
-};
+// A role code. The four built-in ones, or a custom role an admin added (Access, Roles screen).
+export type RoleCode = string;
 
 export interface Person {
     id: number;
@@ -19,6 +13,8 @@ export interface Person {
     email: string;
     contact_number: string | null;
     role: RoleCode | null;
+    role_id: number | null;
+    role_name: string | null;
     team: string | null;
     team_name: string | null;
     department: { id: number; name: string } | null;
@@ -133,6 +129,7 @@ export interface MyProfileData {
     email: string;
     contact_number: string | null;
     role: RoleCode | null;
+    role_name: string | null;
     team: string | null;
     team_name: string | null;
     department: string | null;

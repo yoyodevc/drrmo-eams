@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Personnel\Actions;
 
-use App\Modules\Access\Enums\Role as RoleCode;
+use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Models\Department;
 use App\Modules\Personnel\Models\Team;
 use App\Modules\Personnel\Models\User;
@@ -98,7 +98,7 @@ class PeopleCsvReader
      */
     private function check(array $lines): array
     {
-        $roles = array_map(fn (RoleCode $r) => $r->value, RoleCode::cases());
+        $roles = Role::query()->pluck('code')->all();
         $teams = Team::query()->get()->keyBy(fn (Team $t) => Str::lower($t->name));
         $departments = Department::query()->get()->keyBy(fn (Department $d) => Str::lower($d->name));
         $taken = User::query()->whereIn('email', collect($lines)->pluck('email')->map(fn ($e) => Str::lower($e))->all())

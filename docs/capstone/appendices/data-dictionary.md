@@ -8,8 +8,10 @@ Filled in per milestone. See ../../DOCUMENTATION_GUIDE.md. Types are shown as La
 | Column | Type | Notes |
 |---|---|---|
 | id | bigint | primary key |
-| code | string(32) | unique: admin, marshal, volunteer, coordinator |
-| name | string(64) | display name |
+| code | string(32) | unique. Built-in: admin, marshal, volunteer, coordinator. Custom roles get a code made from the name, for example `records_officer` |
+| name | string(64) | display name, unique |
+| description | string(255), nullable | who gets the role |
+| is_system | boolean | true for the four built-in roles, which cannot be renamed or deleted |
 
 ### permissions (Access)
 | Column | Type | Notes |

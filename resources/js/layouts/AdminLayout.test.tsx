@@ -146,3 +146,47 @@ describe('AdminLayout for a granted person', () => {
         expect(screen.queryByText('Events page')).toBeNull();
     });
 });
+
+describe('AdminLayout access control group', () => {
+    it('shows Roles, Permission matrix and Temporary access to an admin', () => {
+        renderAt('/admin');
+        const sidebar = within(screen.getByRole('complementary'));
+
+        expect(sidebar.getByText('Access control')).toBeInTheDocument();
+        expect(sidebar.getByRole('link', { name: 'Roles' })).toHaveAttribute(
+            'href',
+            '/admin/access/roles',
+        );
+        expect(sidebar.getByRole('link', { name: 'Permission matrix' })).toBeInTheDocument();
+        expect(sidebar.getByRole('link', { name: 'Temporary access' })).toBeInTheDocument();
+    });
+
+    it('names a custom role under the person, and hides access control without access.manage', () => {
+        const queryClient = new QueryClient();
+        queryClient.setQueryData(['me'], {
+            ...admin,
+            role: 'records_officer',
+            role_name: 'Records officer',
+            permissions: ['people.view'],
+        });
+        const router = createMemoryRouter(
+            [
+                {
+                    path: '/admin',
+                    element: <AdminLayout />,
+                    children: [{ path: 'people', element: <p>People page</p> }],
+                },
+            ],
+            { initialEntries: ['/admin/people'] },
+        );
+        render(
+            <QueryClientProvider client={queryClient}>
+                <RouterProvider router={router} />
+            </QueryClientProvider>,
+        );
+        const sidebar = within(screen.getByRole('complementary'));
+
+        expect(sidebar.getByText('Records officer')).toBeInTheDocument();
+        expect(sidebar.queryByText('Access control')).toBeNull();
+    });
+});

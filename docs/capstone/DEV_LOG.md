@@ -300,3 +300,15 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: a person who holds `people.manage` only by a grant cannot create, edit or import an admin, so a grant can never be used to climb to admin. `access.manage` is not grantable for the same reason
 - Evidence: tests/Feature/Access/GrantsTest.php, resources/js/layouts/AdminLayout.test.tsx
 
+
+## 2026-11-10 · S2.9 Roles and permission matrix (access)
+- What was built: an Access control group in the admin sidebar with three screens. Roles lists every role with its people count, how much of the admin side it opens, and a Built-in or Custom chip. A role's page has a Permissions tab (switches grouped by module, each with a plain description) and a People tab (who holds it, and Add people to move people in). Permission matrix shows permissions by roles with tick boxes and saves every role at once. Temporary access is the old grants screen
+- What was built: admins can add custom roles, such as Records officer, from the basics or from a copy of another role, rename them, and delete them once nobody holds them. The People screens read role names from the server, so a custom role shows everywhere and can be picked on the person form and in the role filter
+- What was built: on the phone, the Me tab has a My access page with the person's role, what it lets them do in plain words, any extra access with its end time, and a link to the office screens when they have some
+- Decision and why: permissions stay in code (`PermissionMatrix`) because code checks them. Roles and which permissions they hold became data an admin edits. The docs table is now the default matrix for a fresh install, and the seeder keeps an admin's edits when it runs again
+- Decision and why: some cells are locked. Admin holds everything. Manage access, the live map and event site reports stay admin only, so location data keeps the Data Privacy Act rule and others reach it only through a time-limited grant. Duty stays with Marshal and Volunteer because event requirements staff by those roles. Every role keeps the basics (memos, messages, own profile)
+- Decision and why: a person can give someone a role only when they already hold every admin permission in it (`RoleGuard`). This replaces the older "a grant holder cannot touch an admin" check with one general rule, which also covers custom roles. Nobody can change their own role, and moving the last admin out is refused
+- Decision and why: moving people between roles goes through Personnel's `PersonRoleChanger`, because Personnel owns the users table. Each move, each role change and each permission change writes an audit row
+- Decision and why: unsaved changes collect in a save bar that is always in the layout, only hidden, so the page never jumps when it appears. Changed cells are marked amber until saved
+- Evidence: tests/Feature/Access/RolesTest.php, tests/Feature/Access/PermissionMatrixTest.php, resources/js/features/access/pages/PermissionMatrix.test.tsx, resources/js/layouts/AdminLayout.test.tsx
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (results)

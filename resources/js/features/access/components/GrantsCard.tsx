@@ -12,7 +12,7 @@ import {
 } from '@/features/access/api';
 import { listEvents } from '@/features/events/api';
 import { chipBase, LockIcon, PlusIcon, stamp } from '@/features/personnel/components/ui';
-import { errorMessage, fieldErrors, listPeople, roleLabels } from '@/features/personnel/people';
+import { errorMessage, fieldErrors, listPeople } from '@/features/personnel/people';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { TextField } from '@/shared/ui/TextField';
@@ -93,7 +93,7 @@ export function GrantsCard({ personId, firstName }: { personId: number; firstNam
                             <li key={g.id} className="py-3">
                                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                                     <p className="font-semibold text-stone-900">
-                                        {g.permission.description}
+                                        {g.permission.label}
                                     </p>
                                     <span className={`${chipBase} ${chips[g.status].className}`}>
                                         {chips[g.status].label}
@@ -152,7 +152,7 @@ export function GrantsCard({ personId, firstName }: { personId: number; firstNam
                 title="End this access now?"
                 description={
                     ending
-                        ? `${firstName} loses "${ending.permission.description.toLowerCase()}" straight away. The grant stays in the history.`
+                        ? `${firstName} loses "${ending.permission.label}" straight away. The grant stays in the history.`
                         : ''
                 }
                 confirmLabel="End access"
@@ -269,7 +269,7 @@ export function GiveDialog({
                             </option>
                             {candidates.map((p) => (
                                 <option key={p.id} value={p.id}>
-                                    {p.name} ({p.role ? roleLabels[p.role] : 'No role'})
+                                    {p.name} ({p.role_name ?? 'No role'})
                                 </option>
                             ))}
                         </select>
@@ -287,7 +287,7 @@ export function GiveDialog({
                         </option>
                         {options.data?.map((g) => (
                             <option key={g.code} value={g.code}>
-                                {g.description}
+                                {g.label}: {g.description}
                             </option>
                         ))}
                     </select>

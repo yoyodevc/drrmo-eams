@@ -4,7 +4,9 @@ This system handles names, phone numbers, emergency contacts and location. Under
 
 ## 1. Permission matrix
 
-Permissions are seeded codes. Roles have fixed sets. Extra access only comes from a time-limited grant. Almost every admin permission can be granted, so the office can lend a screen such as People or Events to one person for a while. `access.manage` and the permissions that only make sense for a role (`assignments.own`, `location.send_own`, `events.view_department`, `memos.view`, `messages.use`, `profile.own`) cannot be granted.
+Permissions are codes defined in `PermissionMatrix`. Code checks them, so only a developer adds one. Roles are data. Every person has one role. An admin edits which permissions a role holds on the Roles and Permission matrix screens, and can add custom roles (section 1a). Extra access for one person comes from a time-limited grant. Almost every admin permission can be granted, so the office can lend a screen such as People or Events to one person for a while. `access.manage` and the permissions that only make sense for a role (`assignments.own`, `location.send_own`, `events.view_department`, `memos.view`, `messages.use`, `profile.own`) cannot be granted.
+
+The table below is the **default** matrix: what the four built-in roles hold on a fresh install. `PermissionMatrixTest` checks the seeder against it. After install, the live matrix is whatever the admin saved, and every save is audited.
 
 | Code | What it allows | Admin | Marshal | Volunteer | Coordinator | Grantable |
 |---|---|---|---|---|---|---|
@@ -12,7 +14,7 @@ Permissions are seeded codes. Roles have fixed sets. Extra access only comes fro
 | `people.manage` | Create, edit, import people | ✓ | | | |  ✓ |
 | `registrations.review` | Approve or reject sign up requests | ✓ | | | |  ✓ |
 | `volunteers.toggle` | Set volunteer active or inactive | ✓ | | | |  ✓ |
-| `access.manage` | Create and revoke grants | ✓ | | | | |
+| `access.manage` | Edit roles and their permissions, give and revoke grants | ✓ | | | | |
 | `events.view_all` | See every event | ✓ | | | |  ✓ |
 | `events.manage` | Create and edit events and requirements | ✓ | | | |  ✓ |
 | `assignments.manage` | Assign, change, cancel | ✓ | | | |  ✓ |
@@ -36,8 +38,22 @@ Notes:
 - An inactive volunteer can log in, read memos and messages, and see past assignments. They cannot be assigned and cannot start duty or send pings.
 - `reports.submit` grants must have an `event_id`. A grant without one is rejected.
 - Grants for `location.view` must end within 7 days. This covers the "have the option" answer: the admin can give, for example, the ERT lead map access for one event day.
-- A person who holds `people.manage` only through a grant cannot create or edit an admin, or import one. Only an admin can.
+- A person who holds `people.manage` through a grant or a custom role cannot create, edit or import an admin. Section 1a has the general rule.
 - Admin has every permission through the role. There is no "super admin bypass" in code. The admin role simply has all codes, so the audit and policy paths are the same for everyone.
+
+### 1a. Roles and the locks
+
+- **Built-in roles:** Admin, Marshal, Volunteer and Coordinator. They cannot be renamed or deleted, because code relies on them. Event requirements staff by Marshal and Volunteer.
+- **Custom roles:** an admin adds one (for example "Records officer"), starting from the basics or from a copy of another role, then switches its permissions on. A custom role that holds any admin permission lands on the admin side after sign in. A custom role can be deleted once nobody holds it.
+- **Locked cells.** Some cells never change, on any screen and in the API:
+  - Admin always holds every permission.
+  - `access.manage`, `location.view` and `reports.submit` belong to Admin only. Others reach the map or event reports only through a grant, which keeps location data admin only (section 2).
+  - `assignments.own` and `location.send_own` belong to Marshal and Volunteer only. A custom role cannot go on duty.
+  - `memos.view`, `messages.use` and `profile.own` belong to every role, so nobody loses the basics.
+- **No escalation.** A person can give someone a role, or change the role of someone, only when they already hold every admin permission in that role. So a person with `people.manage` from a grant or a custom role can add volunteers but cannot create, edit or import an admin, or anyone in a role above their own. Only Admin holds `access.manage`, so only an admin edits roles or moves people between them.
+- **Nobody changes their own role**, so an admin cannot lock themselves out. Moving people out of Admin is refused if no active admin would remain.
+- **Audit:** `role.created`, `role.updated`, `role.deleted`, `role.permissions_changed` (with the added and removed codes) and `person.role_changed` (with before and after).
+- **Seeder:** running it again on deploy adds new permissions to the built-in roles that get them by default, and reapplies the locks. It never undoes an admin's edits or removes a custom role.
 
 Scoping rule: every list query is filtered to the user's own rows unless the user has the matching `*.view_all` style permission. Policies check both the permission and ownership.
 
@@ -50,7 +66,7 @@ Scoping rule: every list query is filtered to the user's own rows unless the use
 | Legitimate purpose | Location is used only to coordinate safety and response during an assigned shift. Not for attendance discipline or performance rating. Written in the notice. | Policy text, needs DRRMO sign-off |
 | Proportionality, collect only what is needed | No birthdays, addresses, IDs or photos of people. Pings only while on duty. No tracking outside shifts. | Planned |
 | Retention | Pings: 10 working days. Site report photos: 1 year (assumption). Audit log: 3 years (assumption). Notifications log: 6 months (assumption). Inactive accounts: reviewed yearly. | Needs owner confirmation for non-ping items |
-| Access control | Roles, policies, grants, scoped queries, admin-only location | Planned (M2) |
+| Access control | Roles with an editable permission matrix, locked cells, a no escalation rule, policies, grants, scoped queries, admin-only location | Done (M2) |
 | Audit trail | See section 4 | Planned (M0 stub, M6 viewer) |
 | Right to access | `GET /api/me/data-export` gives a person their own data as JSON | Planned (M6) |
 | Right to correct | People edit their own contact number and emergency contacts. Other corrections through the admin. | Planned (M2) |
@@ -80,6 +96,7 @@ Write an AUDIT_LOG row for:
 
 - Assignment created, changed, cancelled, status override, headcount override (with reason)
 - Permission grant created or revoked
+- Role created, renamed or deleted, role permissions changed, a person moved to another role
 - Volunteer status change
 - Person created, role changed, account disabled
 - Any view of location data: map load, trail view (one row per request, not per pin)

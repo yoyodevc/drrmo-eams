@@ -3,9 +3,8 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { hasAdminAccess } from '@/app/adminAccess';
-import { useMe, type Me } from '@/app/auth';
+import { useMe } from '@/app/auth';
 import { SignOutButton } from '@/app/SignOutButton';
-import { MyGrants } from '@/features/access/components/MyGrants';
 
 function Icon({ children, className = 'size-5' }: { children: ReactNode; className?: string }) {
     return (
@@ -23,13 +22,6 @@ function Icon({ children, className = 'size-5' }: { children: ReactNode; classNa
         </svg>
     );
 }
-
-const roles: Record<NonNullable<Me['role']>, string> = {
-    admin: 'Admin',
-    marshal: 'Marshal',
-    volunteer: 'Volunteer',
-    coordinator: 'Coordinator',
-};
 
 function Row({
     to,
@@ -84,7 +76,7 @@ function Skeleton() {
 export function MyProfile() {
     const me = useMe().data;
     const active = me?.status !== 'inactive';
-    const about = me ? [me.role ? roles[me.role] : null, me.team_name ?? null] : [];
+    const about = me ? [me.role_name, me.team_name ?? null] : [];
 
     return (
         <div className="mx-auto max-w-2xl">
@@ -161,6 +153,28 @@ export function MyProfile() {
                         }
                     />
                     <Row
+                        to="/me/access"
+                        title="My access"
+                        hint={
+                            me?.role_name
+                                ? `What you can do as ${me.role_name}.`
+                                : 'What your account can do.'
+                        }
+                        icon={
+                            <Icon>
+                                <rect x="4.5" y="10.5" width="15" height="10" rx="2" />
+                                <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5M12 14.5v2" />
+                            </Icon>
+                        }
+                        aside={
+                            me?.grants && me.grants.length > 0 ? (
+                                <span className="inline-flex shrink-0 items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-800 ring-1 ring-sky-200 ring-inset">
+                                    {me.grants.length} extra
+                                </span>
+                            ) : undefined
+                        }
+                    />
+                    <Row
                         to="/privacy"
                         title="Privacy notice"
                         hint="What DRRMO keeps about you and why."
@@ -173,8 +187,6 @@ export function MyProfile() {
                     />
                 </ul>
             </section>
-
-            <MyGrants />
 
             {me && hasAdminAccess(me) && (
                 <ul className="mt-4 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">

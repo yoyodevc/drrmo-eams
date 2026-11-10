@@ -57,8 +57,10 @@ One tap starts one sign out. The label changes to "Signing out..." and the butto
 | A-Live map | Admin, granted users | Map takes 70% width. Right panel: event filter, list of on-duty people with last seen time, "No ping 5+ min" and "No location" groups. Layer toggle Satellite and Streets. "Approximate, not real time" label. | Full-screen map, list in a bottom sheet |
 | A-Report feed | Admin, granted users | Filters on top (event, location, date). Newest first list of report cards with summary, time, author, photo thumbnail, late or overdue badge. | Same cards, one column |
 | A-Memo manager | Admin | Table of memos with category and date. Editor: title, category, body or file upload. | List only |
-| A-Grants manager | Admin | Table of grants (active, upcoming, ended) with filters. New grant form: person, permission, event (optional or required), start, end, reason. Revoke button. | List only |
-| A-Permission matrix | Admin | Read-only grid of permissions by role, same as SECURITY_AND_PRIVACY.md. | Not optimized |
+| A-Roles | Admin | Access control group in the sidebar. Table of roles: name and description, people count, a bar for how many admin permissions it holds, Built-in or Custom chip. Buttons: Permission matrix, New role (name, description, start from the basics or a copy). | Tappable list |
+| A-Role detail | Admin | Header with name, chips and description. Edit details and Delete for custom roles. Permissions tab: switches grouped by module, each with a plain description. Locked switches show a lock and why. Turn all on per group. A sticky save bar with the change count. People tab: who holds the role, and an Add people dialog that moves people in. | Same, one column |
+| A-Permission matrix | Admin | Permissions (rows, grouped) by roles (columns) with tick boxes. Find a permission box and a legend. Changed boxes turn amber until saved. Locked boxes show a lock and the reason on hover. One sticky save bar saves every role at once. | Scrolls sideways with the permission column pinned |
+| A-Temporary access | Admin | Table of grants with Active, Upcoming, Ended and All tabs. Give access dialog: person, permission, event (optional or required), start, end, reason. End access button. | Table scrolls sideways |
 | A-Audit log | Admin | Table with filters (actor, action, entity, date). Row expands to show before and after JSON. | List only |
 | A-Notification log | Admin | Table: recipient, type, status, attempts, time, error. Retry button on failed rows. Daily send count against the provider limit. | List only |
 | A-DRRMO inbox | Admin | Two panes: conversations on the left, messages on the right. | One pane at a time |
@@ -84,6 +86,7 @@ One tap starts one sign out. The label changes to "Signing out..." and the butto
 | M-Memo search | Everyone | Search box at top, category chips, results list with title, category, date, file size. | Results in two columns |
 | M-Memo viewer | Everyone | Title, date, body text, or Open file button. | Same, wider |
 | M-Messages | Everyone | Conversation with DRRMO, newest at bottom, text box and Send button. Simple, no attachments in v1. | Two panes |
+| M-My access | Everyone | Your role with its description, what it lets you do (Everyday and Office screens), any extra access with its end time, and a link to the office screens when the person has some. Read only. | Wider column |
 | M-My profile | Everyone | Name, role, team, department (read only), contact number (editable), emergency contacts list with add, edit, delete, "Download my data", "Stop location consent", Logout. | Wider column |
 
 ## States every screen needs

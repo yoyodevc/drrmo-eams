@@ -53,7 +53,9 @@ class GrantController
             if ($def['grantable']) {
                 $data[] = [
                     'code' => $code,
+                    'label' => $def['label'],
                     'description' => $def['description'],
+                    'group' => $def['group'],
                     'needs_event' => $code === 'reports.submit',
                     'max_days' => $code === 'location.view' ? StoreGrantRequest::LOCATION_MAX_DAYS : null,
                 ];

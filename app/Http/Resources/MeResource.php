@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\Modules\Access\Enums\Role as RoleCode;
+use App\Modules\Access\Support\PermissionMatrix;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\ConsentChecker;
 use App\Modules\Records\Enums\ConsentPurpose;
@@ -25,7 +25,8 @@ class MeResource extends JsonResource
         $this->resource->loadMissing('role.permissions', 'activeGrants.event');
         $grants = $this->resource->activeGrants->filter(fn ($g) => $g->permission->grantable);
         $consent = app(ConsentChecker::class);
-        $role = $this->resource->roleCode();
+        $role = $this->resource->role;
+        $roleCodes = $role?->permissions->pluck('code') ?? collect();
 
         return [
             'id' => $this->id,
@@ -33,12 +34,13 @@ class MeResource extends JsonResource
             'last_name' => $this->last_name,
             'name' => $this->name,
             'email' => $this->email,
-            'role' => $role?->value,
+            'role' => $role?->code,
+            'role_name' => $role?->name,
             'team' => $this->team,
             'team_name' => $this->teamName(),
             'status' => $this->status->value,
             // Role permissions plus grants that are in force and not tied to one event.
-            'permissions' => $this->role->permissions->pluck('code')
+            'permissions' => $roleCodes
                 ->merge($grants->whereNull('event_id')->map(fn ($g) => $g->permission->code))
                 ->unique()->sort()->values()->all(),
             // Every grant in force now, so the app can show event scoped access and when it ends.
@@ -54,8 +56,10 @@ class MeResource extends JsonResource
                 'privacy_notice_outdated' => $consent->outdated($this->resource, ConsentPurpose::PrivacyNotice),
                 'location_tracking' => $consent->has($this->resource, ConsentPurpose::LocationTracking),
             ],
-            // Admins land on the desktop area, everyone else on the phone area.
-            'home' => $role === RoleCode::Admin ? '/admin' : '/me',
+            // Admins, and custom office roles that open an admin screen, land on the desktop area.
+            // Built-in field and coordinator roles land on the phone area, even with extra access.
+            'home' => $role !== null && ($role->isAdmin() || (! $role->is_system && $roleCodes->intersect(PermissionMatrix::adminCodes())->isNotEmpty()))
+                ? '/admin' : '/me',
         ];
     }
 }

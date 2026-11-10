@@ -40,6 +40,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S2.6 | Permission check with grants | Done |
 | S2.7 | Grants manager | Done |
 | S2.8 | Coordinator event notices | Done |
+| S2.9 | Roles and permission matrix | Done |
 | S3.1 | Assignment conflict checks | Done |
 | S3.2 | Acknowledge | Done |
 | S3.3 | Edit and cancel assignments | Done |
@@ -155,6 +156,12 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 
 **S2.8 Coordinator event notices** `events` `mobile` **S**
 - Coordinators see published events for their department or campus wide, read only.
+
+**S2.9 Roles and permission matrix** `access` `both` **L**
+- Access control group in the admin sidebar: Roles, Permission matrix, Temporary access.
+- Admin adds custom roles, edits role permissions with switches or the matrix, and moves people between roles.
+- Locked cells (admin only, duty roles only, everyone) cannot change. Nobody hands out a role with more access than they hold.
+- Every change is audited. People see their own role and permissions on My access.
 
 ## M3 Assignments and notifications
 

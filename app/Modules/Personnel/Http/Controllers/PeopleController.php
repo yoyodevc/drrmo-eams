@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Personnel\Http\Controllers;
 
-use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Actions\PersonInviter;
 use App\Modules\Personnel\Enums\AccountStatus;
@@ -34,7 +33,7 @@ class PeopleController
             ->where('account_status', AccountStatus::Active->value);
 
         if (($role = $this->filter($request, 'role')) !== null) {
-            abort_if(RoleCode::tryFrom($role) === null, 422, 'Unknown role filter.');
+            abort_unless(Role::query()->where('code', $role)->exists(), 422, 'Unknown role filter.');
             $query->whereHas('role', fn ($q) => $q->where('code', $role));
         }
         if (($team = $this->filter($request, 'team')) !== null) {
@@ -99,10 +98,8 @@ class PeopleController
     public function update(PersonRequest $request, User $user, AuditLogger $audit): JsonResponse
     {
         $data = $request->validated();
-        $newRole = RoleCode::from($data['role']);
-
-        // An admin cannot demote themselves, so the office never ends up with no admin.
-        abort_if($user->id === $request->user()?->id && $newRole !== RoleCode::Admin, 422, 'You cannot change your own role.');
+        // Nobody changes their own role, so an admin cannot lock themselves or the office out.
+        abort_if($user->id === $request->user()?->id && $data['role'] !== $user->role?->code, 422, 'You cannot change your own role.');
 
         $before = $this->snapshot($user);
 
@@ -152,7 +149,7 @@ class PeopleController
             'last_name' => $user->last_name,
             'email' => $user->email,
             'contact_number' => $user->contact_number,
-            'role' => $user->load('role')->roleCode()?->value,
+            'role' => $user->load('role')->role?->code,
             'team' => $user->team,
             'department_id' => $user->department_id,
         ];
@@ -168,7 +165,9 @@ class PeopleController
             'name' => $user->name,
             'email' => $user->email,
             'contact_number' => $user->contact_number,
-            'role' => $user->roleCode()?->value,
+            'role' => $user->role?->code,
+            'role_id' => $user->role_id,
+            'role_name' => $user->role?->name,
             'team' => $user->team,
             'team_name' => $user->teamName(),
             'department' => $user->department ? ['id' => $user->department->id, 'name' => $user->department->name] : null,

@@ -16,7 +16,9 @@ export interface Me {
     // First and last name together, for display.
     name: string;
     email: string;
-    role: 'admin' | 'marshal' | 'volunteer' | 'coordinator' | null;
+    // The role code: admin, marshal, volunteer, coordinator, or a custom role.
+    role: string | null;
+    role_name: string | null;
     team: string | null;
     team_name?: string | null;
     status: 'active' | 'inactive';
