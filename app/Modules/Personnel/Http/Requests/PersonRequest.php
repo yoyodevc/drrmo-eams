@@ -16,7 +16,19 @@ class PersonRequest extends FormRequest
     // The policy runs before validation, so a person without access gets 403.
     public function authorize(): bool
     {
-        return $this->user()?->can('managePeople', User::class) ?? false;
+        $actor = $this->user();
+        if ($actor === null || ! $actor->can('managePeople', User::class)) {
+            return false;
+        }
+
+        // Someone who got people.manage by a grant must not make or change an admin.
+        if ($actor instanceof User && $actor->roleCode() === RoleCode::Admin) {
+            return true;
+        }
+        $person = $this->route('user');
+
+        return $this->input('role') !== RoleCode::Admin->value
+            && ! ($person instanceof User && $person->roleCode() === RoleCode::Admin);
     }
 
     protected function prepareForValidation(): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Personnel\Http\Controllers;
 
+use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Actions\PeopleCsvReader;
 use App\Modules\Personnel\Actions\PersonInviter;
@@ -47,6 +48,10 @@ class PeopleImportController
         }
 
         $rows = $result['rows'];
+
+        /** @var User $actor */
+        $actor = $request->user();
+        abort_if($actor->roleCode() !== RoleCode::Admin && collect($rows)->contains(fn ($row) => ($row['role'] ?? null) === RoleCode::Admin->value), 403, 'Only an admin can import admins.');
 
         if ($request->boolean('check')) {
             return response()->json(['count' => count($rows), 'imported' => false]);

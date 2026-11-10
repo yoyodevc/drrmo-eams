@@ -17,3 +17,7 @@ Admin and Director share the `admin` role for now. To split them, add a `Directo
 - `GET /api/me/grants`: the signed-in person's own grants.
 - Rules on create: `reports.submit` needs an event, `location.view` lasts 7 days at most, no start in the past, no overlapping grant for the same permission, not for a permission the role already has.
 - Create and revoke write `grant.created` and `grant.revoked` audit rows and fire `PermissionGranted` and `PermissionRevoked`.
+- `GET /api/grantable-permissions` lists what can be granted. Nearly every admin permission is grantable. `access.manage` and role-only permissions are not.
+- A person who holds `people.manage` only through a grant cannot create, edit or import an admin (checked in `PersonRequest` and the CSV import).
+- The React sidebar and routes read `resources/js/app/adminAccess.ts`, which maps each admin screen to its permission.
+

@@ -295,3 +295,8 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: only permissions marked grantable can be granted, and the checker ignores a grant row for any other permission, so a bad row can never open admin features
 - Evidence: tests/Feature/Access/PermissionCheckerTest.php, tests/Feature/Access/GrantsTest.php
 - Paper: Chapter 3 (system design, data privacy)
+- What was built (follow up): the Access item in the System sidebar group now opens the Grants manager. It lists every grant with Active, Upcoming, Ended and All tabs, a New grant dialog with a person picker, and End access. Nearly every admin permission can now be granted (all except `access.manage` and the ones that only make sense for a role), so the office can lend a screen such as People or Events for a while
+- What was built (follow up): the admin sidebar, the route check and the landing page read one permission list (`app/adminAccess.ts`). A marshal granted `people.view` sees only People and Teams, plus a My duties link back, and opens the admin area from an Admin screens row on the Me tab. A screen without its permission shows a short no access message
+- Decision and why: a person who holds `people.manage` only by a grant cannot create, edit or import an admin, so a grant can never be used to climb to admin. `access.manage` is not grantable for the same reason
+- Evidence: tests/Feature/Access/GrantsTest.php, resources/js/layouts/AdminLayout.test.tsx
+

@@ -4,18 +4,18 @@ This system handles names, phone numbers, emergency contacts and location. Under
 
 ## 1. Permission matrix
 
-Permissions are seeded codes. Roles have fixed sets. Extra access only comes from a time-limited grant.
+Permissions are seeded codes. Roles have fixed sets. Extra access only comes from a time-limited grant. Almost every admin permission can be granted, so the office can lend a screen such as People or Events to one person for a while. `access.manage` and the permissions that only make sense for a role (`assignments.own`, `location.send_own`, `events.view_department`, `memos.view`, `messages.use`, `profile.own`) cannot be granted.
 
 | Code | What it allows | Admin | Marshal | Volunteer | Coordinator | Grantable |
 |---|---|---|---|---|---|---|
-| `people.view` | List and view all people | ✓ | | | | |
-| `people.manage` | Create, edit, import people | ✓ | | | | |
-| `registrations.review` | Approve or reject sign up requests | ✓ | | | | |
-| `volunteers.toggle` | Set volunteer active or inactive | ✓ | | | | |
+| `people.view` | List and view all people | ✓ | | | |  ✓ |
+| `people.manage` | Create, edit, import people | ✓ | | | |  ✓ |
+| `registrations.review` | Approve or reject sign up requests | ✓ | | | |  ✓ |
+| `volunteers.toggle` | Set volunteer active or inactive | ✓ | | | |  ✓ |
 | `access.manage` | Create and revoke grants | ✓ | | | | |
-| `events.view_all` | See every event | ✓ | | | | |
-| `events.manage` | Create and edit events and requirements | ✓ | | | | |
-| `assignments.manage` | Assign, change, cancel | ✓ | | | | |
+| `events.view_all` | See every event | ✓ | | | |  ✓ |
+| `events.manage` | Create and edit events and requirements | ✓ | | | |  ✓ |
+| `assignments.manage` | Assign, change, cancel | ✓ | | | |  ✓ |
 | `events.view_department` | See event notices for own department or campus wide | ✓ | | | ✓ | |
 | `assignments.own` | See and acknowledge own assignments, start and end own duty | | ✓ | ✓ (only while active) | | |
 | `location.send_own` | Send own pings while on duty | | ✓ | ✓ | | |
@@ -23,12 +23,12 @@ Permissions are seeded codes. Roles have fixed sets. Extra access only comes fro
 | `reports.submit` | Submit site reports for one event | ✓ | | | | ✓ (event scoped, required) |
 | `reports.view` | Read the site report feed | ✓ | | | | ✓ |
 | `memos.view` | Search and read memos | ✓ | ✓ | ✓ | ✓ | |
-| `memos.manage` | Post, edit, delete memos | ✓ | | | | |
+| `memos.manage` | Post, edit, delete memos | ✓ | | | |  ✓ |
 | `messages.use` | Send and read own messages | ✓ | ✓ | ✓ | ✓ | |
-| `messages.office_inbox` | Read and answer the DRRMO inbox | ✓ | | | | |
-| `notifications.view` | Read the notification log | ✓ | | | | |
-| `audit.view` | Read the audit log | ✓ | | | | |
-| `data.export` | Export lists (CSV) | ✓ | | | | |
+| `messages.office_inbox` | Read and answer the DRRMO inbox | ✓ | | | |  ✓ |
+| `notifications.view` | Read the notification log | ✓ | | | |  ✓ |
+| `audit.view` | Read the audit log | ✓ | | | |  ✓ |
+| `data.export` | Export lists (CSV) | ✓ | | | |  ✓ |
 | `profile.own` | Read own profile, edit own contact number and emergency contacts, export own data | ✓ | ✓ | ✓ | ✓ | |
 
 Notes:
@@ -36,6 +36,7 @@ Notes:
 - An inactive volunteer can log in, read memos and messages, and see past assignments. They cannot be assigned and cannot start duty or send pings.
 - `reports.submit` grants must have an `event_id`. A grant without one is rejected.
 - Grants for `location.view` must end within 7 days. This covers the "have the option" answer: the admin can give, for example, the ERT lead map access for one event day.
+- A person who holds `people.manage` only through a grant cannot create or edit an admin, or import one. Only an admin can.
 - Admin has every permission through the role. There is no "super admin bypass" in code. The admin role simply has all codes, so the audit and policy paths are the same for everyone.
 
 Scoping rule: every list query is filtered to the user's own rows unless the user has the matching `*.view_all` style permission. Policies check both the permission and ownership.

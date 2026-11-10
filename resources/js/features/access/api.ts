@@ -27,19 +27,24 @@ export interface NewGrant {
     reason: string;
 }
 
-// The permissions an admin can give. Plain words for the screens, codes for the server.
-export const grantable = [
-    { code: 'location.view', label: 'See the live map', needsEvent: false, maxDays: 7 },
-    { code: 'reports.submit', label: 'Submit site reports', needsEvent: true, maxDays: null },
-    { code: 'reports.view', label: 'Read site reports', needsEvent: false, maxDays: null },
-] as const;
-
-export function permissionLabel(code: string): string {
-    return grantable.find((g) => g.code === code)?.label ?? code;
+export interface GrantOption {
+    code: string;
+    // Plain words from the permission matrix, for example "List and view all people".
+    description: string;
+    needs_event: boolean;
+    max_days: number | null;
 }
 
-export async function listGrants(userId: number): Promise<Grant[]> {
-    const body = await api<{ data: Grant[] }>(`/api/grants?user=${userId}`);
+export async function grantOptions(): Promise<GrantOption[]> {
+    const body = await api<{ data: GrantOption[] }>('/api/grantable-permissions');
+    return body.data;
+}
+
+// One person's grants, or every grant when no person is given.
+export async function listGrants(userId?: number): Promise<Grant[]> {
+    const body = await api<{ data: Grant[] }>(
+        userId ? `/api/grants?user=${userId}` : '/api/grants',
+    );
     return body.data;
 }
 

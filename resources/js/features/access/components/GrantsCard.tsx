@@ -4,16 +4,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
     createGrant,
-    grantable,
+    grantOptions,
     listGrants,
-    permissionLabel,
     revokeGrant,
     type Grant,
     type GrantStatus,
 } from '@/features/access/api';
 import { listEvents } from '@/features/events/api';
 import { chipBase, LockIcon, PlusIcon, stamp } from '@/features/personnel/components/ui';
-import { errorMessage, fieldErrors } from '@/features/personnel/people';
+import { errorMessage, fieldErrors, listPeople, roleLabels } from '@/features/personnel/people';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { TextField } from '@/shared/ui/TextField';
@@ -94,7 +93,7 @@ export function GrantsCard({ personId, firstName }: { personId: number; firstNam
                             <li key={g.id} className="py-3">
                                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                                     <p className="font-semibold text-stone-900">
-                                        {permissionLabel(g.permission.code)}
+                                        {g.permission.description}
                                     </p>
                                     <span className={`${chipBase} ${chips[g.status].className}`}>
                                         {chips[g.status].label}
@@ -153,7 +152,7 @@ export function GrantsCard({ personId, firstName }: { personId: number; firstNam
                 title="End this access now?"
                 description={
                     ending
-                        ? `${firstName} loses "${permissionLabel(ending.permission.code).toLowerCase()}" straight away. The grant stays in the history.`
+                        ? `${firstName} loses "${ending.permission.description.toLowerCase()}" straight away. The grant stays in the history.`
                         : ''
                 }
                 confirmLabel="End access"
@@ -171,7 +170,7 @@ export function GrantsCard({ personId, firstName }: { personId: number; firstNam
     );
 }
 
-function GiveDialog({
+export function GiveDialog({
     open,
     personId,
     firstName,
@@ -179,23 +178,35 @@ function GiveDialog({
     onSaved,
 }: {
     open: boolean;
-    personId: number;
-    firstName: string;
+    // Left out on the Access page, where the admin picks the person in the dialog.
+    personId?: number;
+    firstName?: string;
     onClose: () => void;
     onSaved: () => Promise<void>;
 }) {
-    const [code, setCode] = useState<string>(grantable[0].code);
+    const [code, setCode] = useState('');
     const [eventId, setEventId] = useState('');
     const [starts, setStarts] = useState(() => toLocalInput(new Date()));
     const [ends, setEnds] = useState(() => toLocalInput(new Date(Date.now() + 86_400_000)));
     const [reason, setReason] = useState('');
+    const [search, setSearch] = useState('');
+    const [picked, setPicked] = useState('');
+    const needsPerson = personId === undefined;
 
-    const choice = grantable.find((g) => g.code === code) ?? grantable[0];
+    const options = useQuery({ queryKey: ['grant-options'], queryFn: grantOptions, enabled: open });
+    const choice = options.data?.find((g) => g.code === code) ?? null;
+    const people = useQuery({
+        queryKey: ['people', 'grant-picker', search],
+        queryFn: () =>
+            listPeople({ search, role: '', team: '', status: '', department: '', page: 1 }),
+        enabled: open && needsPerson,
+    });
+    const candidates = people.data?.data.filter((p) => p.role !== 'admin') ?? [];
     const events = useQuery({ queryKey: ['events', 'all'], queryFn: listEvents, enabled: open });
     const save = useMutation({
         mutationFn: () =>
             createGrant({
-                user_id: personId,
+                user_id: personId ?? Number(picked),
                 permission: code,
                 event_id: eventId ? Number(eventId) : null,
                 starts_at: new Date(starts).toISOString(),
@@ -206,16 +217,18 @@ function GiveDialog({
     });
     const errors = fieldErrors(save.error);
     const ready =
+        (!needsPerson || picked !== '') &&
         reason.trim().length >= 3 &&
         starts !== '' &&
         ends !== '' &&
-        (!choice.needsEvent || eventId !== '');
+        choice !== null &&
+        (!choice.needs_event || eventId !== '');
     const general = save.isError && Object.keys(errors).length === 0;
 
     return (
         <ConfirmDialog
             open={open}
-            title={`Give ${firstName} extra access`}
+            title={firstName ? `Give ${firstName} extra access` : 'Give extra access'}
             description="Pick what they can do and for how long. It ends by itself."
             confirmLabel="Give access"
             loadingLabel="Saving..."
@@ -232,6 +245,36 @@ function GiveDialog({
                     if (ready && !save.isPending) save.mutate();
                 }}
             >
+                {needsPerson && (
+                    <div className="space-y-2">
+                        <TextField
+                            label="Person"
+                            type="search"
+                            placeholder="Search by name or email"
+                            value={search}
+                            onChange={(e) => {
+                                setSearch(e.target.value);
+                                setPicked('');
+                            }}
+                            error={errors.user_id}
+                        />
+                        <select
+                            aria-label="Choose a person"
+                            className={selectClass}
+                            value={picked}
+                            onChange={(e) => setPicked(e.target.value)}
+                        >
+                            <option value="">
+                                {people.isPending ? 'Loading...' : 'Choose a person'}
+                            </option>
+                            {candidates.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.name} ({p.role ? roleLabels[p.role] : 'No role'})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
                 <label className="block text-sm font-medium text-stone-800">
                     <span className="mb-1.5 block">Access</span>
                     <select
@@ -239,9 +282,12 @@ function GiveDialog({
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
                     >
-                        {grantable.map((g) => (
+                        <option value="">
+                            {options.isPending ? 'Loading...' : 'Choose what to allow'}
+                        </option>
+                        {options.data?.map((g) => (
                             <option key={g.code} value={g.code}>
-                                {g.label}
+                                {g.description}
                             </option>
                         ))}
                     </select>
@@ -253,7 +299,7 @@ function GiveDialog({
                 </label>
                 <label className="block text-sm font-medium text-stone-800">
                     <span className="mb-1.5 block">
-                        Event{choice.needsEvent ? '' : ' (optional)'}
+                        Event{choice?.needs_event ? '' : ' (optional)'}
                     </span>
                     <select
                         className={selectClass}
@@ -261,7 +307,7 @@ function GiveDialog({
                         onChange={(e) => setEventId(e.target.value)}
                     >
                         <option value="">
-                            {choice.needsEvent ? 'Choose an event' : 'Any event'}
+                            {choice?.needs_event ? 'Choose an event' : 'Any event'}
                         </option>
                         {events.data?.map((ev) => (
                             <option key={ev.id} value={ev.id}>
@@ -291,7 +337,7 @@ function GiveDialog({
                         min={starts}
                         onChange={(e) => setEnds(e.target.value)}
                         error={errors.ends_at}
-                        hint={choice.maxDays ? `At most ${choice.maxDays} days.` : undefined}
+                        hint={choice?.max_days ? `At most ${choice.max_days} days.` : undefined}
                         required
                     />
                 </div>

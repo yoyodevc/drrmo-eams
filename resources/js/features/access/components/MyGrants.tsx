@@ -1,7 +1,7 @@
 // "Extra access" on the Me page (S2.6). Shows the time-limited access the office gave this person
 // and when it ends. Hidden when there is none, so most people never see it.
 import { useQuery } from '@tanstack/react-query';
-import { myGrants, permissionLabel } from '@/features/access/api';
+import { myGrants } from '@/features/access/api';
 import { stamp } from '@/features/personnel/components/ui';
 
 export function MyGrants() {
@@ -21,9 +21,7 @@ export function MyGrants() {
             <ul className="mt-2 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
                 {current.map((g) => (
                     <li key={g.id} className="px-4 py-3">
-                        <p className="font-semibold text-stone-900">
-                            {permissionLabel(g.permission.code)}
-                        </p>
+                        <p className="font-semibold text-stone-900">{g.permission.description}</p>
                         <p className="text-sm text-pretty text-stone-600">
                             {g.event ? `For ${g.event.title}. ` : ''}
                             {g.status === 'upcoming'

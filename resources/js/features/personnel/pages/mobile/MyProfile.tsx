@@ -2,6 +2,7 @@
 // Mobile first at 360 px: one column, hairline list rows like Alerts. Emergency contacts (S2.3) go here too.
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { hasAdminAccess } from '@/app/adminAccess';
 import { useMe, type Me } from '@/app/auth';
 import { SignOutButton } from '@/app/SignOutButton';
 import { MyGrants } from '@/features/access/components/MyGrants';
@@ -174,6 +175,24 @@ export function MyProfile() {
             </section>
 
             <MyGrants />
+
+            {me && hasAdminAccess(me) && (
+                <ul className="mt-4 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
+                    <Row
+                        to="/admin"
+                        title="Admin screens"
+                        hint="The office screens your extra access opens."
+                        icon={
+                            <Icon>
+                                <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+                                <rect x="13.5" y="3.5" width="7" height="4.5" rx="1.5" />
+                                <rect x="13.5" y="11" width="7" height="9.5" rx="1.5" />
+                                <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+                            </Icon>
+                        }
+                    />
+                </ul>
+            )}
 
             <SignOutButton className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control border border-stone-300 bg-white px-5 text-base font-semibold text-stone-800 transition-colors hover:bg-stone-50 active:bg-stone-100">
                 <Icon>

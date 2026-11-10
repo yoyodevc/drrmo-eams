@@ -100,7 +100,7 @@ it('does not let a grant of one permission open another', function () {
 
 it('ignores a grant row for a permission that is not grantable', function () {
     $marshal = User::factory()->role(RoleCode::Marshal)->create();
-    grantFor($marshal, 'people.manage');
+    grantFor($marshal, 'access.manage');
 
-    expect(allows($marshal, 'people.manage'))->toBeFalse();
+    expect(allows($marshal, 'access.manage'))->toBeFalse();
 });

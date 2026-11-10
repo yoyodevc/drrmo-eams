@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router';
+import { GrantsManager } from '@/features/access/pages/GrantsManager';
 import { adminEventRoutes, dashboardRoute, myDutiesRoute } from '@/features/events/routes';
 import { adminNotificationRoutes, myNotificationRoutes } from '@/features/notifications/routes';
 import { AdminLayout } from '@/layouts/AdminLayout';
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
                     { path: 'people/:id', element: <PersonProfile /> },
                     { path: 'people/:id/edit', element: <PersonForm /> },
                     { path: 'teams', element: <TeamsAndDepartments /> },
+                    { path: 'access', element: <GrantsManager /> },
                     // Volunteer status now lives on the People list and each profile.
                     {
                         path: 'volunteers',

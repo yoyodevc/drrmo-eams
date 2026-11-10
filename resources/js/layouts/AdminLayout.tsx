@@ -1,5 +1,6 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
+import { canOpen, permissionFor } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -28,6 +29,22 @@ interface Item {
     // Dashboard is the index route, so it should only light up on /admin itself.
     end?: boolean;
 }
+
+// Shown to people who reached the admin area through a grant, so they can go back to their duties.
+const backGroup: { label: string; items: Item[] } = {
+    label: 'Me',
+    items: [
+        {
+            to: '/me',
+            label: 'My duties',
+            icon: (
+                <NavIcon>
+                    <path d="M15 5 8 12l7 7" />
+                </NavIcon>
+            ),
+        },
+    ],
+};
 
 const groups: { label: string; items: Item[] }[] = [
     {
@@ -192,10 +209,23 @@ function Tip({ children, always = false }: { children: ReactNode; always?: boole
 // rail: the sidebar, which turns into an icon rail below 1024 px. Otherwise the phone menu.
 function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: () => void }) {
     const id = useId();
+    const me = useMe().data;
+    // Admins see everything. Anyone else sees only the screens their grants open, plus a way back.
+    const visible = (
+        me
+            ? [
+                  ...(me.role === 'admin' ? [] : [backGroup]),
+                  ...groups.map((g) => ({
+                      ...g,
+                      items: g.items.filter((item) => canOpen(me, permissionFor(item.to))),
+                  })),
+              ]
+            : []
+    ).filter((g) => g.items.length > 0);
 
     return (
         <nav aria-label="Admin" className="px-3 py-4">
-            {groups.map((group, index) => (
+            {visible.map((group, index) => (
                 <div key={group.label} className={index > 0 ? 'mt-6' : ''}>
                     {rail && index > 0 && (
                         <hr className="mx-3 mb-4 border-white/10 lg:hidden" aria-hidden="true" />
@@ -308,6 +338,26 @@ function Account({ rail = false }: { rail?: boolean }) {
     );
 }
 
+// Shows the page only when the person holds the permission it needs. The server checks again.
+function Guarded() {
+    const me = useMe().data;
+    const { pathname } = useLocation();
+
+    if (me && !canOpen(me, permissionFor(pathname))) {
+        return (
+            <div className="mx-auto max-w-xl rounded-card bg-white p-8 text-center ring-1 ring-stone-200">
+                <h1 className="text-xl font-semibold text-stone-900">No access to this screen</h1>
+                <p className="mt-2 text-stone-600">
+                    Your account does not have the permission this screen needs. Ask an admin if you
+                    think this is a mistake.
+                </p>
+            </div>
+        );
+    }
+
+    return <Outlet />;
+}
+
 // Desktop first (DESIGN_SYSTEM.md section 7): maroon-900 sidebar plus wide stone-50 content.
 // From 768 to 1023 px the sidebar is an icon rail. Below 768 px it becomes a top bar with a menu.
 export function AdminLayout() {
@@ -390,7 +440,7 @@ export function AdminLayout() {
                 tabIndex={-1}
                 className="min-w-0 flex-1 px-6 py-6 outline-none lg:px-10 lg:py-8"
             >
-                <Outlet />
+                <Guarded />
             </main>
         </div>
     );

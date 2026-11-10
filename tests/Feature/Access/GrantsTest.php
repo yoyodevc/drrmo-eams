@@ -6,12 +6,15 @@ use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Access\Models\Permission;
 use App\Modules\Access\Models\PermissionGrant;
 use App\Modules\Events\Models\Event;
+use App\Modules\Notifications\Contracts\MailSender;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Models\AuditLog;
+use Tests\Support\FakeMailSender;
 
 beforeEach(function () {
     $this->seed();
     $this->withHeaders(['Referer' => 'http://localhost', 'X-Requested-With' => 'XMLHttpRequest']);
+    app()->instance(MailSender::class, new FakeMailSender);
 });
 
 /** @param  array<string, mixed>  $over */
@@ -96,7 +99,7 @@ it('rejects bad input', function (string $case) {
     [$over, $field] = match ($case) {
         'no reason' => [['reason' => ''], 'reason'],
         'end before start' => [['ends_at' => now()->subHour()->toIso8601String()], 'ends_at'],
-        'permission from role only' => [['permission' => 'people.manage'], 'permission'],
+        'permission from role only' => [['permission' => 'access.manage'], 'permission'],
         'unknown permission' => [['permission' => 'nope.nope'], 'permission'],
         'start in the past' => [['starts_at' => now()->subDay()->toIso8601String()], 'starts_at'],
     };
@@ -170,4 +173,43 @@ it('leaves event scoped grants out of /me permissions but lists them under grant
     $me = withAuthCookies(loginCookies($marshal))->getJson('/api/me')->assertOk();
     expect($me->json('permissions'))->not->toContain('reports.submit');
     $me->assertJsonPath('grants.0.permission', 'reports.submit')->assertJsonPath('grants.0.event_title', 'Foundation Day');
+});
+
+it('lets a granted person use an admin screen only while the grant lasts', function () {
+    $marshal = User::factory()->role(RoleCode::Marshal)->create();
+    $cookies = loginCookies($marshal);
+
+    withAuthCookies($cookies)->getJson('/api/people')->assertForbidden();
+
+    $id = withAuthCookies(adminCookies())->postJson('/api/grants', newGrant($marshal, ['permission' => 'people.view']))->assertCreated()->json('data.id');
+    withAuthCookies($cookies)->getJson('/api/people')->assertOk();
+    // Viewing is not managing.
+    withAuthCookies($cookies)->postJson('/api/people', ['first_name' => 'A', 'last_name' => 'B', 'email' => 'ab@example.test', 'role' => 'volunteer'])->assertForbidden();
+
+    PermissionGrant::query()->whereKey($id)->update(['revoked_at' => now()]);
+    withAuthCookies($cookies)->getJson('/api/people')->assertForbidden();
+});
+
+it('does not let a person who only holds people.manage by grant create or change an admin', function () {
+    $marshal = User::factory()->role(RoleCode::Marshal)->create();
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    withAuthCookies(adminCookies())->postJson('/api/grants', newGrant($marshal, ['permission' => 'people.manage']))->assertCreated();
+    $cookies = loginCookies($marshal);
+    $person = ['first_name' => 'Ana', 'last_name' => 'Reyes', 'email' => 'ana@example.test', 'role' => 'volunteer'];
+
+    withAuthCookies($cookies)->postJson('/api/people', $person)->assertCreated();
+    withAuthCookies($cookies)->postJson('/api/people', [...$person, 'email' => 'boss@example.test', 'role' => 'admin'])->assertForbidden();
+    withAuthCookies($cookies)->patchJson("/api/people/{$admin->id}", [
+        'first_name' => $admin->first_name, 'last_name' => $admin->last_name, 'email' => $admin->email, 'role' => 'volunteer',
+    ])->assertForbidden();
+    withAuthCookies($cookies)->patchJson("/api/people/{$marshal->id}", [
+        'first_name' => $marshal->first_name, 'last_name' => $marshal->last_name, 'email' => $marshal->email, 'role' => 'admin',
+    ])->assertForbidden();
+});
+
+it('lists the grantable permissions for admins only', function () {
+    $codes = withAuthCookies(adminCookies())->getJson('/api/grantable-permissions')->assertOk()->json('data.*.code');
+
+    expect($codes)->toContain('people.view', 'events.manage', 'reports.submit')->not->toContain('access.manage', 'profile.own');
+    withAuthCookies(loginCookies(User::factory()->role(RoleCode::Marshal)->create()))->getJson('/api/grantable-permissions')->assertForbidden();
 });

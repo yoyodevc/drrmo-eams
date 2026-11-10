@@ -10,6 +10,7 @@ use App\Modules\Access\Http\Requests\StoreGrantRequest;
 use App\Modules\Access\Http\Resources\GrantResource;
 use App\Modules\Access\Models\Permission;
 use App\Modules\Access\Models\PermissionGrant;
+use App\Modules\Access\Support\PermissionMatrix;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -40,6 +41,26 @@ class GrantController
         }
 
         return GrantResource::collection($query->latest('starts_at')->latest('id')->limit(200)->get());
+    }
+
+    /** The permissions that can be granted, with the rules the form needs. */
+    public function options(): JsonResponse
+    {
+        Gate::authorize('manage', PermissionGrant::class);
+
+        $data = [];
+        foreach (PermissionMatrix::permissions() as $code => $def) {
+            if ($def['grantable']) {
+                $data[] = [
+                    'code' => $code,
+                    'description' => $def['description'],
+                    'needs_event' => $code === 'reports.submit',
+                    'max_days' => $code === 'location.view' ? StoreGrantRequest::LOCATION_MAX_DAYS : null,
+                ];
+            }
+        }
+
+        return response()->json(['data' => $data]);
     }
 
     public function store(StoreGrantRequest $request, AuditLogger $audit): JsonResponse
