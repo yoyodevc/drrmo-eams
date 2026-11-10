@@ -32,7 +32,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S1.3 | Admin adds a duty requirement | Done |
 | S1.4 | Admin assigns a person | Done |
 | S1.5 | Person sees the assignment on a phone | Done |
-| S2.1 | People list and profile | Not started |
+| S2.1 | People list and profile | Done |
 | S2.2 | Import people from CSV | Not started |
 | S2.3 | Emergency contacts | Done |
 | S2.4 | Volunteer active and inactive toggle | Done |
@@ -123,6 +123,8 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 - Filter by role, team, status, department, and search by name or email.
 - Admin creates and edits a person. Email is unique.
 - New person gets a set-password email.
+- Mobile: a person sees their own details and edits their contact number from the Me tab (`/me/details`).
+- Admin opens a person profile (`/admin/people/:id`) with details, availability history and emergency contacts. Viewing contacts is audited.
 
 **S2.2 Import people from CSV** `personnel` `desktop` **M**
 - Template CSV download. Upload validates every row and shows errors per row before anything is saved.

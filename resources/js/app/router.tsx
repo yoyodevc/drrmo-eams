@@ -6,9 +6,13 @@ import { MobileLayout } from '@/layouts/MobileLayout';
 import { CookieNotice } from '@/pages/CookieNotice';
 import { ForgotPassword } from '@/pages/ForgotPassword';
 import { AccessRequests } from '@/features/personnel/pages/admin/AccessRequests';
+import { PeopleList } from '@/features/personnel/pages/admin/PeopleList';
+import { PersonForm } from '@/features/personnel/pages/admin/PersonForm';
+import { PersonProfile } from '@/features/personnel/pages/admin/PersonProfile';
 import { VolunteerStatus } from '@/features/personnel/pages/admin/VolunteerStatus';
 import { MyAvailability } from '@/features/personnel/pages/mobile/MyAvailability';
 import { MyContacts } from '@/features/personnel/pages/mobile/MyContacts';
+import { MyDetails } from '@/features/personnel/pages/mobile/MyDetails';
 import { MyProfile } from '@/features/personnel/pages/mobile/MyProfile';
 import { Login } from '@/pages/Login';
 import { PrivacyNoticePage } from '@/pages/PrivacyNoticePage';
@@ -40,6 +44,10 @@ export const router = createBrowserRouter([
                 children: [
                     dashboardRoute,
                     { path: 'requests', element: <AccessRequests /> },
+                    { path: 'people', element: <PeopleList /> },
+                    { path: 'people/new', element: <PersonForm /> },
+                    { path: 'people/:id', element: <PersonProfile /> },
+                    { path: 'people/:id/edit', element: <PersonForm /> },
                     { path: 'volunteers', element: <VolunteerStatus /> },
                     ...adminEventRoutes,
                     ...adminNotificationRoutes,
@@ -57,6 +65,7 @@ export const router = createBrowserRouter([
                     myDutiesRoute,
                     { path: 'profile', element: <MyProfile /> },
                     { path: 'availability', element: <MyAvailability /> },
+                    { path: 'details', element: <MyDetails /> },
                     { path: 'contacts', element: <MyContacts /> },
                     ...myNotificationRoutes,
                 ],

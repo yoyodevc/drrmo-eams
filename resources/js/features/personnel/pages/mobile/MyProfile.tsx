@@ -144,6 +144,17 @@ export function MyProfile() {
                         }
                     />
                     <Row
+                        to="/me/details"
+                        title="My details"
+                        hint="Your contact number and what DRRMO has on file."
+                        icon={
+                            <Icon>
+                                <circle cx="12" cy="8" r="3.5" />
+                                <path d="M5 20a7 7 0 0 1 14 0" />
+                            </Icon>
+                        }
+                    />
+                    <Row
                         to="/me/contacts"
                         title="Emergency contacts"
                         hint="Who DRRMO can call if something happens."

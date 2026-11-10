@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Modules\Personnel\Http\Controllers\DepartmentController;
 use App\Modules\Personnel\Http\Controllers\EmergencyContactController;
 use App\Modules\Personnel\Http\Controllers\MyAvailabilityController;
+use App\Modules\Personnel\Http\Controllers\MyProfileController;
+use App\Modules\Personnel\Http\Controllers\PeopleController;
 use App\Modules\Personnel\Http\Controllers\RegisterController;
 use App\Modules\Personnel\Http\Controllers\RegistrationReviewController;
 use App\Modules\Personnel\Http\Controllers\ResendCodeController;
@@ -40,4 +43,20 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/me/emergency-contacts/{contact}', [EmergencyContactController::class, 'update']);
     Route::delete('/me/emergency-contacts/{contact}', [EmergencyContactController::class, 'destroy']);
     Route::get('/admin/people/{user}/emergency-contacts', [EmergencyContactController::class, 'forPerson']);
+});
+
+// A person reads their own profile and edits their contact number.
+Route::middleware('auth:api')->group(function () {
+    Route::get('/me/profile', [MyProfileController::class, 'show']);
+    Route::patch('/me/profile', [MyProfileController::class, 'update']);
+});
+
+// Admin people list, profile, create and edit. A new person gets a set-password email.
+Route::middleware('auth:api')->group(function () {
+    Route::get('/people', [PeopleController::class, 'index']);
+    Route::post('/people', [PeopleController::class, 'store']);
+    Route::get('/people/{user}', [PeopleController::class, 'show']);
+    Route::patch('/people/{user}', [PeopleController::class, 'update']);
+    Route::post('/people/{user}/invite', [PeopleController::class, 'invite']);
+    Route::get('/departments', [DepartmentController::class, 'index']);
 });

@@ -1,6 +1,7 @@
 // A-Volunteer status (S2.4). Admin sets a volunteer active or inactive with a reason and reads the history.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { personContacts } from '@/features/personnel/contacts';
 import {
     listVolunteers,
@@ -212,7 +213,14 @@ export function VolunteerStatus() {
                         )}
                         {list.data?.map((row) => (
                             <tr key={row.id}>
-                                <td className="px-4 py-3 font-medium text-stone-900">{row.name}</td>
+                                <td className="px-4 py-3 font-medium">
+                                    <Link
+                                        to={`/admin/people/${row.id}`}
+                                        className="text-maroon-800 hover:underline"
+                                    >
+                                        {row.name}
+                                    </Link>
+                                </td>
                                 <td className="px-4 py-3 text-stone-700">{row.email}</td>
                                 <td className="px-4 py-3 text-stone-700">
                                     {row.status === 'active' ? 'Active' : 'Inactive'}

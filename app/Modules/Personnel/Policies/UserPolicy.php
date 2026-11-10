@@ -31,4 +31,10 @@ class UserPolicy
     {
         return $actor->hasPermission('people.view');
     }
+
+    /** Admin creating, editing and inviting people. */
+    public function managePeople(User $actor): bool
+    {
+        return $actor->hasPermission('people.manage');
+    }
 }

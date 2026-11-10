@@ -224,6 +224,15 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Evidence: resources/js/features/events/dutyLink.test.ts
 - Paper: Chapter 3 (user interface design)
 
+## 2026-11-10 · S2.1 People list and profile (personnel)
+- What was built: admin People list (`/admin/people`) with search by name or email and filters for role, team, department and availability, 25 per page. Admin can add and edit a person. A person profile page brings details, availability history and emergency contacts together
+- Decision and why: a new person gets a random unknown password and an emailed link to choose their own, using the same reset-password flow as forgot password. The admin never sees or types a password. If the email fails the person is still created and the profile offers Send set-password email again
+- Decision and why: an admin cannot change their own role, so the office cannot lock itself out. Create, edit and resend write audit rows (`person.created`, `person.updated` with before and after, `person.invite_sent`)
+- Decision and why: the list shows only approved accounts. Pending sign ups stay on Access requests
+- Also built (mobile): `/me/details` shows a volunteer what DRRMO has on file and lets them change only their contact number (`PATCH /api/me/profile`, which ignores every other field)
+- Evidence: tests/Feature/Personnel/PeopleTest.php
+- Paper: Chapter 3 (system design, data privacy)
+
 ## 2026-11-10 · S2.5 Privacy notice and consent (records)
 - What was built: after sign in, a person who has not agreed to the current privacy notice sees the notice instead of the app, with one "I have read and agree" button and Sign out. A public `/privacy` page shows the same text, linked from Request access and the sign in page
 - Decision and why: the server enforces it. A middleware answers every API call except `/api/me`, the agree call and logout with 403 `consent_required`, so hiding screens is not the only protection. The app reads that code and asks `/api/me` again, so a notice change mid session shows the screen at once
