@@ -267,3 +267,5 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Fix: the teams table migration was missing, so Teams failed to load. It is added with the three starting teams, departments got their `active` column, and `OrgUnitSeeder` fills in starting teams and departments
 - Evidence: tests/Feature/Personnel/OrgUnitsTest.php
 - Paper: Chapter 3 (system design, user interface)
+- Fix: after the role tabs were reverted, only the name text on a People row opened the profile. The whole row is a link again, with a chevron hint
+- What was built: People filters sit on one fixed grid row, role and team share a column, and dates are no longer cut off. Profile details are grouped under Contact and Placement as label and value rows
