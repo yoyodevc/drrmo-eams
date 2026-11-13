@@ -51,14 +51,14 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S3.8 | No-show marking | Done |
 | S3.9 | Calendar view | Done |
 | S4.1 | Start and end duty | Done |
-| S4.2 | Ping engine with offline queue | Not started |
+| S4.2 | Ping engine with offline queue | Done |
 | S4.3 | Live map | Not started |
 | S4.4 | Ping trail | Not started |
 | S4.5 | Report slots | Not started |
 | S4.6 | Report form | Not started |
 | S4.7 | Overdue alerts | Not started |
 | S4.8 | Report feed | Not started |
-| S4.9 | Ping retention | Not started |
+| S4.9 | Ping retention | Done |
 | S5.1 | Memo manager | Not started |
 | S5.2 | Memo search | Not started |
 | S5.3 | Memo viewer | Not started |

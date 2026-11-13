@@ -5,6 +5,7 @@ import type { MyAssignment } from '@/features/events/api';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { endDuty, startDuty } from '../api';
+import { TrackingBanner } from './TrackingBanner';
 
 const EARLY_MINUTES = 15;
 const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -30,6 +31,9 @@ export function DutyControl({ duty }: { duty: MyAssignment }) {
                         : ''}
                     .
                 </p>
+                <div className="mt-2">
+                    <TrackingBanner assignmentId={duty.id} />
+                </div>
                 {failed && (
                     <div className="mt-3">
                         <Alert tone="error">{failed.message}</Alert>

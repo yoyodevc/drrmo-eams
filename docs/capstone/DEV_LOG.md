@@ -312,3 +312,13 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: unsaved changes collect in a save bar that is always in the layout, only hidden, so the page never jumps when it appears. Changed cells are marked amber until saved
 - Evidence: tests/Feature/Access/RolesTest.php, tests/Feature/Access/PermissionMatrixTest.php, resources/js/features/access/pages/PermissionMatrix.test.tsx, resources/js/layouts/AdminLayout.test.tsx
 - Paper: Chapter 3 (system design, data privacy), Chapter 4 (results)
+
+## 2026-11-13 · S4.2 Location sharing and S4.9 Location data cleanup (monitoring)
+- What was built: while a person is on duty and the page is open, the phone captures a location point about every 30 seconds. Points wait in a local queue and upload in batches of up to 50 to `POST /api/me/assignments/{assignment}/pings`. A banner on the duty card shows sharing, GPS off, or offline with the number of points waiting
+- What was built: the phone asks for the Screen Wake Lock so the screen stays on, and asks again when the page becomes visible
+- What was built: the server takes pings only from the assignment's own person who holds `location.send_own`, has not withdrawn location consent, and has started duty. Points captured outside the duty window (from start of duty to its end, with a 2 minute clock allowance) are refused. The limit is 10 requests a minute per person
+- What was built: `monitoring:purge-pings` runs at 02:00 and deletes pings older than 10 working days (Monday to Friday), 5,000 rows at a time
+- Decision and why: one bad point must not block the queue, so the server keeps the good points and reports how many it refused. The phone drops a batch the server refuses for good and keeps retrying on network errors or the rate limit
+- Decision and why: a duty that already ended still accepts points captured during it, because a phone that was offline uploads late
+- Evidence: tests/Feature/Monitoring/PingTest.php, resources/js/features/monitoring/pingQueue.test.ts
+- Paper: Chapter 3 (system design, data privacy)
