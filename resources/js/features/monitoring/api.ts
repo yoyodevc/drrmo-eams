@@ -85,3 +85,32 @@ export async function submitReport(
     });
     return response.data;
 }
+
+// Admin report feed (S4.8). Needs `reports.view`.
+export type FeedReport = {
+    id: number;
+    status: ReportStatus;
+    due_at: string;
+    submitted_at: string | null;
+    summary: string | null;
+    has_photo: boolean;
+    author: string | null;
+    event: { id: number; title: string | null };
+    location: string | null;
+};
+
+export type FeedFilters = { event_id: string; location_id: string; from: string; to: string };
+
+export type ReportFeed = {
+    data: FeedReport[];
+    meta: { current_page: number; last_page: number; total: number };
+    filters: { events: { id: number; title: string }[]; locations: { id: number; name: string }[] };
+};
+
+export async function getReportFeed(filters: FeedFilters, page: number): Promise<ReportFeed> {
+    const query = new URLSearchParams({ page: String(page) });
+    for (const [key, value] of Object.entries(filters)) if (value) query.set(key, value);
+    return api<ReportFeed>(`/api/reports?${query.toString()}`);
+}
+
+export const reportPhotoUrl = (id: number) => `/api/reports/${id}/photo`;

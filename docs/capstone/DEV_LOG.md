@@ -374,3 +374,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: the notifications table got a nullable `site_report_id`, as planned in docs/DATABASE.md gap G7
 - Evidence: tests/Feature/Monitoring/OverdueReportsTest.php (fixed dates, 15 minute boundary, once only, recipients)
 - Paper: Chapter 3 (system design), Chapter 4 (feature 4.7)
+
+## 2026-11-13 · S4.8 Report feed (monitoring)
+- What was built: an admin Reports page. Site reports newest first, each card showing the event, author, place, due and sent times, the summary, and a Late or Overdue badge. A photo thumbnail opens a lightbox. Filters by event, place and date (Manila days) sit in the URL, and results come 15 at a time
+- What was built: `GET /api/reports`, `GET /api/reports/{id}` and `GET /api/reports/{id}/photo`. Photos are read from private storage through the API, never from a public folder
+- Decision and why: access follows `reports.view`. A role that holds it sees every event. A person with an event grant sees only that event, and the filter lists name only events they may see. Everyone else gets 403 on the list, one report and its photo, including a reporter who may send reports but not read the feed
+- Decision and why: slots that are not yet due stay out of the feed, because they carry no news
+- Evidence: tests/Feature/Monitoring/ReportFeedTest.php
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 4.8)

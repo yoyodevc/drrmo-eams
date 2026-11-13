@@ -57,7 +57,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S4.5 | Report slots | Done |
 | S4.6 | Report form | Done |
 | S4.7 | Overdue alerts | Done |
-| S4.8 | Report feed | Not started |
+| S4.8 | Report feed | Done |
 | S4.9 | Ping retention | Done |
 | S5.1 | Memo manager | Not started |
 | S5.2 | Memo search | Not started |
