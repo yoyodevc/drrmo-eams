@@ -3,10 +3,6 @@
 declare(strict_types=1);
 
 use App\Modules\Access\Enums\Role as RoleCode;
-use App\Modules\Access\Models\Permission;
-use App\Modules\Access\Models\PermissionGrant;
-use App\Modules\Events\Models\Assignment;
-use App\Modules\Events\Models\DutyType;
 use App\Modules\Events\Models\Event;
 use App\Modules\Monitoring\Models\SiteReport;
 use App\Modules\Monitoring\Services\ReportSchedule;
@@ -15,33 +11,13 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
 
+require_once __DIR__.'/reportHelpers.php';
+
 beforeEach(function () {
     $this->withHeaders(['Referer' => 'http://localhost', 'X-Requested-With' => 'XMLHttpRequest']);
     $this->seed();
     $this->travelTo(CarbonImmutable::parse('2026-11-16 08:00:00')); // a Monday
 });
-
-/** A published event with one marshal assigned, shift from $start for $hours. */
-function reportAssignment(User $user, string $start = '2026-11-16 08:00:00', float $hours = 5, string $status = 'on_duty'): Assignment
-{
-    $from = CarbonImmutable::parse($start);
-    $event = Event::factory()->create(['status' => 'published', 'starts_at' => $from, 'ends_at' => $from->addMinutes((int) ($hours * 60))]);
-    $req = $event->requirements()->create([
-        'duty_type_id' => DutyType::query()->firstOrFail()->id, 'role' => 'marshal', 'headcount' => 1,
-        'shift_starts_at' => $event->starts_at, 'shift_ends_at' => $event->ends_at,
-    ]);
-
-    return $req->assignments()->create(['event_id' => $event->id, 'user_id' => $user->id, 'duty_type_id' => $req->duty_type_id, 'status' => $status]);
-}
-
-/** Makes the person a designated reporter for one event, the way an admin does with a grant. */
-function designate(User $user, int $eventId, array $over = []): PermissionGrant
-{
-    return PermissionGrant::query()->create([
-        'user_id' => $user->id, 'permission_id' => Permission::query()->where('code', 'reports.submit')->firstOrFail()->id, 'event_id' => $eventId,
-        'starts_at' => now()->subDay(), 'ends_at' => now()->addDays(2), 'reason' => 'Site reporter', 'granted_by' => User::factory()->role(RoleCode::Admin)->create()->id, ...$over,
-    ]);
-}
 
 it('works out due times: every 2 hours, or one slot at the end of a short shift', function () {
     $schedule = new ReportSchedule;

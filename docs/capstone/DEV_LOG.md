@@ -356,3 +356,12 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: running the command again, or twice at once, never makes a second slot. The database unique key is the safety net and the command uses firstOrCreate
 - Evidence: tests/Feature/Monitoring/ReportSlotsTest.php (fixed dates, a Monday)
 - Paper: Chapter 3 (system design), Chapter 4 (feature 4.5)
+
+## 2026-11-13 · S4.6 Report form (monitoring)
+- What was built: a designated reporter sees a Reports due card at the top of My duties. Each row opens the report form: a summary (required, up to 1,000 characters with a live count) and an optional photo from the camera. The phone shrinks the photo to 1,600 px on the long side and sends it as a JPEG
+- What was built: the text is kept on the phone as a draft while typing, so a dropped connection loses nothing. If the send fails for lack of network, the form says so and keeps the draft
+- What was built: `POST /api/me/report-slots/{id}` saves the report as submitted, or late when it is sent more than 15 minutes after the due time or after the slot went overdue. `GET /api/me/report-slots` lists the reporter own slots. The photo goes to private storage under a random name and is read back only through `GET /api/me/report-slots/{id}/photo`
+- Decision and why: sending the same slot twice returns the report already saved and changes nothing, so a double tap or a retry after a slow answer never makes a second report. The slot row is locked while saving
+- Decision and why: only the slot owner can send, and only while their event grant for `reports.submit` holds. A revoked grant stops them at once. The file type is read from the file content, not the name, and a 6 per minute limit applies per person
+- Evidence: tests/Feature/Monitoring/ReportFormTest.php, resources/js/features/monitoring/reportDraft.test.ts
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 4.6)

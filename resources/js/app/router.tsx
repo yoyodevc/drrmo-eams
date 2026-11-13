@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { adminAccessRoutes, myAccessRoutes } from '@/features/access/routes';
 import { adminEventRoutes, dashboardRoute, myDutiesRoute } from '@/features/events/routes';
-import { adminMonitoringRoutes } from '@/features/monitoring/routes';
+import { adminMonitoringRoutes, myMonitoringRoutes } from '@/features/monitoring/routes';
 import { adminNotificationRoutes, myNotificationRoutes } from '@/features/notifications/routes';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { MobileLayout } from '@/layouts/MobileLayout';
@@ -79,6 +79,7 @@ export const router = createBrowserRouter([
                     { path: 'details', element: <MyDetails /> },
                     { path: 'contacts', element: <MyContacts /> },
                     ...myNotificationRoutes,
+                    ...myMonitoringRoutes,
                     ...myAccessRoutes,
                 ],
             },

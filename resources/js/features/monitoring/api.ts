@@ -51,3 +51,37 @@ export async function getTrail(assignmentId: number): Promise<PingPoint[]> {
     const response = await api<{ data: { points: PingPoint[] } }>(`/api/map/trail/${assignmentId}`);
     return response.data.points;
 }
+
+// Site report slots and the report form (S4.5, S4.6). Only for people who hold `reports.submit` for an event.
+export type ReportStatus = 'pending' | 'submitted' | 'overdue' | 'late';
+
+export type ReportSlot = {
+    id: number;
+    assignment_id: number;
+    event: string | null;
+    due_at: string;
+    status: ReportStatus;
+    summary: string | null;
+    has_photo: boolean;
+    submitted_at: string | null;
+};
+
+export async function listReportSlots(): Promise<ReportSlot[]> {
+    const response = await api<{ data: ReportSlot[] }>('/api/me/report-slots');
+    return response.data;
+}
+
+export async function submitReport(
+    slotId: number,
+    summary: string,
+    photo: Blob | null,
+): Promise<ReportSlot> {
+    const form = new FormData();
+    form.set('summary', summary);
+    if (photo) form.set('photo', photo, 'photo.jpg');
+    const response = await api<{ data: ReportSlot }>(`/api/me/report-slots/${slotId}`, {
+        method: 'POST',
+        body: form,
+    });
+    return response.data;
+}
