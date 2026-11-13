@@ -2,7 +2,8 @@
 // 5 minutes. Polls every 30 seconds. Click a person to draw their trail for this shift.
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import 'leaflet/dist/leaflet.css';
-import { useState } from 'react';
+import L from 'leaflet';
+import { useEffect, useState } from 'react';
 import {
     CircleMarker,
     LayersControl,
@@ -10,6 +11,7 @@ import {
     Polyline,
     Popup,
     TileLayer,
+    useMap,
 } from 'react-leaflet';
 import { Alert } from '@/shared/ui/Alert';
 import { getLatestMap, getTrail, type MapPerson } from '../../api';
@@ -24,6 +26,19 @@ import {
 
 const control =
     'min-h-10 rounded-control border border-stone-300 bg-white px-3 text-sm text-stone-900 focus:border-maroon-700 focus:outline-none';
+
+// Zooms the map to the chosen person or their trail. Runs when the choice or the trail changes,
+// not on every 30 second refresh, so it never fights with a person panning the map.
+function FitTo({ points }: { points: [number, number][] }) {
+    const map = useMap();
+    const key = points.map((p) => p.join(',')).join(';');
+    useEffect(() => {
+        if (points.length === 0) return;
+        map.fitBounds(L.latLngBounds(points), { maxZoom: 18, padding: [40, 40] });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [map, key]);
+    return null;
+}
 
 function PersonRow({
     person,
@@ -102,6 +117,8 @@ export function LiveMap() {
         queryFn: () => getLatestMap(eventId),
         refetchInterval: POLL_MS,
         placeholderData: keepPreviousData,
+        // Every load is audited, so reloading when the tab regains focus would add rows for nothing.
+        refetchOnWindowFocus: false,
     });
     // The trail loads once per click, not on a timer, so one click is one audit row.
     const trail = useQuery({
@@ -117,6 +134,13 @@ export function LiveMap() {
     const { onMap, stale, none } = splitPeople(people);
     const liveCount = onMap.filter((p) => p.state === 'live').length;
     const options = eventOptions(people);
+    const chosen = onMap.find((p) => p.assignment_id === selected)?.ping;
+    const focus: [number, number][] =
+        trail.data && trail.data.length > 0
+            ? trail.data.map((p) => [p.lat, p.lng])
+            : chosen
+              ? [[chosen.lat, chosen.lng]]
+              : [];
     const toggle = (id: number) => setSelected((cur) => (cur === id ? null : id));
 
     return (
@@ -176,6 +200,7 @@ export function LiveMap() {
                                 />
                             </LayersControl.BaseLayer>
                         </LayersControl>
+                        <FitTo points={focus} />
                         {trail.data && trail.data.length > 1 && (
                             <Polyline
                                 positions={trail.data.map((p) => [p.lat, p.lng])}
