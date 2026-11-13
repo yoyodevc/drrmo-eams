@@ -3,7 +3,7 @@ import { Alert } from '@/shared/ui/Alert';
 import { useDutyTracker } from '../hooks/useDutyTracker';
 
 export function TrackingBanner({ assignmentId }: { assignmentId: number }) {
-    const { state, pending } = useDutyTracker(assignmentId, true);
+    const { state, pending, wakeLock } = useDutyTracker(assignmentId, true);
     const waiting =
         pending > 0 ? ` ${pending} point${pending === 1 ? '' : 's'} waiting to upload.` : '';
 
@@ -21,5 +21,16 @@ export function TrackingBanner({ assignmentId }: { assignmentId: number }) {
             </Alert>
         );
     }
-    return <p className="text-sm text-pretty text-stone-700">Sharing your location.{waiting}</p>;
+    return (
+        <>
+            <p className="text-sm text-pretty text-stone-700">Sharing your location.{waiting}</p>
+            <p className="mt-1 text-sm text-pretty text-stone-600" data-testid="wake-lock">
+                {wakeLock === 'active'
+                    ? 'Screen stays on.'
+                    : wakeLock === 'released'
+                      ? 'Screen lock is paused. It comes back when you return to this page.'
+                      : 'Screen may turn off (not supported or blocked). Keep this page open.'}
+            </p>
+        </>
+    );
 }

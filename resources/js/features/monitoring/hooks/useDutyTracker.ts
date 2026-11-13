@@ -10,9 +10,16 @@ export const PING_INTERVAL_MS = 30_000;
 
 export type TrackerState = 'sharing' | 'gps_off' | 'offline' | 'stopped';
 
-export type DutyTracker = { state: TrackerState; pending: number };
+// Screen Wake Lock: active (screen stays on), unsupported (no API, or not https), denied (the
+// browser said no, for example battery saver), released (the browser let go, usually page hidden).
+export type WakeLockState = 'active' | 'unsupported' | 'denied' | 'released';
 
-type WakeLockSentinelLike = { release: () => Promise<void> };
+export type DutyTracker = { state: TrackerState; pending: number; wakeLock: WakeLockState };
+
+type WakeLockSentinelLike = {
+    release: () => Promise<void>;
+    addEventListener?: (type: 'release', listener: () => void) => void;
+};
 type WakeLockNavigator = {
     wakeLock?: { request: (type: 'screen') => Promise<WakeLockSentinelLike> };
 };
@@ -20,6 +27,7 @@ type WakeLockNavigator = {
 export function useDutyTracker(assignmentId: number, active: boolean): DutyTracker {
     const [state, setState] = useState<TrackerState>('stopped');
     const [pending, setPending] = useState(() => readQueue(assignmentId).length);
+    const [wakeLock, setWakeLock] = useState<WakeLockState>('released');
     const flushing = useRef(false);
 
     // Upload queued points, one batch at a time, until the queue is empty or a call fails.
@@ -93,11 +101,26 @@ export function useDutyTracker(assignmentId: number, active: boolean): DutyTrack
         let lock: WakeLockSentinelLike | null = null;
         const requestLock = async () => {
             const wake = (navigator as unknown as WakeLockNavigator).wakeLock;
-            if (!wake || lock || document.visibilityState !== 'visible') return;
+            if (!wake) {
+                setWakeLock('unsupported');
+                return;
+            }
+            if (lock || document.visibilityState !== 'visible') return;
             try {
-                lock = await wake.request('screen');
+                const sentinel = await wake.request('screen');
+                if (stopped) {
+                    void sentinel.release().catch(() => undefined);
+                    return;
+                }
+                lock = sentinel;
+                setWakeLock('active');
+                sentinel.addEventListener?.('release', () => {
+                    if (lock === sentinel) lock = null;
+                    if (!stopped) setWakeLock('released');
+                });
             } catch {
-                lock = null; // Battery saver or no support: pings still run while the page is open.
+                lock = null; // Battery saver or blocked: pings still run while the page is open.
+                if (!stopped) setWakeLock('denied');
             }
         };
         const onVisibility = () => {
@@ -133,5 +156,5 @@ export function useDutyTracker(assignmentId: number, active: boolean): DutyTrack
         };
     }, [active, assignmentId, flush]);
 
-    return { state: active ? state : 'stopped', pending };
+    return { state: active ? state : 'stopped', pending, wakeLock };
 }
