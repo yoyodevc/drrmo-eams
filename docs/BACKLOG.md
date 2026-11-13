@@ -54,7 +54,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S4.2 | Ping engine with offline queue | Done |
 | S4.3 | Live map | Done |
 | S4.4 | Ping trail | Done |
-| S4.5 | Report slots | Not started |
+| S4.5 | Report slots | Done |
 | S4.6 | Report form | Not started |
 | S4.7 | Overdue alerts | Not started |
 | S4.8 | Report feed | Not started |
@@ -232,6 +232,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 **S4.5 Report slots** `monitoring` `both` **M**
 - Scheduler creates slots every 2 hours for designated reporters with an assignment in the event.
 - Slots are unique per assignment and due time.
+- Done: `monitoring:create-report-slots` every 5 minutes. A reporter is a person with an active event scoped `reports.submit` grant and a live assignment in that event. Slots appear 15 minutes before they are due.
 
 **S4.6 Report form** `monitoring` `mobile` **M**
 - Summary required (max 1,000 characters), photo optional (resized on the phone).

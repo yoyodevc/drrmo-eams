@@ -348,3 +348,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Problem met and fix: Wake Lock can only be checked on a real phone over HTTPS, so the state is now visible on screen instead of guessed, and a Vitest test with a mocked `navigator.wakeLock` covers request, release, re-request on visible, unsupported and denied
 - Evidence: tests/Feature/Notifications/ConsentWithdrawalNoticeTest.php, resources/js/features/monitoring/hooks/useDutyTracker.test.tsx
 - Paper: Chapter 3 (data privacy), Chapter 4 (results)
+
+## 2026-11-13 · S4.5 Report slots (monitoring)
+- What was built: `monitoring:create-report-slots` runs every 5 minutes and makes a report slot when a report is due within the next 15 minutes. Slots are due every 2 hours from the start of the person's shift. A shift shorter than 2 hours gets one slot, due at its end. Nothing is made for a shift that ended more than 15 minutes ago
+- What was built: a new `site_reports` table with status pending, submitted, overdue or late, a unique key on assignment and due time, and an index on status and due time for the overdue scan. A `ReportSlotCreated` event fires once for each new slot
+- Decision and why: a designated reporter is a person who holds an active `reports.submit` grant tied to that event and also has a live assignment in it. This follows the permission matrix, where the grant must name an event, and the plan rule that the reporter must be on the event. No new flag was added to assignments
+- Decision and why: running the command again, or twice at once, never makes a second slot. The database unique key is the safety net and the command uses firstOrCreate
+- Evidence: tests/Feature/Monitoring/ReportSlotsTest.php (fixed dates, a Monday)
+- Paper: Chapter 3 (system design), Chapter 4 (feature 4.5)
