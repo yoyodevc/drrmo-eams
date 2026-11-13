@@ -56,6 +56,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Proxy IPs trusted for https and host headers, comma separated. Empty trusts nobody.
+    'trusted_proxies' => env('TRUSTED_PROXIES', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Behind a tunnel or load balancer the page must still know it is https. Set TRUSTED_PROXIES
         // to the proxy IPs (for example 127.0.0.1 for a local cloudflared). Empty trusts nobody.
-        $proxies = array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))));
+        $proxies = array_values(array_filter(array_map('trim', explode(',', (string) config('app.trusted_proxies')))));
         if ($proxies !== []) {
             TrustProxies::at($proxies);
         }
