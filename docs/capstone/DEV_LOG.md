@@ -312,3 +312,73 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: unsaved changes collect in a save bar that is always in the layout, only hidden, so the page never jumps when it appears. Changed cells are marked amber until saved
 - Evidence: tests/Feature/Access/RolesTest.php, tests/Feature/Access/PermissionMatrixTest.php, resources/js/features/access/pages/PermissionMatrix.test.tsx, resources/js/layouts/AdminLayout.test.tsx
 - Paper: Chapter 3 (system design, data privacy), Chapter 4 (results)
+
+## 2026-11-13 · S4.2 Location sharing and S4.9 Location data cleanup (monitoring)
+- What was built: while a person is on duty and the page is open, the phone captures a location point about every 30 seconds. Points wait in a local queue and upload in batches of up to 50 to `POST /api/me/assignments/{assignment}/pings`. A banner on the duty card shows sharing, GPS off, or offline with the number of points waiting
+- What was built: the phone asks for the Screen Wake Lock so the screen stays on, and asks again when the page becomes visible
+- What was built: the server takes pings only from the assignment's own person who holds `location.send_own`, has not withdrawn location consent, and has started duty. Points captured outside the duty window (from start of duty to its end, with a 2 minute clock allowance) are refused. The limit is 10 requests a minute per person
+- What was built: `monitoring:purge-pings` runs at 02:00 and deletes pings older than 10 working days (Monday to Friday), 5,000 rows at a time
+- Decision and why: one bad point must not block the queue, so the server keeps the good points and reports how many it refused. The phone drops a batch the server refuses for good and keeps retrying on network errors or the rate limit
+- Decision and why: a duty that already ended still accepts points captured during it, because a phone that was offline uploads late
+- Evidence: tests/Feature/Monitoring/PingTest.php, resources/js/features/monitoring/pingQueue.test.ts
+- Paper: Chapter 3 (system design, data privacy)
+
+## 2026-11-13 · Location consent screen (records, monitoring)
+- What was built: the first time a person taps Start duty without location consent, a sheet explains when location runs, who sees it and how long it is kept. Agree saves the consent and starts duty. Not now closes it and nothing is saved
+- What was built: the Me tab has a Stop location consent button. After that, Start duty is refused with a clear message until the person agrees again
+- Decision and why: `POST /api/consent/location` and `DELETE /api/consent/location` only ever touch the signed-in person's own consent. Only roles that can share location may agree, so an admin gets 403. Agreeing twice writes one row. Both calls write an audit row (`consent.given`, `consent.withdrawn`)
+- Evidence: tests/Feature/Records/LocationConsentTest.php
+- Paper: Chapter 3 (data privacy)
+
+## 2026-11-13 · S4.3 Live map and S4.4 Ping trail (monitoring)
+- What was built: an admin Live map page. Esri satellite imagery by default with an OpenStreetMap switch, centred on the campus, with attribution shown. One pin per person on duty, grey after 5 minutes without a ping, with last seen time. It refreshes every 30 seconds and can be filtered by event
+- What was built: side lists On the map, No ping 5+ min and No location. Clicking a person draws their trail for the shift
+- What was built: `GET /api/map/latest` and `GET /api/map/trail/{assignment}` need `location.view`. Each call writes one audit row (`location.viewed`, `location.trail_viewed`), and a trail is one row however many points it holds
+- Decision and why: the latest ping per person uses the indexed join in docs/DATABASE.md, so the page stays fast with 600,000 rows. The trail loads once per click and is not polled, so one click is one audit row
+- Decision and why: the event filter is built from people on duty, so someone who holds only `location.view` does not need the events permission
+- Evidence: tests/Feature/Monitoring/MapTest.php, resources/js/features/monitoring/mapView.test.ts
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (results)
+
+## 2026-11-13 · Admin notice on location consent withdrawal and Wake Lock status (records, notifications, monitoring)
+- What was built: when a person stops sharing their location, everyone who may view locations (admins, and anyone holding `location.view` through a grant) gets a notification and an email. It names the person and lists their upcoming duties with shift times, so the office can reassign. It shows in the Notification log with a "Location consent withdrawn" label and the person's name
+- What was built: nothing is sent when there was no open consent to withdraw, so tapping twice, or withdrawing when never agreed, makes no notice. The person is never told about their own withdrawal
+- What was built: the duty banner now says whether the screen stays on. It reads "Screen stays on", a paused note when the browser lets go (page hidden, comes back on return), or "Screen may turn off (not supported or blocked)". The hook exposes the state as `active`, `unsupported`, `denied` or `released`
+- Decision and why: Records only fires a `LocationConsentWithdrawn` event. Notifications listens and writes its own rows, because Records must not write another module's table. The notification table gained a nullable `subject_user_id` for notices that are about a person and not an assignment
+- Decision and why: the upcoming duties are read when the email is built, so the list is current at send time
+- Problem met and fix: Wake Lock can only be checked on a real phone over HTTPS, so the state is now visible on screen instead of guessed, and a Vitest test with a mocked `navigator.wakeLock` covers request, release, re-request on visible, unsupported and denied
+- Evidence: tests/Feature/Notifications/ConsentWithdrawalNoticeTest.php, resources/js/features/monitoring/hooks/useDutyTracker.test.tsx
+- Paper: Chapter 3 (data privacy), Chapter 4 (results)
+
+## 2026-11-13 · S4.5 Report slots (monitoring)
+- What was built: `monitoring:create-report-slots` runs every 5 minutes and makes a report slot when a report is due within the next 15 minutes. Slots are due every 2 hours from the start of the person's shift. A shift shorter than 2 hours gets one slot, due at its end. Nothing is made for a shift that ended more than 15 minutes ago
+- What was built: a new `site_reports` table with status pending, submitted, overdue or late, a unique key on assignment and due time, and an index on status and due time for the overdue scan. A `ReportSlotCreated` event fires once for each new slot
+- Decision and why: a designated reporter is a person who holds an active `reports.submit` grant tied to that event and also has a live assignment in it. This follows the permission matrix, where the grant must name an event, and the plan rule that the reporter must be on the event. No new flag was added to assignments
+- Decision and why: running the command again, or twice at once, never makes a second slot. The database unique key is the safety net and the command uses firstOrCreate
+- Evidence: tests/Feature/Monitoring/ReportSlotsTest.php (fixed dates, a Monday)
+- Paper: Chapter 3 (system design), Chapter 4 (feature 4.5)
+
+## 2026-11-13 · S4.6 Report form (monitoring)
+- What was built: a designated reporter sees a Reports due card at the top of My duties. Each row opens the report form: a summary (required, up to 1,000 characters with a live count) and an optional photo from the camera. The phone shrinks the photo to 1,600 px on the long side and sends it as a JPEG
+- What was built: the text is kept on the phone as a draft while typing, so a dropped connection loses nothing. If the send fails for lack of network, the form says so and keeps the draft
+- What was built: `POST /api/me/report-slots/{id}` saves the report as submitted, or late when it is sent more than 15 minutes after the due time or after the slot went overdue. `GET /api/me/report-slots` lists the reporter own slots. The photo goes to private storage under a random name and is read back only through `GET /api/me/report-slots/{id}/photo`
+- Decision and why: sending the same slot twice returns the report already saved and changes nothing, so a double tap or a retry after a slow answer never makes a second report. The slot row is locked while saving
+- Decision and why: only the slot owner can send, and only while their event grant for `reports.submit` holds. A revoked grant stops them at once. The file type is read from the file content, not the name, and a 6 per minute limit applies per person
+- Evidence: tests/Feature/Monitoring/ReportFormTest.php, resources/js/features/monitoring/reportDraft.test.ts
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 4.6)
+
+## 2026-11-13 · S4.7 Overdue alerts (monitoring, notifications)
+- What was built: `monitoring:mark-overdue-reports` runs every 5 minutes. A pending slot becomes overdue 15 minutes after it was due, and a `ReportOverdue` event fires once for it. Notifications listens and emails everyone who may read site reports, naming the reporter, the event and the due time. The email also shows in the admin Notification log as "Report overdue"
+- What was built: a report sent after the 15 minutes, or after the slot went overdue, is stored as late (done in S4.6). Sent, late and future slots are never touched
+- Decision and why: the status change is made with a conditional update (only if still pending), so two runs at once cannot both announce the same slot, and running the command again sends nothing new
+- Decision and why: recipients are found by the permission `reports.view`, tied to the event, so a person with a grant for one event hears only about that event. The lookup moved into a small shared helper that the consent withdrawal notice now uses too
+- Decision and why: the notifications table got a nullable `site_report_id`, as planned in docs/DATABASE.md gap G7
+- Evidence: tests/Feature/Monitoring/OverdueReportsTest.php (fixed dates, 15 minute boundary, once only, recipients)
+- Paper: Chapter 3 (system design), Chapter 4 (feature 4.7)
+
+## 2026-11-13 · S4.8 Report feed (monitoring)
+- What was built: an admin Reports page. Site reports newest first, each card showing the event, author, place, due and sent times, the summary, and a Late or Overdue badge. A photo thumbnail opens a lightbox. Filters by event, place and date (Manila days) sit in the URL, and results come 15 at a time
+- What was built: `GET /api/reports`, `GET /api/reports/{id}` and `GET /api/reports/{id}/photo`. Photos are read from private storage through the API, never from a public folder
+- Decision and why: access follows `reports.view`. A role that holds it sees every event. A person with an event grant sees only that event, and the filter lists name only events they may see. Everyone else gets 403 on the list, one report and its photo, including a reporter who may send reports but not read the feed
+- Decision and why: slots that are not yet due stay out of the feed, because they carry no news
+- Evidence: tests/Feature/Monitoring/ReportFeedTest.php
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 4.8)

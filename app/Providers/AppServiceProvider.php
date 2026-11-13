@@ -9,6 +9,7 @@ use App\Auth\JwtGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -30,6 +31,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Behind a tunnel or load balancer the page must still know it is https. Set TRUSTED_PROXIES
+        // to the proxy IPs (for example 127.0.0.1 for a local cloudflared). Empty trusts nobody.
+        $proxies = array_values(array_filter(array_map('trim', explode(',', (string) config('app.trusted_proxies')))));
+        if ($proxies !== []) {
+            TrustProxies::at($proxies);
+        }
+
         Auth::extend('jwt', function (Application $app, string $name, array $config): JwtGuard {
             $guard = new JwtGuard(
                 Auth::createUserProvider($config['provider'] ?? null) ?? throw new RuntimeException('No user provider for the jwt guard.'),
@@ -43,6 +51,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Rate limits from docs/SECURITY_AND_PRIVACY.md section 6.
         RateLimiter::for('refresh', fn (Request $request) => Limit::perMinute(30)->by((string) $request->ip()));
+
+        // Pings: 10 requests a minute per user, 50 points per request (docs/SECURITY_AND_PRIVACY.md section 6).
+        RateLimiter::for('pings', fn (Request $request) => Limit::perMinute(10)
+            ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(fn () => response()->json(['message' => 'Too many location uploads. Try again in a minute.', 'code' => 'too_many_pings'], 429)));
 
         RateLimiter::for('register', fn (Request $request) => Limit::perHour(5)
             ->by((string) $request->ip())

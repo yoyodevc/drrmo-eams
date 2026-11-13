@@ -331,3 +331,52 @@ it('blocks moving an inactive person, an overlapping shift, and a full duty with
     withAuthCookies($cookies)->patchJson("/api/assignments/{$mine->id}", ['requirement_id' => $otherReq->id])
         ->assertUnprocessable()->assertJsonValidationErrors(['requirement_id']);
 });
+
+it('frees people when an event is cancelled, so they can be assigned to an overlapping event', function () {
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    $marshal = User::factory()->role(RoleCode::Marshal)->create();
+    $busy = User::factory()->role(RoleCode::Marshal)->create();
+    $one = Event::factory()->create(['status' => 'published']);
+    $two = Event::factory()->create(['status' => 'published', 'starts_at' => $one->starts_at, 'ends_at' => $one->ends_at]);
+    $freed = assignTo($one->requirements()->create(shift($one)), $marshal, ['status' => 'acknowledged']);
+    $second = $two->requirements()->create(shift($two));
+    $cookies = loginCookies($admin);
+
+    // Still blocked while the first event is active.
+    withAuthCookies($cookies)->postJson("/api/requirements/{$second->id}/assignments", ['user_id' => $marshal->id])
+        ->assertUnprocessable()->assertJsonValidationErrors(['user_id']);
+
+    withAuthCookies($cookies)->postJson("/api/events/{$one->id}/cancel")->assertOk();
+
+    expect($freed->refresh()->status->value)->toBe('cancelled')->and($freed->cancelled_at)->not->toBeNull()->and($freed->cancel_reason)->toBe('Event cancelled');
+    withAuthCookies($cookies)->getJson("/api/requirements/{$second->id}/candidates")->assertOk()->assertJsonPath('data.0.conflict', null);
+    withAuthCookies($cookies)->postJson("/api/requirements/{$second->id}/assignments", ['user_id' => $marshal->id])->assertCreated();
+});
+
+it('ends duty already started when an event is cancelled, and keeps notifications', function () {
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    $onDuty = User::factory()->role(RoleCode::Marshal)->create();
+    $waiting = User::factory()->role(RoleCode::Marshal)->create();
+    $event = Event::factory()->create(['status' => 'published']);
+    $req = $event->requirements()->create(shift($event, ['headcount' => 2]));
+    $started = assignTo($req, $onDuty, ['status' => 'on_duty', 'duty_started_at' => now()]);
+    $pending = assignTo($req, $waiting);
+
+    withAuthCookies(loginCookies($admin))->postJson("/api/events/{$event->id}/cancel")->assertOk();
+
+    expect($started->refresh()->status->value)->toBe('completed')->and($started->duty_ended_at)->not->toBeNull();
+    expect($pending->refresh()->status->value)->toBe('cancelled');
+    expect(DB::table('notifications')->where('assignment_id', $pending->id)->where('type', 'assignment.cancelled')->count())->toBe(1);
+    // Nobody from a cancelled event shows as on duty.
+    expect(Assignment::query()->where('event_id', $event->id)->where('status', 'on_duty')->count())->toBe(0);
+});
+
+it('treats leftover assignments of an already cancelled event as free', function () {
+    $marshal = User::factory()->role(RoleCode::Marshal)->create();
+    $one = Event::factory()->create(['status' => 'cancelled']);
+    $two = Event::factory()->create(['status' => 'published', 'starts_at' => $one->starts_at, 'ends_at' => $one->ends_at]);
+    assignTo($one->requirements()->create(shift($one)), $marshal);
+    $second = $two->requirements()->create(shift($two));
+
+    expect($second->overlapFor($marshal->id))->toBeNull();
+});

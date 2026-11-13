@@ -13,6 +13,8 @@ export interface NotificationRow {
     sent_at: string | null;
     recipient: { name: string; email: string } | null;
     event: string | null;
+    // The person a notice is about, when it is not about an event.
+    about?: string | null;
 }
 
 export interface NotificationFilters {

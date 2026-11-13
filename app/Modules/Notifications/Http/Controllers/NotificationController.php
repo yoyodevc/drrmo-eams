@@ -31,7 +31,7 @@ class NotificationController
             'search' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $query = Notification::query()->with(['user:id,first_name,last_name,email', 'assignment.event:id,title']);
+        $query = Notification::query()->with(['user:id,first_name,last_name,email', 'subject:id,first_name,last_name', 'assignment.event:id,title']);
         if (! empty($f['type'])) {
             $query->where('type', $f['type']);
         }
@@ -88,7 +88,7 @@ class NotificationController
         SendNotificationEmail::dispatch($notification);
         $audit->log('notification.retried', $notification);
 
-        return response()->json(['data' => $this->row($notification->fresh(['user', 'assignment.event']) ?? $notification)]);
+        return response()->json(['data' => $this->row($notification->fresh(['user', 'subject', 'assignment.event']) ?? $notification)]);
     }
 
     /** @return array<string, mixed> */
@@ -104,6 +104,7 @@ class NotificationController
             'sent_at' => $n->sent_at?->toIso8601String(),
             'recipient' => $n->user === null ? null : ['name' => $n->user->name, 'email' => $n->user->email],
             'event' => $n->assignment?->event->title,
+            'about' => $n->subject?->name,
         ];
     }
 }

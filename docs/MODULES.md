@@ -52,7 +52,7 @@ resources/js/features/<module>/
 | Personnel | DEPARTMENT, USER, EMERGENCY_CONTACT, VOLUNTEER_STATUS_LOG | Access (role lookup), Records |
 | Access | ROLE, PERMISSION, ROLE_PERMISSION, PERMISSION_GRANT | Records |
 | Events | DUTY_TYPE, CAMPUS_LOCATION, EVENT, EVENT_DUTY_REQUIREMENT, ASSIGNMENT | Personnel, Access, Records |
-| Notifications | NOTIFICATION | Events, Monitoring (listens only), Personnel |
+| Notifications | NOTIFICATION | Events, Monitoring (listens only), Records (listens only), Personnel |
 | Monitoring | LOCATION_PING, SITE_REPORT | Events, Access, Records |
 | Information | MEMO, MESSAGE | Personnel, Records |
 | Records | AUDIT_LOG, CONSENT_RECORD | Personnel |
@@ -130,7 +130,7 @@ Count: 4 + 4 + 5 + 1 + 2 + 2 + 2 = 20 tables. Each appears once.
 
 - **Owns:** NOTIFICATION.
 - **Endpoints:** `GET /api/notifications` (admin log, filters: type, status, date), `POST /api/notifications/{notification}/retry`.
-- **Listens to:** `AssignmentCreated`, `AssignmentUpdated`, `AssignmentCancelled`, `ReportSlotCreated`, `ReportOverdue`, `PersonCreated` (welcome and set password email).
+- **Listens to:** `AssignmentCreated`, `AssignmentUpdated`, `AssignmentCancelled`, `ReportSlotCreated`, `ReportOverdue`, `PersonCreated` (welcome and set password email), `LocationConsentWithdrawn` (tells people with `location.view`).
 - **Jobs and commands:** `SendNotificationJob`, `notifications:shift-reminders`.
 - **Policies:** `NotificationPolicy`.
 - **Contracts offered:** `Notifier::queue(User $to, NotificationType $type, array $context)`. Any module may call this instead of sending mail itself.
@@ -171,6 +171,7 @@ Count: 4 + 4 + 5 + 1 + 2 + 2 + 2 = 20 tables. Each appears once.
   - `GET /api/audit-logs` (filters: actor, action, entity, date)
   - `GET /api/privacy-notice` (current version and text), `POST /api/consents`, `POST /api/consents/withdraw-location`
   - `GET /api/me/data-export` (the person's own data as JSON, right of access)
+- **Events fired:** `LocationConsentWithdrawn`.
 - **Contracts offered:** `AuditLogger::log(string $action, Model|string $entity, ?int $entityId, array $meta = [])`, `ConsentChecker::has(User $user, ConsentPurpose $purpose)`.
 - **Jobs and commands:** `records:prune`.
 - **Policies:** `AuditLogPolicy`.

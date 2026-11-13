@@ -11,4 +11,6 @@ enum NotificationType: string
     case AssignmentCancelled = 'assignment.cancelled';
     case ReminderEvening = 'reminder.evening';
     case ReminderHour = 'reminder.hour';
+    case ConsentWithdrawn = 'consent.withdrawn';
+    case ReportOverdue = 'report.overdue';
 }

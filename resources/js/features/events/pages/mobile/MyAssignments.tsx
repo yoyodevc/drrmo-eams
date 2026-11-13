@@ -15,6 +15,7 @@ import { CheckIcon, ClipboardIcon, ClockIcon, PinIcon } from '@/features/events/
 import { findLinkedDuty, linkedAssignmentId } from '@/features/events/dutyLink';
 import { assignmentStatuses, chipClass } from '@/features/events/format';
 import { DutyControl } from '@/features/monitoring/components/DutyControl';
+import { ReportDueCard } from '@/features/monitoring/components/ReportDueCard';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 
@@ -264,6 +265,8 @@ export function MyAssignments() {
             <p className="mt-1 text-base text-pretty text-stone-600">
                 Where to be and when, soonest first.
             </p>
+
+            <ReportDueCard />
 
             {toAcknowledge > 0 && (
                 <p
