@@ -44,6 +44,11 @@ class AppServiceProvider extends ServiceProvider
         // Rate limits from docs/SECURITY_AND_PRIVACY.md section 6.
         RateLimiter::for('refresh', fn (Request $request) => Limit::perMinute(30)->by((string) $request->ip()));
 
+        // Pings: 10 requests a minute per user, 50 points per request (docs/SECURITY_AND_PRIVACY.md section 6).
+        RateLimiter::for('pings', fn (Request $request) => Limit::perMinute(10)
+            ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(fn () => response()->json(['message' => 'Too many location uploads. Try again in a minute.', 'code' => 'too_many_pings'], 429)));
+
         RateLimiter::for('register', fn (Request $request) => Limit::perHour(5)
             ->by((string) $request->ip())
             ->response(fn () => $this->tooManyAttempts()));
