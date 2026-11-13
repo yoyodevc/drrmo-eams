@@ -6,6 +6,7 @@ namespace App\Modules\Monitoring;
 
 use App\Modules\Monitoring\Console\AutoEndDuty;
 use App\Modules\Monitoring\Console\CreateReportSlots;
+use App\Modules\Monitoring\Console\MarkOverdueReports;
 use App\Modules\Monitoring\Console\PurgePings;
 use App\Modules\Monitoring\Models\SiteReport;
 use App\Modules\Monitoring\Policies\SiteReportPolicy;
@@ -28,10 +29,11 @@ class MonitoringServiceProvider extends ServiceProvider
             ->response(fn () => response()->json(['message' => 'Too many reports sent. Try again in a minute.', 'code' => 'too_many_reports'], 429)));
 
         if ($this->app->runningInConsole()) {
-            $this->commands([AutoEndDuty::class, CreateReportSlots::class, PurgePings::class]);
+            $this->commands([AutoEndDuty::class, CreateReportSlots::class, MarkOverdueReports::class, PurgePings::class]);
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
                 $schedule->command('monitoring:auto-end-duty')->everyFiveMinutes();
                 $schedule->command('monitoring:create-report-slots')->everyFiveMinutes();
+                $schedule->command('monitoring:mark-overdue-reports')->everyFiveMinutes();
                 $schedule->command('monitoring:purge-pings')->dailyAt('02:00');
             });
         }

@@ -8,6 +8,7 @@ export const typeLabels: Record<string, string> = {
     'reminder.evening': 'Reminder (evening)',
     'reminder.hour': 'Reminder (1 hour)',
     'consent.withdrawn': 'Location consent withdrawn',
+    'report.overdue': 'Report overdue',
 };
 
 export const statusChips: Record<NotificationStatus, { label: string; chip: string }> = {

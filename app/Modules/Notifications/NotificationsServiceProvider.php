@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications;
 
+use App\Modules\Monitoring\Events\ReportOverdue;
 use App\Modules\Notifications\Console\SendShiftReminders;
 use App\Modules\Notifications\Contracts\AssignmentNotifier;
 use App\Modules\Notifications\Contracts\MailSender;
+use App\Modules\Notifications\Listeners\NotifyAdminsOfOverdueReport;
 use App\Modules\Notifications\Listeners\NotifyAdminsOfWithdrawal;
 use App\Modules\Notifications\Models\Notification;
 use App\Modules\Notifications\Policies\NotificationPolicy;
@@ -37,6 +39,7 @@ class NotificationsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(LocationConsentWithdrawn::class, NotifyAdminsOfWithdrawal::class);
+        Event::listen(ReportOverdue::class, NotifyAdminsOfOverdueReport::class);
         $this->loadViewsFrom(__DIR__.'/Views', 'eams-notifications');
         Gate::policy(Notification::class, NotificationPolicy::class);
         if ($this->app->runningInConsole()) {

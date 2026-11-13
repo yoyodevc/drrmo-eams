@@ -365,3 +365,12 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: only the slot owner can send, and only while their event grant for `reports.submit` holds. A revoked grant stops them at once. The file type is read from the file content, not the name, and a 6 per minute limit applies per person
 - Evidence: tests/Feature/Monitoring/ReportFormTest.php, resources/js/features/monitoring/reportDraft.test.ts
 - Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 4.6)
+
+## 2026-11-13 · S4.7 Overdue alerts (monitoring, notifications)
+- What was built: `monitoring:mark-overdue-reports` runs every 5 minutes. A pending slot becomes overdue 15 minutes after it was due, and a `ReportOverdue` event fires once for it. Notifications listens and emails everyone who may read site reports, naming the reporter, the event and the due time. The email also shows in the admin Notification log as "Report overdue"
+- What was built: a report sent after the 15 minutes, or after the slot went overdue, is stored as late (done in S4.6). Sent, late and future slots are never touched
+- Decision and why: the status change is made with a conditional update (only if still pending), so two runs at once cannot both announce the same slot, and running the command again sends nothing new
+- Decision and why: recipients are found by the permission `reports.view`, tied to the event, so a person with a grant for one event hears only about that event. The lookup moved into a small shared helper that the consent withdrawal notice now uses too
+- Decision and why: the notifications table got a nullable `site_report_id`, as planned in docs/DATABASE.md gap G7
+- Evidence: tests/Feature/Monitoring/OverdueReportsTest.php (fixed dates, 15 minute boundary, once only, recipients)
+- Paper: Chapter 3 (system design), Chapter 4 (feature 4.7)

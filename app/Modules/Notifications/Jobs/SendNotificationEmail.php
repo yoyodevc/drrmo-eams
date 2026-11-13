@@ -34,7 +34,7 @@ class SendNotificationEmail implements ShouldQueue
 
     public function handle(MailSender $mail): void
     {
-        $n = $this->notification->loadMissing(['user', 'subject', 'assignment.event.location', 'assignment.requirement', 'assignment.dutyType']);
+        $n = $this->notification->loadMissing(['user', 'subject', 'siteReport', 'assignment.event.location', 'assignment.requirement', 'assignment.dutyType']);
         if ($n->status === 'sent' || $n->user === null) {
             return;
         }
@@ -54,6 +54,9 @@ class SendNotificationEmail implements ShouldQueue
     {
         if ($n->type === NotificationType::ConsentWithdrawn->value) {
             return $this->composeWithdrawal($n);
+        }
+        if ($n->type === NotificationType::ReportOverdue->value) {
+            return $this->composeOverdueReport($n);
         }
 
         $a = $n->assignment;
@@ -84,6 +87,21 @@ class SendNotificationEmail implements ShouldQueue
         }
 
         return $message->button($n->type === NotificationType::AssignmentCancelled->value ? 'Open DRRMO EAMS' : 'View my duty', $link);
+    }
+
+    /** Tells an admin a site report is 15 minutes late, and who owes it. */
+    private function composeOverdueReport(Notification $n): EmailMessage
+    {
+        $who = $n->subject_user_id === null ? 'The reporter' : $n->subject->name;
+        $event = $n->assignment->event->title ?? 'an event';
+        $due = $n->siteReport === null ? 'To be confirmed' : $n->siteReport->due_at->copy()->setTimezone(self::TIMEZONE)->format('D, M j, g:i A');
+
+        return EmailMessage::make('Site report overdue: '.$event, 'A site report is overdue')
+            ->preheader($who.' has not sent the report for '.$event.'.')
+            ->greeting($n->user->first_name ?? 'there')
+            ->line($who.' has not sent a site report that was due at '.$due.'. It is now more than 15 minutes late.')
+            ->details(['Event' => $event, 'Reporter' => $who, 'Due' => $due])
+            ->button('Open the reports', url('/admin/reports'));
     }
 
     /** Tells an admin who stopped sharing location and which upcoming duties need a new person. */

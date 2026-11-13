@@ -7,7 +7,7 @@ namespace App\Modules\Notifications\Listeners;
 use App\Modules\Notifications\Enums\NotificationType;
 use App\Modules\Notifications\Jobs\SendNotificationEmail;
 use App\Modules\Notifications\Models\Notification;
-use App\Modules\Personnel\Models\User;
+use App\Modules\Notifications\Services\PermissionHolders;
 use App\Modules\Records\Events\LocationConsentWithdrawn;
 
 /**
@@ -16,18 +16,11 @@ use App\Modules\Records\Events\LocationConsentWithdrawn;
  */
 class NotifyAdminsOfWithdrawal
 {
+    public function __construct(private readonly PermissionHolders $holders) {}
+
     public function handle(LocationConsentWithdrawn $event): void
     {
-        $recipients = User::query()
-            ->where('account_status', 'active')->whereNull('disabled_at')
-            ->whereKeyNot($event->user->getKey())
-            ->where(fn ($q) => $q
-                ->whereHas('role.permissions', fn ($p) => $p->where('code', 'location.view'))
-                ->orWhereHas('grants', fn ($g) => $g->active()))
-            ->get()
-            ->filter(fn (User $u) => $u->hasPermission('location.view'));
-
-        foreach ($recipients as $admin) {
+        foreach ($this->holders->of('location.view', exceptUserId: (int) $event->user->getKey()) as $admin) {
             $notification = Notification::query()->create([
                 'user_id' => $admin->id,
                 'subject_user_id' => $event->user->getKey(),
