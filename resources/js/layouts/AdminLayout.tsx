@@ -450,7 +450,7 @@ export function AdminLayout() {
                         </div>
                     </BrandLink>
                 </div>
-                <div className="flex-1 lg:overflow-y-auto">
+                <div className="nav-scroll flex-1 lg:overflow-y-auto">
                     <AdminNav rail />
                 </div>
                 <Account rail />
