@@ -34,7 +34,7 @@ class DatabaseConsentChecker implements ConsentChecker
         return ConsentRecord::query()
             ->where('user_id', $user->getKey())
             ->where('purpose', $purpose->value)
-            ->latest('consented_at')
+            // Newest row by id. consented_at can disagree with the real order when clocks or time zones differ.
             ->latest('id')
             ->first();
     }

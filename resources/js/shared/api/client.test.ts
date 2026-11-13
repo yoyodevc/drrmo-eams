@@ -137,4 +137,20 @@ describe('api client', () => {
 
         expect(ended).not.toHaveBeenCalled();
     });
+
+    it("uses the server's message as the error text, and a plain fallback without one", async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(() => json(422, { message: 'Location consent is needed to start duty.' })),
+        );
+        await expect(api('/api/x', { method: 'POST' })).rejects.toThrow(
+            'Location consent is needed to start duty.',
+        );
+
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(() => json(500, {})),
+        );
+        await expect(api('/api/x')).rejects.toThrow('API error 500');
+    });
 });

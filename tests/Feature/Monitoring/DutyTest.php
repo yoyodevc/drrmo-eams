@@ -95,3 +95,32 @@ it('auto ends open duties 30 minutes after the shift end', function () {
         ->and($notYet->fresh()->status->value)->toBe('on_duty')
         ->and(AuditLog::query()->where('action', 'assignment.duty_ended')->firstOrFail()->meta['source'])->toBe('system');
 });
+
+it('lets a person agree again after withdrawing and start duty right away', function () {
+    $user = User::factory()->role(RoleCode::Marshal)->create();
+    $assignment = dutyFor($user);
+    $cookies = loginCookies($user);
+
+    withAuthCookies($cookies)->postJson('/api/consent/location')->assertNoContent();
+    withAuthCookies($cookies)->deleteJson('/api/consent/location')->assertNoContent();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/start-duty")->assertUnprocessable()
+        ->assertJsonPath('message', 'Location consent is needed to start duty.');
+
+    withAuthCookies($cookies)->postJson('/api/consent/location')->assertNoContent();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/start-duty")->assertOk()->assertJsonPath('data.status', 'on_duty');
+});
+
+it('is not fooled by a withdrawn consent row dated in the future', function () {
+    // Real case: an old row got a consented_at hours ahead of the clock, so it always looked "latest"
+    // and every new agree was ignored, which made Start duty fail with 422 after Agree.
+    $user = User::factory()->role(RoleCode::Marshal)->create();
+    $assignment = dutyFor($user);
+    ConsentRecord::query()->create(['user_id' => $user->id, 'purpose' => ConsentPurpose::LocationTracking, 'notice_version' => 'v1', 'consented_at' => now()->addHours(8), 'withdrawn_at' => now()]);
+    $cookies = loginCookies($user);
+
+    withAuthCookies($cookies)->postJson('/api/consent/location')->assertNoContent();
+    withAuthCookies($cookies)->postJson('/api/consent/location')->assertNoContent();
+
+    expect(ConsentRecord::query()->where('user_id', $user->id)->where('purpose', ConsentPurpose::LocationTracking->value)->count())->toBe(2);
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/start-duty")->assertOk();
+});

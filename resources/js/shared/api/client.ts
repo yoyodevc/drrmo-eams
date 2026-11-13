@@ -9,7 +9,13 @@ export class ApiError extends Error {
         // Seconds from the Retry-After header, when the server sent one.
         public retryAfter?: number,
     ) {
-        super(`API error ${status}`);
+        // Show the server's own words when it sent some ("Location consent is needed to start duty.").
+        super(
+            typeof (body as { message?: unknown } | null)?.message === 'string' &&
+                (body as { message: string }).message !== ''
+                ? (body as { message: string }).message
+                : `API error ${status}`,
+        );
     }
 }
 
