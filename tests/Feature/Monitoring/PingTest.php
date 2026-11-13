@@ -92,7 +92,7 @@ it('refuses pings when duty never started, after consent withdrawal, or with bad
     withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertUnprocessable();
 
     $assignment->update(['status' => 'on_duty', 'duty_started_at' => now()->subMinutes(2)]);
-    ConsentRecord::query()->where('user_id', $user->id)->update(['withdrawn_at' => now()]);
+    ConsentRecord::query()->where('user_id', $user->id)->where('purpose', ConsentPurpose::LocationTracking)->update(['withdrawn_at' => now()]);
     withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertUnprocessable();
 });
 
