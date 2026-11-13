@@ -1,10 +1,14 @@
 // M-My profile, the "Me" tab. Who you are, then the pages about your own account.
 // Mobile first at 360 px: one column, hairline list rows like Alerts. Emergency contacts (S2.3) go here too.
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { hasAdminAccess } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
 import { SignOutButton } from '@/app/SignOutButton';
+import { withdrawLocationConsent } from '@/features/records/api';
+import { Button } from '@/shared/ui/Button';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 function Icon({ children, className = 'size-5' }: { children: ReactNode; className?: string }) {
     return (
@@ -70,6 +74,57 @@ function Skeleton() {
                 <div className="mt-2 h-4 w-56 animate-pulse rounded bg-stone-200" />
             </div>
         </div>
+    );
+}
+
+function StopLocationConsent() {
+    const queryClient = useQueryClient();
+    const [asking, setAsking] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function stop() {
+        setSaving(true);
+        setError(null);
+        try {
+            await withdrawLocationConsent();
+            await queryClient.invalidateQueries({ queryKey: ['me'] });
+            setAsking(false);
+        } catch {
+            setError('Could not save your answer. Check your connection and try again.');
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <section aria-labelledby="me-location" className="mt-8">
+            <h2
+                id="me-location"
+                className="text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase"
+            >
+                Location
+            </h2>
+            <p className="mt-2 text-sm text-pretty text-stone-600">
+                Your location is shared only while you are on duty. You are asked again the next
+                time you start duty.
+            </p>
+            <Button variant="secondary" block className="mt-3" onClick={() => setAsking(true)}>
+                Stop location consent
+            </Button>
+            <ConfirmDialog
+                open={asking}
+                title="Stop sharing your location?"
+                description="You will not be able to start duty until you agree again. Let your coordinator know so your duties can be reassigned."
+                confirmLabel="Stop location consent"
+                tone="danger"
+                loading={saving}
+                loadingLabel="Saving..."
+                error={error}
+                onConfirm={() => void stop()}
+                onCancel={() => setAsking(false)}
+            />
+        </section>
     );
 }
 
@@ -205,6 +260,8 @@ export function MyProfile() {
                     />
                 </ul>
             )}
+
+            {me?.consent.location_tracking && <StopLocationConsent />}
 
             <SignOutButton className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control border border-stone-300 bg-white px-5 text-base font-semibold text-stone-800 transition-colors hover:bg-stone-50 active:bg-stone-100">
                 <Icon>

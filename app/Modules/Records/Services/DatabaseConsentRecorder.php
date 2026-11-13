@@ -21,4 +21,13 @@ class DatabaseConsentRecorder implements ConsentRecorder
             'ip_address' => $ipAddress,
         ]);
     }
+
+    public function withdraw(User $user, ConsentPurpose $purpose): bool
+    {
+        return ConsentRecord::query()
+            ->where('user_id', $user->getKey())
+            ->where('purpose', $purpose->value)
+            ->whereNull('withdrawn_at')
+            ->update(['withdrawn_at' => now()]) > 0;
+    }
 }
