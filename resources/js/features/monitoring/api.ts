@@ -26,3 +26,28 @@ export async function uploadPings(
     );
     return response.data;
 }
+
+// Live map and ping trail (S4.3, S4.4). Admin only: needs `location.view`.
+export type MapState = 'live' | 'stale' | 'none';
+
+export type MapPerson = {
+    assignment_id: number;
+    event_id: number;
+    event_title: string | null;
+    name: string;
+    state: MapState;
+    ping: PingPoint | null;
+};
+
+export type LatestMap = { people: MapPerson[]; stale_after_seconds: number; generated_at: string };
+
+export async function getLatestMap(eventId?: number): Promise<LatestMap> {
+    const query = eventId ? `?event_id=${eventId}` : '';
+    const response = await api<{ data: LatestMap }>(`/api/map/latest${query}`);
+    return response.data;
+}
+
+export async function getTrail(assignmentId: number): Promise<PingPoint[]> {
+    const response = await api<{ data: { points: PingPoint[] } }>(`/api/map/trail/${assignmentId}`);
+    return response.data.points;
+}

@@ -322,3 +322,19 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: a duty that already ended still accepts points captured during it, because a phone that was offline uploads late
 - Evidence: tests/Feature/Monitoring/PingTest.php, resources/js/features/monitoring/pingQueue.test.ts
 - Paper: Chapter 3 (system design, data privacy)
+
+## 2026-11-13 · Location consent screen (records, monitoring)
+- What was built: the first time a person taps Start duty without location consent, a sheet explains when location runs, who sees it and how long it is kept. Agree saves the consent and starts duty. Not now closes it and nothing is saved
+- What was built: the Me tab has a Stop location consent button. After that, Start duty is refused with a clear message until the person agrees again
+- Decision and why: `POST /api/consent/location` and `DELETE /api/consent/location` only ever touch the signed-in person's own consent. Only roles that can share location may agree, so an admin gets 403. Agreeing twice writes one row. Both calls write an audit row (`consent.given`, `consent.withdrawn`)
+- Evidence: tests/Feature/Records/LocationConsentTest.php
+- Paper: Chapter 3 (data privacy)
+
+## 2026-11-13 · S4.3 Live map and S4.4 Ping trail (monitoring)
+- What was built: an admin Live map page. Esri satellite imagery by default with an OpenStreetMap switch, centred on the campus, with attribution shown. One pin per person on duty, grey after 5 minutes without a ping, with last seen time. It refreshes every 30 seconds and can be filtered by event
+- What was built: side lists On the map, No ping 5+ min and No location. Clicking a person draws their trail for the shift
+- What was built: `GET /api/map/latest` and `GET /api/map/trail/{assignment}` need `location.view`. Each call writes one audit row (`location.viewed`, `location.trail_viewed`), and a trail is one row however many points it holds
+- Decision and why: the latest ping per person uses the indexed join in docs/DATABASE.md, so the page stays fast with 600,000 rows. The trail loads once per click and is not polled, so one click is one audit row
+- Decision and why: the event filter is built from people on duty, so someone who holds only `location.view` does not need the events permission
+- Evidence: tests/Feature/Monitoring/MapTest.php, resources/js/features/monitoring/mapView.test.ts
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (results)

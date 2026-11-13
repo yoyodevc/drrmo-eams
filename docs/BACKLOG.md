@@ -52,8 +52,8 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S3.9 | Calendar view | Done |
 | S4.1 | Start and end duty | Done |
 | S4.2 | Ping engine with offline queue | Done |
-| S4.3 | Live map | Not started |
-| S4.4 | Ping trail | Not started |
+| S4.3 | Live map | Done |
+| S4.4 | Ping trail | Done |
 | S4.5 | Report slots | Not started |
 | S4.6 | Report form | Not started |
 | S4.7 | Overdue alerts | Not started |
@@ -223,9 +223,11 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 - Latest pin per on-duty person with last seen time. Grey after 5 minutes. Polls every 30 seconds.
 - Lists "No ping 5+ min" and "No location".
 - Each load writes an audit row. Users without `location.view` get 403.
+- Done: `GET /api/map/latest`, Live map admin page with Leaflet, event filter, 30 second polling.
 
 **S4.4 Ping trail** `monitoring` `desktop` **S**
 - Click a person to draw their trail for this shift. Audited.
+- Done: `GET /api/map/trail/{assignment}`, one audit row per request, trail drawn on the live map.
 
 **S4.5 Report slots** `monitoring` `both` **M**
 - Scheduler creates slots every 2 hours for designated reporters with an assignment in the event.
