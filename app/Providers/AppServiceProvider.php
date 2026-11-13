@@ -9,6 +9,7 @@ use App\Auth\JwtGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -30,6 +31,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Behind a tunnel or load balancer the page must still know it is https. Set TRUSTED_PROXIES
+        // to the proxy IPs (for example 127.0.0.1 for a local cloudflared). Empty trusts nobody.
+        $proxies = array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))));
+        if ($proxies !== []) {
+            TrustProxies::at($proxies);
+        }
+
         Auth::extend('jwt', function (Application $app, string $name, array $config): JwtGuard {
             $guard = new JwtGuard(
                 Auth::createUserProvider($config['provider'] ?? null) ?? throw new RuntimeException('No user provider for the jwt guard.'),
