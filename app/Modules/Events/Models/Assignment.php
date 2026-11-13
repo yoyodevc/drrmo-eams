@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Events\Models;
 
 use App\Modules\Events\Enums\AssignmentStatus;
+use App\Modules\Events\Enums\EventStatus;
 use App\Modules\Personnel\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -32,13 +33,14 @@ class Assignment extends Model
     }
 
     /**
-     * Assignments that still hold a place on a duty (not cancelled, not no show).
+     * Assignments that still hold a place on a duty (not cancelled, not no show, and not on a cancelled event).
      *
      * @param  Builder<Assignment>  $query
      */
     public function scopeLive(Builder $query): void
     {
-        $query->whereNotIn('status', [AssignmentStatus::Cancelled->value, AssignmentStatus::NoShow->value]);
+        $query->whereNotIn('status', [AssignmentStatus::Cancelled->value, AssignmentStatus::NoShow->value])
+            ->whereDoesntHave('event', fn (Builder $q) => $q->where('status', EventStatus::Cancelled->value));
     }
 
     /** @return BelongsTo<Event, $this> */

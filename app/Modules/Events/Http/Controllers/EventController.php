@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Events\Http\Controllers;
 
+use App\Modules\Events\Contracts\AssignmentLookup;
 use App\Modules\Events\Enums\AssignmentStatus;
 use App\Modules\Events\Enums\EventStatus;
 use App\Modules\Events\Http\Requests\StoreEventRequest;
@@ -83,17 +84,23 @@ class EventController
         return new EventResource($event->load('location'));
     }
 
-    public function cancel(Event $event, AuditLogger $audit, AssignmentNotifier $notifier): EventResource
+    public function cancel(Event $event, AuditLogger $audit, AssignmentNotifier $notifier, AssignmentLookup $lookup): EventResource
     {
         Gate::authorize('create', Event::class);
         abort_unless(in_array($event->status, [EventStatus::Draft, EventStatus::Published], true), 422, 'This event cannot be cancelled.');
 
         $event->update(['status' => EventStatus::Cancelled]);
         $audit->log('event.cancelled', $event);
-        // Everyone still expected on duty hears about it once.
-        Assignment::query()->where('event_id', $event->id)
-            ->whereIn('status', [AssignmentStatus::Assigned->value, AssignmentStatus::Acknowledged->value])
-            ->each(fn (Assignment $a) => $notifier->cancelled($a));
+        // Free everyone: places are released, so these people can be assigned to other events again.
+        // Duty that already started ends cleanly, and everyone still expected hears about it once.
+        Assignment::query()->where('event_id', $event->id)->get()->each(function (Assignment $a) use ($notifier, $lookup) {
+            if ($a->status === AssignmentStatus::OnDuty) {
+                $lookup->endDuty($a, auto: true);
+            } elseif (in_array($a->status, [AssignmentStatus::Assigned, AssignmentStatus::Acknowledged], true)) {
+                $a->update(['status' => AssignmentStatus::Cancelled, 'cancelled_at' => now(), 'cancel_reason' => 'Event cancelled']);
+                $notifier->cancelled($a);
+            }
+        });
 
         return new EventResource($event->load('location'));
     }
