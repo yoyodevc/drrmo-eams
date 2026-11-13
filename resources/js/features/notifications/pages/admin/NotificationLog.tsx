@@ -409,7 +409,7 @@ export function NotificationLog() {
                                                     </span>
                                                 </td>
                                                 <td className="max-w-xs px-5 py-3.5 text-sm text-stone-700">
-                                                    {n.event ?? (
+                                                    {n.event ?? n.about ?? (
                                                         <span className="text-stone-500">
                                                             No event
                                                         </span>

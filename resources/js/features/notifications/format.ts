@@ -7,6 +7,7 @@ export const typeLabels: Record<string, string> = {
     'assignment.cancelled': 'Cancelled',
     'reminder.evening': 'Reminder (evening)',
     'reminder.hour': 'Reminder (1 hour)',
+    'consent.withdrawn': 'Location consent withdrawn',
 };
 
 export const statusChips: Record<NotificationStatus, { label: string; chip: string }> = {

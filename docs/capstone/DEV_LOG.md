@@ -338,3 +338,13 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: the event filter is built from people on duty, so someone who holds only `location.view` does not need the events permission
 - Evidence: tests/Feature/Monitoring/MapTest.php, resources/js/features/monitoring/mapView.test.ts
 - Paper: Chapter 3 (system design, data privacy), Chapter 4 (results)
+
+## 2026-11-13 · Admin notice on location consent withdrawal and Wake Lock status (records, notifications, monitoring)
+- What was built: when a person stops sharing their location, everyone who may view locations (admins, and anyone holding `location.view` through a grant) gets a notification and an email. It names the person and lists their upcoming duties with shift times, so the office can reassign. It shows in the Notification log with a "Location consent withdrawn" label and the person's name
+- What was built: nothing is sent when there was no open consent to withdraw, so tapping twice, or withdrawing when never agreed, makes no notice. The person is never told about their own withdrawal
+- What was built: the duty banner now says whether the screen stays on. It reads "Screen stays on", a paused note when the browser lets go (page hidden, comes back on return), or "Screen may turn off (not supported or blocked)". The hook exposes the state as `active`, `unsupported`, `denied` or `released`
+- Decision and why: Records only fires a `LocationConsentWithdrawn` event. Notifications listens and writes its own rows, because Records must not write another module's table. The notification table gained a nullable `subject_user_id` for notices that are about a person and not an assignment
+- Decision and why: the upcoming duties are read when the email is built, so the list is current at send time
+- Problem met and fix: Wake Lock can only be checked on a real phone over HTTPS, so the state is now visible on screen instead of guessed, and a Vitest test with a mocked `navigator.wakeLock` covers request, release, re-request on visible, unsupported and denied
+- Evidence: tests/Feature/Notifications/ConsentWithdrawalNoticeTest.php, resources/js/features/monitoring/hooks/useDutyTracker.test.tsx
+- Paper: Chapter 3 (data privacy), Chapter 4 (results)

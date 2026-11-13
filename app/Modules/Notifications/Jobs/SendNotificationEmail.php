@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications\Jobs;
 
+use App\Modules\Events\Models\Assignment;
 use App\Modules\Notifications\Contracts\EmailMessage;
 use App\Modules\Notifications\Contracts\MailSender;
 use App\Modules\Notifications\Enums\NotificationType;
@@ -33,7 +34,7 @@ class SendNotificationEmail implements ShouldQueue
 
     public function handle(MailSender $mail): void
     {
-        $n = $this->notification->loadMissing(['user', 'assignment.event.location', 'assignment.requirement', 'assignment.dutyType']);
+        $n = $this->notification->loadMissing(['user', 'subject', 'assignment.event.location', 'assignment.requirement', 'assignment.dutyType']);
         if ($n->status === 'sent' || $n->user === null) {
             return;
         }
@@ -51,6 +52,10 @@ class SendNotificationEmail implements ShouldQueue
 
     private function compose(Notification $n): EmailMessage
     {
+        if ($n->type === NotificationType::ConsentWithdrawn->value) {
+            return $this->composeWithdrawal($n);
+        }
+
         $a = $n->assignment;
         $event = $a?->event->title ?? 'an event';
         $link = url('/').'?assignment='.($a->id ?? '');
@@ -79,6 +84,37 @@ class SendNotificationEmail implements ShouldQueue
         }
 
         return $message->button($n->type === NotificationType::AssignmentCancelled->value ? 'Open DRRMO EAMS' : 'View my duty', $link);
+    }
+
+    /** Tells an admin who stopped sharing location and which upcoming duties need a new person. */
+    private function composeWithdrawal(Notification $n): EmailMessage
+    {
+        // The person can be gone (the foreign key is nulled), so the id decides, not the relation.
+        $subjectId = $n->subject_user_id;
+        $who = $subjectId === null ? 'Someone' : $n->subject->name;
+        $duties = $subjectId === null ? collect() : Assignment::query()->live()
+            ->where('user_id', $subjectId)
+            ->whereIn('status', ['assigned', 'acknowledged'])
+            ->whereHas('requirement', fn ($q) => $q->where('shift_ends_at', '>', now()))
+            ->with(['event:id,title', 'requirement:id,shift_starts_at,shift_ends_at'])
+            ->get()
+            ->sortBy(fn (Assignment $a) => $a->requirement?->shift_starts_at)
+            ->take(10);
+
+        $message = EmailMessage::make('Location consent withdrawn: '.$who, 'Location consent withdrawn')
+            ->preheader($who.' stopped sharing their location.')
+            ->greeting($n->user->first_name ?? 'there')
+            ->line($who.' withdrew location consent, so they cannot start duty. Reassign their duties if needed.');
+
+        if ($duties->isEmpty()) {
+            $message->line('They have no upcoming duties.');
+        } else {
+            $message->details($duties->mapWithKeys(fn (Assignment $a) => [
+                ($a->event->title ?? 'An event').' (#'.$a->id.')' => $this->shift($a->requirement?->shift_starts_at, $a->requirement?->shift_ends_at),
+            ])->all());
+        }
+
+        return $message->button('Open DRRMO EAMS', url('/admin/events'));
     }
 
     private function shift(?CarbonInterface $start, ?CarbonInterface $end): string

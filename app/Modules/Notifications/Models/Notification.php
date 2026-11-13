@@ -21,7 +21,7 @@ class Notification extends Model
 {
     public const UPDATED_AT = null;
 
-    protected $fillable = ['user_id', 'assignment_id', 'type', 'channel', 'status', 'attempts', 'last_error', 'scheduled_for', 'sent_at'];
+    protected $fillable = ['user_id', 'assignment_id', 'subject_user_id', 'type', 'channel', 'status', 'attempts', 'last_error', 'scheduled_for', 'sent_at'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -33,6 +33,12 @@ class Notification extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'subject_user_id');
     }
 
     /** @return BelongsTo<Assignment, $this> */

@@ -9,6 +9,7 @@ use App\Modules\Records\Contracts\AuditLogger;
 use App\Modules\Records\Contracts\ConsentChecker;
 use App\Modules\Records\Contracts\ConsentRecorder;
 use App\Modules\Records\Enums\ConsentPurpose;
+use App\Modules\Records\Events\LocationConsentWithdrawn;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -40,6 +41,7 @@ class LocationConsentController
 
         if ($recorder->withdraw($user, ConsentPurpose::LocationTracking)) {
             $audit->log('consent.withdrawn', $user, null, ['purpose' => ConsentPurpose::LocationTracking->value]);
+            LocationConsentWithdrawn::dispatch($user);
         }
 
         return response()->json(null, 204);
