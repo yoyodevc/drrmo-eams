@@ -4,7 +4,7 @@ Personnel Event Assignment and Monitoring System for the ZPPSU Disaster Risk Red
 
 The DRRMO plans events, assigns Marshals and Volunteers, emails them, collects 2-hourly site reports, and sees approximate positions of on-duty people on a campus map. Built with Laravel 13, React 19, MySQL 8.
 
-> Status: planning stage. No features are built yet, and feature work waits for the plan to be approved. Start with [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
+> Status: in development. 20 of 45 stories are done, including events and assignments, assignment emails, shift reminders, the notification log, conflict checks, the admin dashboard and start and end duty. The story table in [docs/BACKLOG.md](docs/BACKLOG.md) is kept up to date. Start with [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
 
 ## Documents
 
@@ -47,6 +47,13 @@ bash scripts/setup.sh
 Keep the project inside the Ubuntu home folder (`~/`), not under `/mnt/c/`. It is much faster.
 
 Open http://localhost for the app and http://localhost:8025 for Mailpit, which catches every email the app sends locally.
+
+Sail does not start a queue worker or the scheduler for you. Without them, assignment emails and shift reminders never go out. Run each in its own terminal:
+
+```
+./vendor/bin/sail artisan queue:work
+./vendor/bin/sail artisan schedule:work
+```
 
 Everyday commands:
 
@@ -100,11 +107,52 @@ Every day:
 1. Start MySQL in the XAMPP Control Panel.
 2. In one terminal run `php artisan serve`.
 3. In a second terminal run `npm run dev`. Skip this if you are not changing React code.
-4. Open http://127.0.0.1:8000. Emails are written to `storage/logs/laravel.log`.
+4. In a third terminal run `php artisan queue:work`. Assignment and reminder emails wait in the queue until it runs.
+5. In a fourth terminal run `php artisan schedule:work`. It sends the shift reminders and closes finished duties.
+6. Open http://127.0.0.1:8000. With `MAIL_MAILER=log`, emails are written to `storage/logs/laravel.log`.
 
-To stop, press Ctrl+C in both terminals and stop MySQL in XAMPP.
+To stop, press Ctrl+C in all terminals and stop MySQL in XAMPP.
 
 Run checks with `composer check` and `npm run check`. Note: XAMPP ships MariaDB 10.4, not MySQL 8. The server and CI use MySQL 8, so CI still catches database differences.
+
+## Email
+
+The app sends these emails:
+
+- **Queued** (needs `php artisan queue:work`): a new, moved or cancelled assignment, a cancelled event, and the shift reminders (6:00 PM the evening before and 1 hour before). Each email has a button that opens the app on the right duty, with the link `/?assignment=<id>`. A person who is signed out signs in first and then lands on that duty.
+- **Sent at once:** the sign up confirmation code, access approved or rejected, and the password reset link.
+
+A failed queued email is retried 3 times and then shows as `failed` in the notification log. Reminders need `php artisan schedule:work` locally. On the server, cron runs the scheduler.
+
+Where mail goes is set by `MAIL_MAILER` in `.env`:
+
+- `log`: nothing is sent. The message is written to `storage/logs/laravel.log`. Use this for local work.
+- `smtp`: the message goes to the SMTP server in `MAIL_HOST`. Docker uses Mailpit. Production uses Brevo.
+- Tests never send real mail, whatever `.env` says.
+
+### Brevo setup
+
+Do not use a personal Gmail account to send. Gmail held our test emails for up to 2 hours. Brevo delivered them in seconds.
+
+1. Make a Brevo account and verify the sender address. A school domain with SPF and DKIM set up by IT gives the best delivery.
+2. Make an SMTP key in Brevo under SMTP & API.
+3. In Brevo under Security, then Authorized IPs, add the IP address of the server. A home PC has a changing IP, so for local tests turn off the IP block for SMTP keys.
+4. Put these in the server `.env`. Never commit it, and never paste the key in chat or tickets.
+
+```
+MAIL_MAILER=smtp
+MAIL_HOST=smtp-relay.brevo.com
+MAIL_PORT=587
+MAIL_ENCRYPTION=tls
+MAIL_USERNAME=<your Brevo SMTP login>
+MAIL_PASSWORD=<your Brevo SMTP key>
+MAIL_FROM_ADDRESS=<the verified sender>
+MAIL_FROM_NAME="ZPPSU DRRMO"
+```
+
+5. Restart the queue worker with `php artisan queue:restart` so it reads the new settings.
+
+If Brevo answers `525 Unauthorized IP address`, the IP is not on the Authorized IPs list.
 
 ## Stack
 
