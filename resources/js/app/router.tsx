@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { adminAccessRoutes, myAccessRoutes } from '@/features/access/routes';
 import { adminEventRoutes, dashboardRoute, myDutiesRoute } from '@/features/events/routes';
+import { adminInformationRoutes } from '@/features/information/routes';
 import { adminMonitoringRoutes, myMonitoringRoutes } from '@/features/monitoring/routes';
 import { adminNotificationRoutes, myNotificationRoutes } from '@/features/notifications/routes';
 import { AdminLayout } from '@/layouts/AdminLayout';
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
                         element: <Navigate to="/admin/people?role=volunteer" replace />,
                     },
                     ...adminEventRoutes,
+                    ...adminInformationRoutes,
                     ...adminNotificationRoutes,
                     ...adminMonitoringRoutes,
                     ...adminAccessRoutes,

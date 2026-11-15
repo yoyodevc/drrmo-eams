@@ -8,6 +8,7 @@ import { EventsCalendar } from '@/features/events/components/EventsCalendar';
 import { chipClass, schedule, statuses } from '@/features/events/format';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
+import { SegmentedControl } from '@/shared/ui/SegmentedControl';
 
 const headCell = 'px-5 py-3 text-xs font-semibold tracking-wide text-stone-500 uppercase';
 
@@ -164,37 +165,18 @@ export function Events() {
             ) : (
                 <section className="mt-8" aria-busy={list.isPending || undefined}>
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <div
-                            className="inline-flex rounded-control bg-stone-100 p-1"
-                            aria-label="Show events"
-                            role="group"
-                        >
-                            {views.map((v) => {
-                                const selected = v.id === view.id;
-                                return (
-                                    <button
-                                        key={v.id}
-                                        type="button"
-                                        aria-pressed={selected}
-                                        onClick={() =>
-                                            setParams(v.id === 'active' ? {} : { view: v.id }, {
-                                                replace: true,
-                                            })
-                                        }
-                                        className={`inline-flex min-h-9 items-center gap-2 rounded-[6px] px-3 text-sm font-semibold transition-colors ${selected ? 'bg-white text-stone-900 ring-1 ring-stone-200' : 'text-stone-600 hover:text-stone-900'}`}
-                                    >
-                                        {v.label}
-                                        {list.isSuccess && (
-                                            <span
-                                                className={`text-xs tabular-nums ${selected ? 'text-stone-600' : 'text-stone-500'}`}
-                                            >
-                                                {count(v)}
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
+                        <SegmentedControl
+                            label="Show events"
+                            options={views.map((v) => ({
+                                id: v.id,
+                                label: v.label,
+                                count: list.isSuccess ? count(v) : undefined,
+                            }))}
+                            value={view.id}
+                            onChange={(id) =>
+                                setParams(id === 'active' ? {} : { view: id }, { replace: true })
+                            }
+                        />
                         <p className="text-sm text-stone-600" aria-live="polite">
                             {list.isPending
                                 ? 'Loading events...'
