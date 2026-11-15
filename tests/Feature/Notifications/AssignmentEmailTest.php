@@ -30,7 +30,7 @@ it('queues one notification and one email for create, move and cancel', function
     Queue::fake();
     $admin = User::factory()->role(RoleCode::Admin)->create();
     $marshal = User::factory()->role(RoleCode::Marshal)->create(['email' => 'mara@example.test']);
-    $event = Event::factory()->create();
+    $event = Event::factory()->create(['status' => 'published']);
     $one = emailReq($event);
     $two = emailReq($event);
     $cookies = loginCookies($admin);
@@ -43,6 +43,41 @@ it('queues one notification and one email for create, move and cancel', function
         ->toBe(['assignment.created', 'assignment.changed', 'assignment.cancelled'])
         ->and(Notification::query()->where('user_id', $marshal->id)->where('status', 'queued')->count())->toBe(3);
     Queue::assertPushed(SendNotificationEmail::class, 3);
+});
+
+it('stays quiet on a draft and emails each live assignee once when the event is published', function () {
+    Queue::fake();
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    $marshal = User::factory()->role(RoleCode::Marshal)->create();
+    $dropped = User::factory()->role(RoleCode::Marshal)->create();
+    $event = Event::factory()->create(['status' => 'draft']);
+    $req = emailReq($event);
+    $cookies = loginCookies($admin);
+
+    withAuthCookies($cookies)->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $marshal->id])->assertCreated();
+    $gone = withAuthCookies($cookies)->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $dropped->id])->assertCreated()->json('data.id');
+    withAuthCookies($cookies)->postJson("/api/assignments/{$gone}/cancel", ['reason' => 'Changed the plan'])->assertOk();
+    expect(Notification::query()->count())->toBe(0);
+    Queue::assertNothingPushed();
+
+    withAuthCookies($cookies)->postJson("/api/events/{$event->id}/publish")->assertOk();
+
+    expect(Notification::query()->pluck('user_id')->all())->toBe([$marshal->id])
+        ->and(Notification::query()->sole()->type)->toBe('assignment.created');
+    Queue::assertPushed(SendNotificationEmail::class, 1);
+});
+
+it('emails nobody when a draft event is cancelled', function () {
+    Queue::fake();
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    $event = Event::factory()->create(['status' => 'draft']);
+    $req = emailReq($event);
+    $req->assignments()->create(['event_id' => $event->id, 'user_id' => User::factory()->role(RoleCode::Marshal)->create()->id, 'duty_type_id' => $req->duty_type_id]);
+
+    withAuthCookies(loginCookies($admin))->postJson("/api/events/{$event->id}/cancel")->assertOk();
+
+    expect(Notification::query()->count())->toBe(0);
+    Queue::assertNothingPushed();
 });
 
 it('sends the email with a link and marks the row sent', function () {

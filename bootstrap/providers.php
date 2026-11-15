@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Access\AccessServiceProvider;
 use App\Modules\Events\EventsServiceProvider;
+use App\Modules\Information\InformationServiceProvider;
 use App\Modules\Monitoring\MonitoringServiceProvider;
 use App\Modules\Notifications\NotificationsServiceProvider;
 use App\Modules\Personnel\PersonnelServiceProvider;
@@ -14,6 +15,7 @@ return [
     AppServiceProvider::class,
     AccessServiceProvider::class,
     EventsServiceProvider::class,
+    InformationServiceProvider::class,
     MonitoringServiceProvider::class,
     NotificationsServiceProvider::class,
     PersonnelServiceProvider::class,
