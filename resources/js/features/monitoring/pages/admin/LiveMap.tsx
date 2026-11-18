@@ -206,16 +206,15 @@ export function LiveMap() {
                         <>
                             <Polygon
                                 positions={CAMPUS_BOUNDARY}
-                                pathOptions={{ color: '#ffffff', weight: 9, fillOpacity: 0 }}
+                                pathOptions={{ color: '#ffffff', weight: 6, fillOpacity: 0 }}
                                 interactive={false}
                             />
                             <Polygon
                                 positions={CAMPUS_BOUNDARY}
                                 pathOptions={{
-                                    color: '#b91c1c',
-                                    weight: 5,
-                                    fillColor: '#ef4444',
-                                    fillOpacity: 0.18,
+                                    color: '#7f1d1d',
+                                    weight: 2.5,
+                                    fillOpacity: 0,
                                 }}
                                 interactive={false}
                             />
