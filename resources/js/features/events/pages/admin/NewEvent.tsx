@@ -258,6 +258,14 @@ export function NewEvent() {
                                     {type.label}
                                 </SelectOption>
                             ))}
+                            {/* An event may still use a type that was retired after it was made. */}
+                            {existing.data &&
+                                eventType === existing.data.event_type.value &&
+                                !lookups.data?.event_types.some((t) => t.value === eventType) && (
+                                    <SelectOption value={eventType}>
+                                        {existing.data.event_type.label}
+                                    </SelectOption>
+                                )}
                         </SelectField>
                     </div>
 

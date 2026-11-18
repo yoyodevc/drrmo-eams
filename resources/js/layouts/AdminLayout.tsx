@@ -75,6 +75,16 @@ const groups: { label: string; items: Item[] }[] = [
                 ),
             },
             {
+                to: '/admin/event-types',
+                label: 'Event types',
+                icon: (
+                    <NavIcon>
+                        <path d="M3.5 12.5V4.5h8l9 9-8 8-9-9Z" />
+                        <circle cx="8" cy="9" r="1" />
+                    </NavIcon>
+                ),
+            },
+            {
                 to: '/admin/map',
                 label: 'Map',
                 icon: (

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Events\Models;
 
 use App\Modules\Events\Enums\EventStatus;
-use App\Modules\Events\Enums\EventType;
 use App\Modules\Personnel\Models\Department;
 use App\Modules\Personnel\Models\User;
 use Carbon\Carbon;
@@ -19,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property EventStatus $status
- * @property EventType $event_type
+ * @property string $event_type
  * @property int|null $people_count
  * @property int|null $on_duty_count
  * @property int|string|null $places_needed
@@ -37,7 +36,19 @@ class Event extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['starts_at' => 'datetime', 'ends_at' => 'datetime', 'status' => EventStatus::class, 'event_type' => EventType::class];
+        return ['starts_at' => 'datetime', 'ends_at' => 'datetime', 'status' => EventStatus::class];
+    }
+
+    /** @return BelongsTo<EventType, $this> */
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(EventType::class, 'event_type', 'code');
+    }
+
+    /** The type's current name, or the stored code if the type row is gone. */
+    public function typeLabel(): string
+    {
+        return $this->type?->name ?? $this->event_type;
     }
 
     /** @return BelongsTo<CampusLocation, $this> */

@@ -8,12 +8,18 @@ use App\Modules\Events\Http\Controllers\CalendarController;
 use App\Modules\Events\Http\Controllers\DashboardController;
 use App\Modules\Events\Http\Controllers\EventController;
 use App\Modules\Events\Http\Controllers\EventNoticeController;
+use App\Modules\Events\Http\Controllers\EventTypeController;
 use App\Modules\Events\Http\Controllers\LookupController;
 use App\Modules\Events\Http\Controllers\MyAssignmentController;
 use App\Modules\Events\Http\Controllers\RequirementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/event-lookups', LookupController::class);
+
+Route::get('/event-types', [EventTypeController::class, 'index']);
+Route::post('/event-types', [EventTypeController::class, 'store']);
+Route::patch('/event-types/{event_type}', [EventTypeController::class, 'update']);
+Route::delete('/event-types/{event_type}', [EventTypeController::class, 'destroy']);
 
 Route::get('/events', [EventController::class, 'index']);
 Route::post('/events', [EventController::class, 'store']);

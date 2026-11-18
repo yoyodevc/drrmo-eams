@@ -17,7 +17,7 @@ class CalendarController
         Gate::authorize('viewAny', Event::class);
         $data = $request->validate(['from' => ['required', 'date'], 'to' => ['required', 'date', 'after:from']]);
 
-        $events = Event::query()->with('location:id,name')
+        $events = Event::query()->with(['location:id,name', 'type'])
             ->withCount([
                 'assignments as people_count' => fn ($q) => $q->live(),
                 'assignments as acknowledged_count' => fn ($q) => $q->where('status', 'acknowledged'),
@@ -30,7 +30,7 @@ class CalendarController
             'id' => $e->id,
             'title' => $e->title,
             'status' => $e->status->value,
-            'event_type' => ['value' => $e->event_type->value, 'label' => $e->event_type->label()],
+            'event_type' => ['value' => $e->event_type, 'label' => $e->typeLabel()],
             'location' => $e->location?->name,
             'starts_at' => $e->starts_at->toIso8601String(),
             'ends_at' => $e->ends_at->toIso8601String(),

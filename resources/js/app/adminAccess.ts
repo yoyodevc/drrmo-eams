@@ -12,6 +12,7 @@ export interface AdminEntry {
 export const adminEntries: AdminEntry[] = [
     { to: '/admin', permission: 'events.view_all' },
     { to: '/admin/events', permission: 'events.view_all' },
+    { to: '/admin/event-types', permission: 'events.manage' },
     { to: '/admin/map', permission: 'location.view' },
     { to: '/admin/reports', permission: 'reports.view' },
     { to: '/admin/people', permission: 'people.view' },

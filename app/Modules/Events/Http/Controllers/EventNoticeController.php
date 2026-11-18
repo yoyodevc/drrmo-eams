@@ -18,7 +18,7 @@ class EventNoticeController
         $user = $request->user();
         abort_unless($user->hasPermission('events.view_department'), 403);
 
-        $events = Event::query()->with('location:id,name')
+        $events = Event::query()->with(['location:id,name', 'type'])
             ->where('status', 'published')
             ->where('ends_at', '>=', now())
             ->where(fn ($q) => $q->whereNull('department_id')->when($user->department_id, fn ($q2) => $q2->orWhere('department_id', $user->department_id)))
@@ -28,7 +28,7 @@ class EventNoticeController
             'id' => $e->id,
             'title' => $e->title,
             'description' => $e->description,
-            'event_type' => $e->event_type->label(),
+            'event_type' => $e->typeLabel(),
             'location' => $e->location?->name,
             'campus_wide' => $e->department_id === null,
             'starts_at' => $e->starts_at->toIso8601String(),

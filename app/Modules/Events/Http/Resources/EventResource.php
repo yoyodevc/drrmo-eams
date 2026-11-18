@@ -18,7 +18,7 @@ class EventResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
-            'event_type' => ['value' => $this->event_type->value, 'label' => $this->event_type->label()],
+            'event_type' => ['value' => $this->event_type, 'label' => $this->typeLabel()],
             'status' => $this->status->value,
             'starts_at' => $this->starts_at->toIso8601String(),
             'ends_at' => $this->ends_at->toIso8601String(),
