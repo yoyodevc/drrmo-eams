@@ -48,7 +48,7 @@ class Event extends Model
     /** The type's current name, or the stored code if the type row is gone. */
     public function typeLabel(): string
     {
-        return $this->type?->name ?? $this->event_type;
+        return data_get($this->type, 'name') ?? $this->event_type;
     }
 
     /** @return BelongsTo<CampusLocation, $this> */
