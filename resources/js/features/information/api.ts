@@ -5,6 +5,8 @@ export interface MemoFile {
     name: string;
     type: string;
     size: number;
+    // Word files only: the server's PDF copy for the preview pane. Left out or null for other files.
+    preview?: 'ready' | 'converting' | 'unavailable' | null;
 }
 
 export interface Memo {
@@ -83,6 +85,14 @@ export async function deleteMemo(id: number): Promise<void> {
 }
 
 export const memoFileUrl = (id: number) => `/api/memos/${id}/file`;
+export const memoPreviewUrl = (id: number) => `/api/memos/${id}/preview`;
+
+// The raw bytes of a memo file or its PDF copy, for the preview pane to draw.
+export async function fetchMemoBytes(url: string): Promise<ArrayBuffer> {
+    const response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(`The file did not load (${response.status}).`);
+    return response.arrayBuffer();
+}
 
 // "240 KB", "3.4 MB".
 export function fileSize(bytes: number): string {

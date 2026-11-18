@@ -1,13 +1,15 @@
 // The memo's file, shown right on the memo page so nobody has to open it a second time.
 // PDF pages are drawn with pdf.js (its legacy build, because the modern one needs very new browser
-// features such as Map.getOrInsertComputed) and Word files with docx-preview, both in the browser and loaded only
-// when a memo needs them. We fetch the file and draw it ourselves instead of using an iframe, because
-// the server forbids framing pages (X-Frame-Options DENY in deploy/nginx.conf) and phone browsers do not
-// show a PDF inside a page anyway.
+// features such as Map.getOrInsertComputed). A Word file shows the PDF copy the server makes with
+// LibreOffice, so it looks exactly like Word. Until that copy is ready, or where the server has no
+// LibreOffice, docx-preview draws a quick version in the browser. Both libraries load only when needed.
+// We fetch the file and draw it ourselves instead of using an iframe, because the server forbids framing
+// pages (X-Frame-Options DENY in deploy/nginx.conf) and phone browsers do not show a PDF inside a page.
+// No fetch here: the bytes come from api.ts.
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DownloadIcon, FileIcon } from '@/features/personnel/components/ui';
-import { fileKind, fileSize, memoFileUrl, type Memo } from '../api';
+import { fetchMemoBytes, fileKind, fileSize, memoFileUrl, memoPreviewUrl, type Memo } from '../api';
 
 // Long files stop here, so a phone does not draw hundreds of pages. The rest is one tap away.
 const MAX_PAGES = 30;
@@ -29,12 +31,6 @@ const ExternalIcon = ({ className = 'size-4' }: { className?: string }) => (
 
 const toolButton =
     'inline-flex min-h-12 items-center justify-center gap-2 rounded-control px-3 text-base font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-900 md:min-h-9 md:text-sm';
-
-async function fetchFile(id: number): Promise<ArrayBuffer> {
-    const response = await fetch(memoFileUrl(id), { credentials: 'same-origin' });
-    if (!response.ok) throw new Error(`The file did not load (${response.status}).`);
-    return response.arrayBuffer();
-}
 
 function Sheet() {
     return (
@@ -95,9 +91,10 @@ function PdfPages({
                         'mx-auto block h-auto w-full max-w-3xl rounded-sm bg-white ring-1 ring-stone-200';
                     canvas.setAttribute('role', 'img');
                     canvas.setAttribute('aria-label', `Page ${n} of ${doc.numPages}`);
+                    // In the page before drawing: pdf.js does not finish drawing on a detached canvas.
+                    out.append(canvas);
                     await page.render({ canvas, viewport }).promise;
                     if (cancelled) return;
-                    out.append(canvas);
                     setReady(true);
                     onPages(n, doc.numPages);
                 }
@@ -124,7 +121,7 @@ function PdfPages({
 // Lays a Word file out as real pages at their true size, portrait or landscape, then scales each page
 // down to fit the pane. Reflowing the text into our column broke text boxes and tables, so we keep the
 // layout and shrink it instead.
-function DocxPages({ data }: { data: ArrayBuffer }) {
+function DocxPages({ data, converting }: { data: ArrayBuffer; converting: boolean }) {
     const host = useRef<HTMLDivElement>(null);
     const [failed, setFailed] = useState(false);
     const [ready, setReady] = useState(false);
@@ -179,10 +176,10 @@ function DocxPages({ data }: { data: ArrayBuffer }) {
                 className="mx-auto max-w-5xl text-black [&_section.docx]:mx-auto [&_section.docx]:mb-4 [&_section.docx]:bg-white [&_section.docx]:rounded-sm [&_section.docx]:shadow-none [&_section.docx]:ring-1 [&_section.docx]:ring-stone-200 [&_section.docx:last-child]:mb-0"
             />
             {!ready && <Sheet />}
-            {ready && (
+            {ready && !converting && (
                 <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-pretty text-stone-600">
                     This is a quick preview. Text boxes, shapes and some fonts may look different
-                    from Word. Open or download the file to see the exact layout.
+                    from Word. Download the file to see the exact layout.
                 </p>
             )}
         </>
@@ -210,9 +207,14 @@ export function MemoPreview({ memo }: { memo: Memo }) {
     const [pages, setPages] = useState<{ shown: number; total: number } | null>(null);
     const onPages = useCallback((shown: number, total: number) => setPages({ shown, total }), []);
 
+    // A Word file with a ready PDF copy is shown as that PDF.
+    const asPdf = kind === 'PDF' || (kind === 'Word' && file?.preview === 'ready');
+    const converting = kind === 'Word' && file?.preview === 'converting';
+    const source = kind === 'Word' && asPdf ? memoPreviewUrl(memo.id) : memoFileUrl(memo.id);
+
     const content = useQuery({
-        queryKey: ['memo-file', memo.id, memo.updated_at],
-        queryFn: () => fetchFile(memo.id),
+        queryKey: ['memo-file', memo.id, memo.updated_at, source],
+        queryFn: () => fetchMemoBytes(source),
         enabled: file !== null && canDraw,
         staleTime: Infinity,
         gcTime: 60_000,
@@ -220,6 +222,8 @@ export function MemoPreview({ memo }: { memo: Memo }) {
 
     if (!file) return null;
     const url = memoFileUrl(memo.id);
+    // Open shows the PDF copy of a Word file, since a browser cannot open Word itself.
+    const openUrl = asPdf ? source : url;
 
     return (
         <section
@@ -230,7 +234,7 @@ export function MemoPreview({ memo }: { memo: Memo }) {
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-control border border-stone-200 text-maroon-700">
                     <FileIcon className="size-5" />
                 </span>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-56">
                     <h2
                         id="memo-preview-heading"
                         className="truncate font-semibold text-stone-900"
@@ -244,16 +248,18 @@ export function MemoPreview({ memo }: { memo: Memo }) {
                     </p>
                 </div>
                 <div className="flex w-full gap-1 sm:w-auto">
-                    <a
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`${toolButton} flex-1 sm:flex-none`}
-                    >
-                        <ExternalIcon className="size-5 md:size-4" />
-                        Open
-                        <span className="sr-only"> {file.name} in a new tab</span>
-                    </a>
+                    {(kind !== 'Word' || asPdf) && (
+                        <a
+                            href={openUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`${toolButton} flex-1 sm:flex-none`}
+                        >
+                            <ExternalIcon className="size-5 md:size-4" />
+                            {kind === 'Word' ? 'Open as PDF' : 'Open'}
+                            <span className="sr-only"> {file.name} in a new tab</span>
+                        </a>
+                    )}
                     <a
                         href={url}
                         download={file.name}
@@ -270,6 +276,18 @@ export function MemoPreview({ memo }: { memo: Memo }) {
                 className="bg-stone-100 p-3 sm:p-6"
                 aria-busy={content.isPending && canDraw ? true : undefined}
             >
+                {converting && (
+                    <p
+                        role="status"
+                        className="mx-auto mb-4 flex max-w-2xl items-center justify-center gap-2 text-center text-sm text-stone-600"
+                    >
+                        <span
+                            aria-hidden="true"
+                            className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-stone-300 border-t-maroon-700"
+                        />
+                        Preparing an exact copy. This quick preview is replaced when it is ready.
+                    </p>
+                )}
                 {kind === 'Image' ? (
                     <a href={url} target="_blank" rel="noreferrer" className="block">
                         <img
@@ -299,17 +317,17 @@ export function MemoPreview({ memo }: { memo: Memo }) {
                         </p>
                         <Sheet />
                     </>
-                ) : kind === 'PDF' ? (
+                ) : asPdf ? (
                     <PdfPages data={content.data} onPages={onPages} />
                 ) : (
-                    <DocxPages data={content.data} />
+                    <DocxPages data={content.data} converting={converting} />
                 )}
 
                 {pages && pages.total > MAX_PAGES && pages.shown === MAX_PAGES && (
                     <p className="mt-4 text-center text-sm text-stone-600">
                         Showing the first {MAX_PAGES} of {pages.total} pages.{' '}
                         <a
-                            href={url}
+                            href={openUrl}
                             target="_blank"
                             rel="noreferrer"
                             className="font-semibold text-maroon-700 underline-offset-2 hover:underline"

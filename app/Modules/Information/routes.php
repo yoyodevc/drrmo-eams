@@ -14,3 +14,5 @@ Route::get('/memos/{memo}', [MemoController::class, 'show']);
 Route::patch('/memos/{memo}', [MemoController::class, 'update']);
 Route::delete('/memos/{memo}', [MemoController::class, 'destroy']);
 Route::get('/memos/{memo}/file', [MemoController::class, 'file']);
+// The PDF copy of a Word file, for the preview pane.
+Route::get('/memos/{memo}/preview', [MemoController::class, 'preview']);

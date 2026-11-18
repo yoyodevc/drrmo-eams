@@ -89,6 +89,8 @@ Cron runs `php artisan schedule:run` every minute. The scheduler pushes work ont
 | Job or command | When | What it does | Module |
 |---|---|---|---|
 | `SendNotificationJob` | On demand | Sends one queued email, updates the NOTIFICATION row to sent or failed | Notifications |
+| `ConvertMemoFile` | On demand, after a Word memo is posted or its file replaced | Makes a PDF copy of the Word file with LibreOffice for the memo preview pane. 2 tries, then the page uses the quick browser preview | Information |
+| `memos:convert-previews` | By hand, after installing LibreOffice | Queues PDF copies for Word memos that have none. `--retry-failed` tries failed ones again | Information |
 | `notifications:shift-reminders` | Every 5 minutes | Queues the evening-before (6:00 PM) and 1-hour-before reminders that are due and not yet sent | Notifications |
 | `monitoring:create-report-slots` | Every 5 minutes | For each active shift with a designated reporter, creates the next SITE_REPORT slot and queues its reminder 15 minutes before due time | Monitoring |
 | `monitoring:mark-overdue-reports` | Every 5 minutes | Marks slots overdue 15 minutes after due time and queues an admin alert | Monitoring |

@@ -87,6 +87,8 @@ Foreign key rules: `restrict` on delete for people and events (we soft-close, no
 | site_reports | unique(assignment_id, due_at), (status, due_at) | idempotent slots, overdue scan, feed |
 | notifications | (status, scheduled_for), (user_id, type), (assignment_id) | queue scan, dedupe |
 | memos | FULLTEXT(title, body), (category, posted_at) | search |
+
+MEMO also has `preview_path` and `preview_status` (pending, ready, failed) for the PDF copy of a Word file (migration `2026_01_01_600002`).
 | messages | (recipient_id, read_at), (sender_id, sent_at) | inbox, threads |
 | audit_logs | (actor_id, created_at), (entity, entity_id), (action, created_at) | audit filters |
 | consent_records | (user_id, purpose, consented_at) | consent check |

@@ -100,7 +100,15 @@ export function MemoView() {
     const [confirming, setConfirming] = useState(false);
     // Set by the editor after a save, so this page confirms it (same pattern as RoleDetail).
     const saved = (useLocation().state as { saved?: 'posted' | 'updated' } | null)?.saved;
-    const memo = useQuery({ queryKey: ['memo', id], queryFn: () => getMemo(id) });
+    const memo = useQuery({
+        queryKey: ['memo', id],
+        queryFn: () => getMemo(id),
+        // While the server makes the PDF copy of a Word file, check every 3 seconds for 2 minutes.
+        refetchInterval: (query) =>
+            query.state.data?.file?.preview === 'converting' && query.state.dataUpdateCount < 40
+                ? 3000
+                : false,
+    });
     const remove = useMutation({
         mutationFn: () => deleteMemo(id),
         onSuccess: async () => {
