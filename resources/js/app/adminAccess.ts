@@ -15,7 +15,7 @@ export const adminEntries: AdminEntry[] = [
     { to: '/admin/map', permission: 'location.view' },
     { to: '/admin/reports', permission: 'reports.view' },
     { to: '/admin/people', permission: 'people.view' },
-    { to: '/admin/teams', permission: 'people.view' },
+    { to: '/admin/lists', permission: 'people.view' },
     { to: '/admin/requests', permission: 'registrations.review' },
     { to: '/admin/memos', permission: 'memos.manage' },
     { to: '/admin/notifications', permission: 'notifications.view' },

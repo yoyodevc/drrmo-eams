@@ -85,6 +85,18 @@ it('finds memos by every search word, even a half typed one, and counts matches 
     expect($counts->all())->toBe(['policy' => 0, 'procedure' => 1, 'advisory' => 0, 'training' => 1, 'other' => 0]);
 });
 
+it('searches 500 memos in under 300 ms', function () {
+    Memo::factory()->count(499)->create();
+    Memo::factory()->create(['title' => 'Fire Drill Procedure']);
+    $cookies = loginCookies(User::factory()->role(RoleCode::Volunteer)->create());
+
+    $start = microtime(true);
+    $titles = withAuthCookies($cookies)->getJson('/api/memos?q=fire%20dril')->assertOk()->json('data.*.title');
+    $ms = (microtime(true) - $start) * 1000;
+
+    expect($titles)->toContain('Fire Drill Procedure')->and($ms)->toBeLessThan(300);
+});
+
 it('keeps memos away from signed out visitors', function () {
     $memo = Memo::factory()->create();
 

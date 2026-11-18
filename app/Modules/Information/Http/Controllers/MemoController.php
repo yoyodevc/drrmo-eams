@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Information\Http\Controllers;
 
+use App\Modules\Information\Contracts\DocumentConverter;
 use App\Modules\Information\Enums\MemoCategory;
 use App\Modules\Information\Http\Requests\SaveMemoRequest;
+use App\Modules\Information\Jobs\ConvertMemoFile;
 use App\Modules\Information\Models\Memo;
 use App\Modules\Records\Contracts\AuditLogger;
 use Illuminate\Database\Eloquent\Builder;
@@ -101,6 +103,18 @@ class MemoController
         ]);
     }
 
+    /** The PDF copy of a Word file. 404 until it is ready, so the page keeps its quick preview. */
+    public function preview(Memo $memo): StreamedResponse
+    {
+        Gate::authorize('view', $memo);
+        abort_if($memo->preview_status !== 'ready' || $memo->preview_path === null || ! Storage::disk('local')->exists($memo->preview_path), 404);
+
+        return Storage::disk('local')->response($memo->preview_path, pathinfo((string) $memo->file_name, PATHINFO_FILENAME).'.pdf', [
+            'Content-Type' => 'application/pdf',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function store(SaveMemoRequest $request): JsonResponse
     {
         Gate::authorize('create', Memo::class);
@@ -112,6 +126,7 @@ class MemoController
         ]);
         $this->attach($memo, $request->file('file'));
         $memo->save();
+        $this->queuePreview($memo);
 
         return response()->json(['data' => [...$this->row($memo->load('poster:id,first_name,last_name')), 'body' => $memo->body]], 201);
     }
@@ -121,16 +136,18 @@ class MemoController
         Gate::authorize('update', $memo);
 
         $old = $memo->file_path;
+        $oldPreview = $memo->preview_path;
         $memo->fill($request->safe()->only(['title', 'category', 'body']));
         if ($request->hasFile('file')) {
             $this->attach($memo, $request->file('file'));
         } elseif ($request->boolean('remove_file')) {
-            $memo->fill(['file_path' => null, 'file_name' => null, 'file_mime' => null, 'file_size' => null]);
+            $memo->fill(['file_path' => null, 'file_name' => null, 'file_mime' => null, 'file_size' => null, 'preview_path' => null, 'preview_status' => null]);
         }
         $memo->save();
-        // Remove the old file only after the new state is saved, so a failed save loses nothing.
-        if ($old !== null && $old !== $memo->file_path) {
-            Storage::disk('local')->delete($old);
+        // Remove the old file and its PDF copy only after the new state is saved, so a failed save loses nothing.
+        if ($old !== $memo->file_path) {
+            Storage::disk('local')->delete(array_values(array_filter([$old, $oldPreview])));
+            $this->queuePreview($memo);
         }
 
         return response()->json(['data' => [...$this->row($memo->load('poster:id,first_name,last_name')), 'body' => $memo->body]]);
@@ -152,12 +169,37 @@ class MemoController
         if ($file === null) {
             return;
         }
+        $mime = $file->getMimeType();
         $memo->fill([
             'file_path' => $file->store('memos', 'local'),
             'file_name' => $file->getClientOriginalName(),
-            'file_mime' => $file->getMimeType(),
+            'file_mime' => $mime,
             'file_size' => $file->getSize(),
+            'preview_path' => null,
+            // Word files wait for their PDF copy when a converter is set up on this server.
+            'preview_status' => Memo::isWordFile($mime) && app(DocumentConverter::class)->available() ? 'pending' : null,
         ]);
+    }
+
+    private function queuePreview(Memo $memo): void
+    {
+        if ($memo->preview_status === 'pending' && $memo->file_path !== null) {
+            ConvertMemoFile::dispatch($memo, $memo->file_path);
+        }
+    }
+
+    /** Where the preview pane stands for a Word file. Null for files that need no copy. */
+    private function previewState(Memo $m): ?string
+    {
+        if (! Memo::isWordFile($m->file_mime)) {
+            return null;
+        }
+
+        return match ($m->preview_status) {
+            'ready' => 'ready',
+            'pending' => 'converting',
+            default => 'unavailable',
+        };
     }
 
     /** @return array<string, mixed> */
@@ -176,6 +218,8 @@ class MemoController
                 'name' => $m->file_name,
                 'type' => $m->file_mime,
                 'size' => $m->file_size,
+                // Word only: ready, converting or unavailable. The quick browser preview covers unavailable.
+                'preview' => $this->previewState($m),
             ],
         ];
     }

@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { adminAccessRoutes, myAccessRoutes } from '@/features/access/routes';
 import { adminEventRoutes, dashboardRoute, myDutiesRoute } from '@/features/events/routes';
-import { adminInformationRoutes } from '@/features/information/routes';
+import { adminInformationRoutes, myInformationRoutes } from '@/features/information/routes';
 import { adminMonitoringRoutes, myMonitoringRoutes } from '@/features/monitoring/routes';
 import { adminNotificationRoutes, myNotificationRoutes } from '@/features/notifications/routes';
 import { AdminLayout } from '@/layouts/AdminLayout';
@@ -13,7 +13,7 @@ import { PeopleList } from '@/features/personnel/pages/admin/PeopleList';
 import { PeopleImport } from '@/features/personnel/pages/admin/PeopleImport';
 import { PersonForm } from '@/features/personnel/pages/admin/PersonForm';
 import { PersonProfile } from '@/features/personnel/pages/admin/PersonProfile';
-import { TeamsAndDepartments } from '@/features/personnel/pages/admin/TeamsAndDepartments';
+import { ManageLists } from '@/features/personnel/pages/admin/ManageLists';
 import { MyAvailability } from '@/features/personnel/pages/mobile/MyAvailability';
 import { MyContacts } from '@/features/personnel/pages/mobile/MyContacts';
 import { MyDetails } from '@/features/personnel/pages/mobile/MyDetails';
@@ -53,7 +53,8 @@ export const router = createBrowserRouter([
                     { path: 'people/import', element: <PeopleImport /> },
                     { path: 'people/:id', element: <PersonProfile /> },
                     { path: 'people/:id/edit', element: <PersonForm /> },
-                    { path: 'teams', element: <TeamsAndDepartments /> },
+                    { path: 'lists', element: <ManageLists /> },
+                    { path: 'teams', element: <Navigate to="/admin/lists" replace /> },
                     // Volunteer status now lives on the People list and each profile.
                     {
                         path: 'volunteers',
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
                     { path: 'availability', element: <MyAvailability /> },
                     { path: 'details', element: <MyDetails /> },
                     { path: 'contacts', element: <MyContacts /> },
+                    ...myInformationRoutes,
                     ...myNotificationRoutes,
                     ...myMonitoringRoutes,
                     ...myAccessRoutes,

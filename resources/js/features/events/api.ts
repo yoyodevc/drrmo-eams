@@ -254,3 +254,57 @@ export async function getCalendar(from: string, to: string): Promise<CalendarEve
     const body = await api<{ data: CalendarEvent[] }>(`/api/events/calendar?${query.toString()}`);
     return body.data;
 }
+
+export interface EventTypeRow {
+    code: string;
+    name: string;
+    active: boolean;
+    events_count: number;
+}
+
+export async function listEventTypes(): Promise<EventTypeRow[]> {
+    const body = await api<{ data: EventTypeRow[] }>('/api/event-types');
+    return body.data;
+}
+
+export async function saveEventType(
+    code: string | null,
+    input: { name: string; active: boolean },
+): Promise<void> {
+    await api(code === null ? '/api/event-types' : `/api/event-types/${code}`, {
+        method: code === null ? 'POST' : 'PATCH',
+        body: JSON.stringify(input),
+    });
+}
+
+export async function deleteEventType(code: string): Promise<void> {
+    await api(`/api/event-types/${code}`, { method: 'DELETE' });
+}
+
+export interface LocationRow {
+    id: number;
+    name: string;
+    latitude: number;
+    longitude: number;
+    active: boolean;
+    events_count: number;
+}
+
+export async function listLocations(): Promise<LocationRow[]> {
+    const body = await api<{ data: LocationRow[] }>('/api/campus-locations');
+    return body.data;
+}
+
+export async function saveLocation(
+    id: number | null,
+    input: { name: string; latitude: number; longitude: number; active: boolean },
+): Promise<void> {
+    await api(id === null ? '/api/campus-locations' : `/api/campus-locations/${id}`, {
+        method: id === null ? 'POST' : 'PATCH',
+        body: JSON.stringify(input),
+    });
+}
+
+export async function deleteLocation(id: number): Promise<void> {
+    await api(`/api/campus-locations/${id}`, { method: 'DELETE' });
+}

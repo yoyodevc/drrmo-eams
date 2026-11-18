@@ -382,3 +382,12 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: slots that are not yet due stay out of the feed, because they carry no news
 - Evidence: tests/Feature/Monitoring/ReportFeedTest.php
 - Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 4.8)
+
+## 2026-11-18 · Manage lists redesign and location pin picker (personnel, events)
+- What was built: the admin Manage lists page now shows one list at a time. A switcher on the left groups People lists (teams, departments) and Events lists (event types, locations) with counts. Phones get a row of choices on top. The chosen list is in the URL (`?list=locations`)
+- What was built: each list has a search box, an All, Active and Inactive filter, and table rows with name, status, use count and actions. Empty, no match, loading and error states are covered
+- What was built: locations show on a campus map next to the list. The add and edit dialog has a map picker: click to drop the pin, drag to fine tune, or pin the map center. Typed latitude and longitude still work. A note shows when the pin is outside the campus border
+- Decision and why: the satellite and street layers and the campus border moved into one shared map piece, so the live map and the picker look the same
+- Decision and why: setting a location inactive from the delete dialog now keeps its coordinates. Before, it sent 0, 0
+- Evidence: resources/js/features/monitoring/mapView.test.ts (campus border check, coordinate parsing)
+- Paper: Chapter 4 (admin lists, campus locations)

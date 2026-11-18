@@ -37,6 +37,8 @@ const tabs: { to: string; label: string; icon: ReactNode; also?: string[] }[] = 
     {
         to: '/me/memos',
         label: 'Memos',
+        // A memo you open keeps the Memos tab highlighted.
+        also: ['/me/memos/'],
         icon: (
             <TabIcon>
                 <path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10Z" />

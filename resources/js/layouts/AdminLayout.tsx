@@ -112,8 +112,8 @@ const groups: { label: string; items: Item[] }[] = [
                 ),
             },
             {
-                to: '/admin/teams',
-                label: 'Teams and departments',
+                to: '/admin/lists',
+                label: 'Manage lists',
                 icon: (
                     <NavIcon>
                         <rect x="4" y="3.5" width="16" height="17" rx="1.5" />

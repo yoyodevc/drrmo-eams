@@ -27,12 +27,20 @@ class Memo extends Model
 
     use SoftDeletes;
 
-    protected $fillable = ['title', 'category', 'body', 'file_path', 'file_name', 'file_mime', 'file_size', 'posted_by', 'posted_at'];
+    /** Word files get a PDF copy for the preview pane (ConvertMemoFile). */
+    public const WORD_TYPES = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
+    protected $fillable = ['title', 'category', 'body', 'file_path', 'file_name', 'file_mime', 'file_size', 'preview_path', 'preview_status', 'posted_by', 'posted_at'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
         return ['category' => MemoCategory::class, 'posted_at' => 'datetime', 'file_size' => 'integer'];
+    }
+
+    public static function isWordFile(?string $mime): bool
+    {
+        return in_array($mime, self::WORD_TYPES, true);
     }
 
     /** @return BelongsTo<User, $this> */

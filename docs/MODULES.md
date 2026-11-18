@@ -157,7 +157,7 @@ Count: 4 + 4 + 5 + 1 + 2 + 2 + 2 = 20 tables. Each appears once.
 
 - **Owns:** MEMO, MESSAGE.
 - **Endpoints:**
-  - `GET /api/memos?q=&category=`, `GET /api/memos/{memo}`, `GET /api/memos/{memo}/file`
+  - `GET /api/memos?q=&category=`, `GET /api/memos/{memo}`, `GET /api/memos/{memo}/file`, `GET /api/memos/{memo}/preview` (PDF copy of a Word file)
   - `POST /api/memos`, `PATCH /api/memos/{memo}`, `DELETE /api/memos/{memo}` (admin)
   - `GET /api/messages/threads`, `GET /api/messages/threads/{user}`, `POST /api/messages`, `POST /api/messages/{message}/read`
 - **Policies:** `MemoPolicy`, `MessagePolicy`.

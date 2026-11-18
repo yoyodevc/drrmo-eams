@@ -207,7 +207,7 @@ export function PeopleList() {
                         </Link>
                         . Edit the{' '}
                         <Link
-                            to="/admin/teams"
+                            to="/admin/lists"
                             className="font-medium text-maroon-700 underline-offset-2 hover:underline"
                         >
                             teams and departments

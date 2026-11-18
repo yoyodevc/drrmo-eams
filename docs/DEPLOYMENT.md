@@ -46,6 +46,9 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y nginx mysql-server supervisor git unzip \
   php8.3-fpm php8.3-cli php8.3-mysql php8.3-mbstring php8.3-xml php8.3-curl \
   php8.3-zip php8.3-intl php8.3-bcmath php8.3-gd
+# Word to PDF for memo previews. Then set LIBREOFFICE_BINARY=soffice in .env
+# and run: php artisan memos:convert-previews
+sudo apt install -y --no-install-recommends libreoffice-writer-nogui
 # Composer: follow https://getcomposer.org/download/
 # Node 22 LTS for building assets: use the NodeSource or nvm instructions
 sudo timedatectl set-timezone Asia/Manila

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Events\Http\Controllers;
 
-use App\Modules\Events\Enums\EventType;
 use App\Modules\Events\Models\CampusLocation;
 use App\Modules\Events\Models\DutyType;
 use App\Modules\Events\Models\Event;
+use App\Modules\Events\Models\EventType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
@@ -19,9 +19,9 @@ class LookupController
         Gate::authorize('create', Event::class);
 
         return response()->json(['data' => [
-            'event_types' => array_map(fn (EventType $t) => ['value' => $t->value, 'label' => $t->label()], EventType::cases()),
+            'event_types' => EventType::query()->where('active', true)->orderBy('name')->get(['code', 'name'])->map(fn (EventType $t) => ['value' => $t->code, 'label' => $t->name])->values(),
             'task_types' => DutyType::query()->orderBy('name')->get(['id', 'name']),
-            'locations' => CampusLocation::query()->orderBy('name')->get(['id', 'name']),
+            'locations' => CampusLocation::query()->where('active', true)->orderBy('name')->get(['id', 'name']),
         ]]);
     }
 }

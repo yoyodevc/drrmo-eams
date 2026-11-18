@@ -21,6 +21,8 @@ interface ConfirmDialogProps {
     children?: ReactNode;
     // Disables the confirm button, for example until a reason is typed.
     confirmDisabled?: boolean;
+    // lg widens the desktop dialog for a bigger field, such as a map picker.
+    size?: 'sm' | 'lg';
 }
 
 export function ConfirmDialog({
@@ -37,6 +39,7 @@ export function ConfirmDialog({
     onCancel,
     children,
     confirmDisabled = false,
+    size = 'sm',
 }: ConfirmDialogProps) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const cancelRef = useRef<HTMLButtonElement>(null);
@@ -78,7 +81,7 @@ export function ConfirmDialog({
             aria-describedby={bodyId}
             onCancel={handleCancel}
             onClick={handleClick}
-            className="animate-dialog-in outline-none m-0 mt-auto w-full max-w-none rounded-t-sheet bg-white p-0 text-stone-600 shadow-raised backdrop:animate-backdrop-in backdrop:bg-stone-950/40 sm:m-auto sm:max-w-sm sm:rounded-card"
+            className={`animate-dialog-in outline-none m-0 mt-auto w-full max-w-none rounded-t-sheet bg-white p-0 text-stone-600 shadow-raised backdrop:animate-backdrop-in backdrop:bg-stone-950/40 sm:m-auto sm:rounded-card ${size === 'lg' ? 'max-h-[92dvh] overflow-y-auto sm:max-w-2xl' : 'sm:max-w-sm'}`}
         >
             <div className="p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-6">
                 <h2 id={titleId} className="text-lg font-semibold text-stone-900">

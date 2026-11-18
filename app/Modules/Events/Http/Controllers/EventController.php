@@ -29,7 +29,7 @@ class EventController
         Gate::authorize('viewAny', Event::class);
 
         return EventResource::collection(
-            Event::query()->with('location')->orderByDesc('starts_at')->paginate(25),
+            Event::query()->with(['location', 'type'])->orderByDesc('starts_at')->paginate(25),
         );
     }
 
@@ -47,7 +47,7 @@ class EventController
     {
         Gate::authorize('viewAny', Event::class);
 
-        return new EventResource($event->load(['location', 'requirements' => fn ($q) => $q->with(['dutyType', 'assignments' => fn ($a) => $a->where('status', '!=', 'cancelled')->with(['user.role', 'dutyType'])->orderBy('id')])->orderBy('shift_starts_at')->orderBy('id')]));
+        return new EventResource($event->load(['location', 'type', 'requirements' => fn ($q) => $q->with(['dutyType', 'assignments' => fn ($a) => $a->where('status', '!=', 'cancelled')->with(['user.role', 'dutyType'])->orderBy('id')])->orderBy('shift_starts_at')->orderBy('id')]));
     }
 
     public function update(UpdateEventRequest $request, Event $event, AuditLogger $audit): EventResource

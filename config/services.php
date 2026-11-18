@@ -20,6 +20,12 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    // Word to PDF for memo previews. Leave empty to use the quick browser preview only.
+    'libreoffice' => [
+        'binary' => env('LIBREOFFICE_BINARY'),
+        'timeout' => (int) env('LIBREOFFICE_TIMEOUT', 120),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],
