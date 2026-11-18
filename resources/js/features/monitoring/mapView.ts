@@ -124,3 +124,33 @@ export function matchesSearch(person: MapPerson, query: string): boolean {
     if (q === '') return true;
     return `${person.name} ${person.event_title ?? ''}`.toLowerCase().includes(q);
 }
+
+// True when the point falls inside either campus ring. Ray casting, good enough at campus scale.
+export function insideCampus(lat: number, lng: number): boolean {
+    return CAMPUS_BOUNDARY.some((ring) => {
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [yi, xi] = ring[i];
+            const [yj, xj] = ring[j];
+            if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+                inside = !inside;
+            }
+        }
+        return inside;
+    });
+}
+
+// Reads typed latitude and longitude. Returns null unless both are numbers in range.
+export function parseCoords(lat: string, lng: string): [number, number] | null {
+    if (lat.trim() === '' || lng.trim() === '') return null;
+    const a = Number(lat);
+    const b = Number(lng);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    if (Math.abs(a) > 90 || Math.abs(b) > 180) return null;
+    return [a, b];
+}
+
+// Six decimals is about 10 cm, more than a phone or a map click can tell apart.
+export function formatCoord(n: number): string {
+    return n.toFixed(6);
+}

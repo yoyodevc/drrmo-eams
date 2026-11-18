@@ -142,6 +142,13 @@
     background-color: var(--color-stone-50);
     color: var(--color-stone-900);
 }
+/* Pin picker: a crosshair says "click to place". Dragging the map still shows the grab hand. */
+.eams-pick .leaflet-container.leaflet-grab {
+    cursor: crosshair;
+}
+.eams-map .eams-pin {
+    filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.35));
+}
 .eams-map .eams-tip {
     border: 1px solid var(--color-stone-200);
     border-radius: var(--radius-control);

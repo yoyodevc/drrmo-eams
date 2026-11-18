@@ -4,20 +4,11 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useState, type ReactNode } from 'react';
-import {
-    CircleMarker,
-    LayersControl,
-    MapContainer,
-    Polygon,
-    Polyline,
-    TileLayer,
-    Tooltip,
-    useMap,
-} from 'react-leaflet';
+import { CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-leaflet';
 import { Alert } from '@/shared/ui/Alert';
 import { getLatestMap, getTrail, type MapPerson } from '../../api';
+import { CampusMapLayers, HomeIcon } from '../../components/CampusMapLayers';
 import {
-    CAMPUS_BOUNDARY,
     eventOptions,
     lastSeen,
     MAP_HOME,
@@ -31,9 +22,6 @@ import {
 const control =
     'h-10 rounded-control border border-stone-300 bg-white px-3 text-sm text-stone-900 focus:border-maroon-700 focus:outline-none';
 
-// Campus border colors. Approved look: thin maroon line on a white edge, no fill.
-const BORDER_EDGE = '#ffffff';
-const BORDER_LINE = '#7f1d1d';
 // Selected trail and ring: ember-500 on a white casing, maroon-700 ring.
 const TRAIL = '#f04e12';
 const SELECTED_RING = '#7d1d23';
@@ -186,25 +174,6 @@ function Legend({ showTrail }: { showTrail: boolean }) {
                 )}
             </ul>
         </div>
-    );
-}
-
-function HomeIcon() {
-    return (
-        <svg
-            viewBox="0 0 24 24"
-            className="size-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-            <circle cx="12" cy="12" r="6" />
-            <circle cx="12" cy="12" r="1.5" />
-        </svg>
     );
 }
 
@@ -465,33 +434,8 @@ export function LiveMap() {
                         zoom={MAP_HOME_ZOOM}
                         className="h-full w-full"
                     >
-                        <LayersControl position="topright">
-                            <LayersControl.BaseLayer checked name="Satellite (Esri)">
-                                <TileLayer
-                                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                                    attribution="Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community"
-                                    maxZoom={19}
-                                />
-                            </LayersControl.BaseLayer>
-                            <LayersControl.BaseLayer name="Streets (OpenStreetMap)">
-                                <TileLayer
-                                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    attribution="&copy; OpenStreetMap contributors"
-                                    maxZoom={19}
-                                />
-                            </LayersControl.BaseLayer>
-                        </LayersControl>
+                        <CampusMapLayers />
                         <FitTo points={focus} />
-                        <Polygon
-                            positions={CAMPUS_BOUNDARY}
-                            pathOptions={{ color: BORDER_EDGE, weight: 6, fillOpacity: 0 }}
-                            interactive={false}
-                        />
-                        <Polygon
-                            positions={CAMPUS_BOUNDARY}
-                            pathOptions={{ color: BORDER_LINE, weight: 2.5, fillOpacity: 0 }}
-                            interactive={false}
-                        />
                         {trailPoints.length > 1 && (
                             <>
                                 <Polyline
