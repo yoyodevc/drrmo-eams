@@ -30,7 +30,7 @@ const ExternalIcon = ({ className = 'size-4' }: { className?: string }) => (
 );
 
 const toolButton =
-    'inline-flex min-h-12 items-center justify-center gap-2 rounded-control px-3 text-base font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-900 md:min-h-9 md:text-sm';
+    'inline-flex min-h-12 items-center justify-center gap-2 rounded-control px-3 text-base font-semibold whitespace-nowrap text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-900 md:min-h-9 md:text-sm';
 
 function Sheet() {
     return (
