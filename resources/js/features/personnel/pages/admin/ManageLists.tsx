@@ -108,10 +108,10 @@ const copy: Record<
 const iconButton =
     'inline-flex size-12 items-center justify-center rounded-control text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900 active:bg-stone-200 md:size-10';
 
-// Name, status, used by, actions. Locations add a place column.
-const rowGrid = 'md:grid md:grid-cols-[minmax(0,1fr)_7rem_8rem_5.5rem] md:items-center md:gap-4';
-const rowGridPlace =
-    'md:grid md:grid-cols-[minmax(0,1fr)_7rem_7rem_5.5rem] md:items-center md:gap-4';
+// Name, status, used by, actions. Columns appear only when the panel itself is wide enough
+// (a container query), so a narrow panel never squeezes the name into one letter per line.
+const rowGrid =
+    '@xl:grid @xl:grid-cols-[minmax(0,1fr)_6.5rem_7.5rem_5.5rem] @xl:items-center @xl:gap-4';
 
 function count(n: number, kind: ListKind) {
     const [one, many] = copy[kind].noun;
@@ -201,10 +201,10 @@ function SkeletonRows() {
                 <li key={row} className="flex items-center gap-4 px-4 py-4 md:px-6">
                     <div className="flex-1">
                         <div className="h-4 w-48 animate-pulse rounded bg-stone-200" />
-                        <div className="mt-2 h-3 w-20 animate-pulse rounded bg-stone-200 md:hidden" />
+                        <div className="mt-2 h-3 w-20 animate-pulse rounded bg-stone-200 @xl:hidden" />
                     </div>
-                    <div className="hidden h-4 w-16 animate-pulse rounded bg-stone-200 md:block" />
-                    <div className="hidden h-4 w-20 animate-pulse rounded bg-stone-200 md:block" />
+                    <div className="hidden h-4 w-16 animate-pulse rounded bg-stone-200 @xl:block" />
+                    <div className="hidden h-4 w-20 animate-pulse rounded bg-stone-200 @xl:block" />
                     <div className="h-8 w-20 animate-pulse rounded bg-stone-200" />
                 </li>
             ))}
@@ -373,7 +373,7 @@ function ListPanel({ kind, list }: { kind: ListKind; list: UseQueryResult<Unit[]
         };
     }
 
-    const grid = isLocation ? rowGridPlace : rowGrid;
+    const grid = rowGrid;
 
     let body: ReactNode;
     if (list.isPending) {
@@ -476,17 +476,17 @@ function ListPanel({ kind, list }: { kind: ListKind; list: UseQueryResult<Unit[]
                                             {u.name}
                                         </p>
                                     )}
-                                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 md:hidden">
+                                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 @xl:hidden">
                                         {!u.active && <StatusChip active={false} />}
                                         <span className="text-sm text-stone-500 tabular-nums">
                                             {u.count > 0 ? count(u.count, kind) : 'Not used yet'}
                                         </span>
                                     </div>
                                 </div>
-                                <div className="hidden md:block">
+                                <div className="hidden @xl:block">
                                     <StatusChip active={u.active} />
                                 </div>
-                                <div className="hidden text-sm tabular-nums md:block">
+                                <div className="hidden text-sm tabular-nums @xl:block">
                                     {link ? (
                                         <Link
                                             to={link}
@@ -572,7 +572,7 @@ function ListPanel({ kind, list }: { kind: ListKind; list: UseQueryResult<Unit[]
     return (
         <section
             aria-labelledby={`${kind}-title`}
-            className="overflow-hidden rounded-card bg-white ring-1 ring-stone-200"
+            className="@container overflow-hidden rounded-card bg-white ring-1 ring-stone-200"
         >
             <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-stone-200 px-4 py-4 md:px-6 md:py-5">
                 <div className="flex min-w-56 flex-1 items-start gap-3">
@@ -599,30 +599,26 @@ function ListPanel({ kind, list }: { kind: ListKind; list: UseQueryResult<Unit[]
                 </Button>
             </div>
 
-            {isLocation && list.isSuccess && units.length > 0 ? (
-                <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-                    <div className="min-w-0 lg:border-r lg:border-stone-200">{table}</div>
-                    <div className="border-t border-stone-200 lg:border-t-0">
-                        <LocationsOverview
-                            places={units.map((u) => ({
-                                key: u.key,
-                                name: u.name,
-                                active: u.active,
-                                latitude: u.latitude ?? 0,
-                                longitude: u.longitude ?? 0,
-                            }))}
-                            focused={focused}
-                            onOpen={(key) => {
-                                setFocused(key);
-                                const unit = units.find((u) => u.key === key);
-                                if (unit) open(unit);
-                            }}
-                        />
-                    </div>
+            {isLocation && list.isSuccess && units.length > 0 && (
+                <div className="border-b border-stone-200">
+                    <LocationsOverview
+                        places={units.map((u) => ({
+                            key: u.key,
+                            name: u.name,
+                            active: u.active,
+                            latitude: u.latitude ?? 0,
+                            longitude: u.longitude ?? 0,
+                        }))}
+                        focused={focused}
+                        onOpen={(key) => {
+                            setFocused(key);
+                            const unit = units.find((u) => u.key === key);
+                            if (unit) open(unit);
+                        }}
+                    />
                 </div>
-            ) : (
-                table
             )}
+            {table}
 
             <ConfirmDialog
                 open={editing !== null}

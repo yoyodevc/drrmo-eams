@@ -16,6 +16,9 @@ export function CampusMapLayers() {
                         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                         attribution="Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community"
                         maxZoom={19}
+                        // Esri has no campus imagery past zoom 18 and sends a "Map data not yet
+                        // available" tile. Stretch the zoom 18 tiles instead.
+                        maxNativeZoom={18}
                     />
                 </LayersControl.BaseLayer>
                 <LayersControl.BaseLayer name="Streets (OpenStreetMap)">

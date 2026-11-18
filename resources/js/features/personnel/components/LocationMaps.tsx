@@ -217,7 +217,7 @@ export function LocationsOverview({
     const [map, setMap] = useState<L.Map | null>(null);
     const target = places.find((p) => p.key === focused) ?? null;
     return (
-        <div className="eams-map relative h-72 overflow-hidden bg-stone-200 lg:h-full lg:min-h-[28rem]">
+        <div className="eams-map relative h-72 overflow-hidden bg-stone-200 md:h-80">
             <MapContainer
                 ref={setMap}
                 center={MAP_HOME}
