@@ -1,8 +1,10 @@
 // Pure helpers for the live map (S4.3). No React or Leaflet in here so they are easy to test.
 import type { MapPerson, MapState } from './api';
 
-// Centre of the ZPPSU campus.
-export const CAMPUS_CENTER: [number, number] = [6.91212, 122.05909];
+// Where the map opens: the ZPPSU Oval, the athletic oval inside the campus. Centroid of
+// OpenStreetMap way 1569631012 ("ZPPSU Oval"). At zoom 17 the whole campus fits around it.
+export const MAP_HOME: [number, number] = [6.91371, 122.05938];
+export const MAP_HOME_ZOOM = 17;
 
 // Campus perimeter from OpenStreetMap relation 3679647 (ODbL, openstreetmap.org/copyright).
 // Two rings: the main campus and the strip along Ricardo S. Baban Road. Points are [lat, lng].
@@ -80,8 +82,9 @@ export const CAMPUS_BOUNDARY: [number, number][][] = [
 
 export const POLL_MS = 30_000;
 
+// Leaflet needs plain colors. Live is ember-500 (DRRMO "live"), the rest stone-500.
 export const pinColors: Record<MapState, string> = {
-    live: '#15803d',
+    live: '#f04e12',
     stale: '#78716c',
     none: '#78716c',
 };
@@ -95,10 +98,11 @@ export function lastSeen(capturedAt: string, now: number): string {
     return `${Math.floor(minutes / 60)} h ago`;
 }
 
-// The map shows everyone who has a ping. "No ping 5+ min" and "No location" are side lists.
+// The map shows everyone who has a ping. The side list groups people by state, so nobody shows twice.
 export function splitPeople(people: MapPerson[]) {
     return {
         onMap: people.filter((p) => p.ping !== null),
+        live: people.filter((p) => p.state === 'live'),
         stale: people.filter((p) => p.state === 'stale'),
         none: people.filter((p) => p.state === 'none'),
     };
@@ -112,4 +116,11 @@ export function eventOptions(people: MapPerson[]): { id: number; title: string }
     return [...seen]
         .map(([id, title]) => ({ id, title }))
         .sort((a, b) => a.title.localeCompare(b.title));
+}
+
+// Case insensitive match on the person's name or event, for the "Find a person" field.
+export function matchesSearch(person: MapPerson, query: string): boolean {
+    const q = query.trim().toLowerCase();
+    if (q === '') return true;
+    return `${person.name} ${person.event_title ?? ''}`.toLowerCase().includes(q);
 }
