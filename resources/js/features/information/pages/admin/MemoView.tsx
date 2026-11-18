@@ -1,25 +1,17 @@
-// A-Memo view. Desktop first. Read a memo the way people will: the text in a readable column, with a
-// side panel for the file and the memo's details. A memo that is only a file puts the file in the main
-// column. Images show inline. PDF and Word open in a new tab, because the server forbids framing pages
-// (X-Frame-Options DENY in deploy/nginx.conf). Under 1024 px everything stacks in one column.
+// A-Memo view. Desktop first. Read a memo the way people will: the text in a readable column, then the
+// file itself in a preview pane (PDF pages, Word text or the image), so nobody has to open it a second
+// time. A side panel holds the memo's details. Under 1024 px everything stacks in one column.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
-import { DownloadIcon, EditIcon, FileIcon, TrashIcon } from '@/features/personnel/components/ui';
+import { EditIcon, TrashIcon } from '@/features/personnel/components/ui';
 import { ApiError } from '@/shared/api/client';
 import { Alert } from '@/shared/ui/Alert';
 import { BackLink } from '@/shared/ui/BackLink';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
-import {
-    deleteMemo,
-    fileKind,
-    fileSize,
-    getMemo,
-    memoFileUrl,
-    postedOn,
-    type Memo,
-} from '../../api';
+import { deleteMemo, fileKind, getMemo, postedOn, type Memo } from '../../api';
+import { MemoPreview } from '../../components/MemoPreview';
 
 // "Nov 18, 2026, 8:41 PM", for the details panel where the time helps.
 const stampFormat = new Intl.DateTimeFormat(undefined, {
@@ -31,111 +23,10 @@ const stampFormat = new Intl.DateTimeFormat(undefined, {
 });
 const stamp = (iso: string) => stampFormat.format(new Date(iso));
 
-const ExternalIcon = ({ className = 'size-4' }: { className?: string }) => (
-    <svg
-        viewBox="0 0 24 24"
-        className={className}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-    >
-        <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
-    </svg>
-);
-
 // 48 px on phones, the denser 40 px admin size from 768 px.
 const buttonBase =
     'inline-flex min-h-12 items-center justify-center gap-2 rounded-control px-4 text-base font-semibold transition-colors md:min-h-10 md:text-sm';
-const primaryButton = `${buttonBase} bg-maroon-700 text-white hover:bg-maroon-800 active:bg-maroon-900`;
 const secondaryButton = `${buttonBase} border border-stone-300 bg-white text-stone-800 hover:bg-stone-50 active:bg-stone-100`;
-
-// The file: what it is, how big, and the two ways to get it. "lead" is the large version for a memo that
-// is only a file, where opening it is the main thing to do on the page.
-function FileCard({ memo, lead = false }: { memo: Memo; lead?: boolean }) {
-    const file = memo.file;
-    if (!file) return null;
-    const url = memoFileUrl(memo.id);
-    const kind = fileKind(file.type);
-    const openLabel = kind === 'File' ? 'Open file' : `Open ${kind}`;
-
-    return (
-        <section
-            aria-labelledby="memo-file-heading"
-            className={`rounded-card bg-white ring-1 ring-stone-200 ${lead ? 'p-5 sm:p-8' : 'p-5'}`}
-        >
-            <h2
-                id="memo-file-heading"
-                className="text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase"
-            >
-                Attached file
-            </h2>
-            <div className={`flex items-center gap-4 ${lead ? 'mt-5' : 'mt-4'}`}>
-                <span
-                    className={`flex shrink-0 items-center justify-center rounded-control border border-stone-200 text-maroon-700 ${lead ? 'size-14' : 'size-12'}`}
-                >
-                    <FileIcon className={lead ? 'size-7' : 'size-6'} />
-                </span>
-                <span className="min-w-0 flex-1">
-                    <span
-                        className={`block font-semibold break-words text-stone-900 ${lead ? 'text-lg' : ''}`}
-                    >
-                        {file.name}
-                    </span>
-                    <span className="text-sm text-stone-600 tabular-nums">
-                        {kind} · {fileSize(file.size)}
-                    </span>
-                </span>
-            </div>
-            <div
-                className={`mt-5 flex flex-col gap-2 ${lead ? 'sm:flex-row' : 'sm:flex-row lg:flex-col'}`}
-            >
-                <a
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={memo.has_body ? secondaryButton : primaryButton}
-                >
-                    <ExternalIcon className="size-5 md:size-4" />
-                    {openLabel}
-                    <span className="sr-only"> in a new tab</span>
-                </a>
-                <a href={url} download={file.name} className={secondaryButton}>
-                    <DownloadIcon className="size-5 md:size-4" />
-                    Download
-                </a>
-            </div>
-            {kind !== 'Image' && (
-                <p className="mt-3 text-sm text-pretty text-stone-500">
-                    Opens in a new tab. Phones may download it instead.
-                </p>
-            )}
-        </section>
-    );
-}
-
-// An image is the memo's content, so it shows large in the main column. A click opens it full size.
-function ImagePreview({ memo }: { memo: Memo }) {
-    if (!memo.file || fileKind(memo.file.type) !== 'Image') return null;
-    const url = memoFileUrl(memo.id);
-    return (
-        <figure className="overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
-            <a href={url} target="_blank" rel="noreferrer" className="block bg-stone-100">
-                <img
-                    src={url}
-                    alt={`Attached image: ${memo.file.name}`}
-                    className="mx-auto max-h-[36rem] w-full object-contain"
-                />
-                <span className="sr-only"> (opens full size in a new tab)</span>
-            </a>
-            <figcaption className="border-t border-stone-200 px-5 py-3 text-sm text-stone-600">
-                Select the image to see it full size.
-            </figcaption>
-        </figure>
-    );
-}
 
 function Detail({ term, children }: { term: string; children: ReactNode }) {
     return (
@@ -251,9 +142,6 @@ export function MemoView() {
     }
 
     const m = memo.data;
-    const isImage = m.file !== null && fileKind(m.file.type) === 'Image';
-    // Only a file, and not an image: the file is the memo, so it leads.
-    const fileLeads = !m.body && m.file !== null && !isImage;
 
     return (
         <div className="mx-auto max-w-6xl">
@@ -318,8 +206,7 @@ export function MemoView() {
                             </p>
                         </article>
                     )}
-                    {isImage && <ImagePreview memo={m} />}
-                    {fileLeads && <FileCard memo={m} lead />}
+                    <MemoPreview memo={m} />
                     {!m.body && !m.file && (
                         <div className="rounded-card bg-white p-8 text-center ring-1 ring-stone-200">
                             <p className="text-stone-600">This memo has no text or file yet.</p>
@@ -333,8 +220,7 @@ export function MemoView() {
                     )}
                 </div>
 
-                <aside className="space-y-6 lg:sticky lg:top-6">
-                    {m.file && !fileLeads && <FileCard memo={m} />}
+                <aside className="lg:sticky lg:top-6">
                     <Details memo={m} />
                 </aside>
             </div>
