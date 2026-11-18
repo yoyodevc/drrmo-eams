@@ -121,7 +121,9 @@ function PdfPages({
     );
 }
 
-// Lays a Word file out as flowing text in our own column, not as a fake paper page.
+// Lays a Word file out as real pages at their true size, portrait or landscape, then scales each page
+// down to fit the pane. Reflowing the text into our column broke text boxes and tables, so we keep the
+// layout and shrink it instead.
 function DocxPages({ data }: { data: ArrayBuffer }) {
     const host = useRef<HTMLDivElement>(null);
     const [failed, setFailed] = useState(false);
@@ -131,6 +133,16 @@ function DocxPages({ data }: { data: ArrayBuffer }) {
         let cancelled = false;
         const el = host.current;
         if (!el) return;
+        // CSS zoom shrinks the page and the space it takes, so pages stack without gaps.
+        const fit = () => {
+            const room = el.clientWidth;
+            el.querySelectorAll<HTMLElement>('section.docx').forEach((page) => {
+                page.style.zoom = '1';
+                const scale = Math.min(1, room / page.offsetWidth);
+                page.style.zoom = String(scale);
+            });
+        };
+        const resize = new ResizeObserver(fit);
         void (async () => {
             try {
                 const { renderAsync } = await import('docx-preview');
@@ -138,16 +150,14 @@ function DocxPages({ data }: { data: ArrayBuffer }) {
                 const out = document.createElement('div');
                 await renderAsync(data, out, undefined, {
                     inWrapper: false,
-                    ignoreWidth: true,
-                    ignoreHeight: true,
-                    breakPages: false,
+                    breakPages: true,
                     ignoreLastRenderedPageBreak: true,
-                    renderHeaders: false,
-                    renderFooters: false,
                     useBase64URL: true,
                 });
                 if (cancelled) return;
                 el.replaceChildren(out);
+                fit();
+                resize.observe(el);
                 setReady(true);
             } catch (error) {
                 console.error('Memo preview failed', error);
@@ -156,21 +166,26 @@ function DocxPages({ data }: { data: ArrayBuffer }) {
         })();
         return () => {
             cancelled = true;
+            resize.disconnect();
         };
     }, [data]);
 
     if (failed) return <PreviewProblem />;
     return (
-        <div className="mx-auto max-w-3xl rounded-sm bg-white px-5 py-6 ring-1 ring-stone-200 sm:px-10 sm:py-10">
-            <div ref={host} className="overflow-x-auto text-stone-800 [overflow-wrap:anywhere]" />
-            {!ready && (
-                <div className="space-y-3" aria-hidden="true">
-                    <div className="h-4 w-1/2 animate-pulse rounded bg-stone-200" />
-                    <div className="h-3 w-full animate-pulse rounded bg-stone-100" />
-                    <div className="h-3 w-4/5 animate-pulse rounded bg-stone-100" />
-                </div>
+        <>
+            {/* Filled by the effect above. Pages get the same white sheet look as PDF pages. */}
+            <div
+                ref={host}
+                className="mx-auto max-w-5xl text-black [&_section.docx]:mx-auto [&_section.docx]:mb-4 [&_section.docx]:bg-white [&_section.docx]:rounded-sm [&_section.docx]:shadow-none [&_section.docx]:ring-1 [&_section.docx]:ring-stone-200 [&_section.docx:last-child]:mb-0"
+            />
+            {!ready && <Sheet />}
+            {ready && (
+                <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-pretty text-stone-600">
+                    This is a quick preview. Text boxes, shapes and some fonts may look different
+                    from Word. Open or download the file to see the exact layout.
+                </p>
             )}
-        </div>
+        </>
     );
 }
 
