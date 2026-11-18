@@ -203,17 +203,23 @@ export function LiveMap() {
                             </LayersControl.BaseLayer>
                         </LayersControl>
                         <FitTo points={focus} />
-                        <Polygon
-                            positions={CAMPUS_BOUNDARY}
-                            pathOptions={{
-                                color: '#7f1d1d',
-                                weight: 3,
-                                dashArray: '8 6',
-                                fillColor: '#7f1d1d',
-                                fillOpacity: 0.08,
-                            }}
-                            interactive={false}
-                        />
+                        <>
+                            <Polygon
+                                positions={CAMPUS_BOUNDARY}
+                                pathOptions={{ color: '#ffffff', weight: 9, fillOpacity: 0 }}
+                                interactive={false}
+                            />
+                            <Polygon
+                                positions={CAMPUS_BOUNDARY}
+                                pathOptions={{
+                                    color: '#b91c1c',
+                                    weight: 5,
+                                    fillColor: '#ef4444',
+                                    fillOpacity: 0.18,
+                                }}
+                                interactive={false}
+                            />
+                        </>
                         {trail.data && trail.data.length > 1 && (
                             <Polyline
                                 positions={trail.data.map((p) => [p.lat, p.lng])}
