@@ -1,5 +1,6 @@
 // The memo's file, shown right on the memo page so nobody has to open it a second time.
-// PDF pages are drawn with pdf.js and Word files with docx-preview, both in the browser and loaded only
+// PDF pages are drawn with pdf.js (its legacy build, because the modern one needs very new browser
+// features such as Map.getOrInsertComputed) and Word files with docx-preview, both in the browser and loaded only
 // when a memo needs them. We fetch the file and draw it ourselves instead of using an iframe, because
 // the server forbids framing pages (X-Frame-Options DENY in deploy/nginx.conf) and phone browsers do not
 // show a PDF inside a page anyway.
@@ -69,8 +70,8 @@ function PdfPages({
         if (!el) return;
         void (async () => {
             try {
-                const pdfjs = await import('pdfjs-dist');
-                const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+                const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+                const worker = await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url');
                 pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
                 // pdf.js takes the buffer over, so give it a copy and keep ours for a redraw.
                 const doc = await pdfjs.getDocument({ data: data.slice(0) }).promise;
@@ -100,7 +101,8 @@ function PdfPages({
                     setReady(true);
                     onPages(n, doc.numPages);
                 }
-            } catch {
+            } catch (error) {
+                console.error('Memo preview failed', error);
                 if (!cancelled) setFailed(true);
             }
         })();
@@ -147,7 +149,8 @@ function DocxPages({ data }: { data: ArrayBuffer }) {
                 if (cancelled) return;
                 el.replaceChildren(out);
                 setReady(true);
-            } catch {
+            } catch (error) {
+                console.error('Memo preview failed', error);
                 if (!cancelled) setFailed(true);
             }
         })();
