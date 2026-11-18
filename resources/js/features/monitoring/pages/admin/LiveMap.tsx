@@ -8,6 +8,7 @@ import {
     CircleMarker,
     LayersControl,
     MapContainer,
+    Polygon,
     Polyline,
     Popup,
     TileLayer,
@@ -16,6 +17,7 @@ import {
 import { Alert } from '@/shared/ui/Alert';
 import { getLatestMap, getTrail, type MapPerson } from '../../api';
 import {
+    CAMPUS_BOUNDARY,
     CAMPUS_CENTER,
     eventOptions,
     lastSeen,
@@ -201,6 +203,17 @@ export function LiveMap() {
                             </LayersControl.BaseLayer>
                         </LayersControl>
                         <FitTo points={focus} />
+                        <Polygon
+                            positions={CAMPUS_BOUNDARY}
+                            pathOptions={{
+                                color: '#7f1d1d',
+                                weight: 3,
+                                dashArray: '8 6',
+                                fillColor: '#7f1d1d',
+                                fillOpacity: 0.08,
+                            }}
+                            interactive={false}
+                        />
                         {trail.data && trail.data.length > 1 && (
                             <Polyline
                                 positions={trail.data.map((p) => [p.lat, p.lng])}
