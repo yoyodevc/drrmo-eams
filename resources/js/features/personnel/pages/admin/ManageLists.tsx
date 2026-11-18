@@ -1,9 +1,19 @@
-// A-Teams and departments. Admin adds, renames, deactivates and removes the values used by the
-// people filters and the person form. A unit that still has people can be set inactive, not deleted.
-// Desktop: two lists side by side. Phones: stacked. Add and edit open a small dialog.
+// A-Manage lists. Admin adds, renames, deactivates and removes the values used on the person form,
+// the people filters and the event form: teams, departments, event types and campus locations.
+// A value that is still in use can be set inactive, not deleted.
+// Desktop: lists side by side. Phones: stacked. Add and edit open a small dialog.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { useMe } from '@/app/auth';
+import {
+    deleteEventType,
+    deleteLocation,
+    listEventTypes,
+    listLocations,
+    saveEventType,
+    saveLocation,
+} from '@/features/events/api';
 import {
     deleteOrgUnit,
     errorMessage,
@@ -11,7 +21,6 @@ import {
     listDepartments,
     listTeams,
     saveOrgUnit,
-    type OrgKind,
 } from '@/features/personnel/people';
 import {
     EditIcon,
@@ -25,16 +34,33 @@ import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { TextField } from '@/shared/ui/TextField';
 
+type ListKind = 'teams' | 'departments' | 'event-types' | 'locations';
+
 interface Unit {
     key: string | number;
     name: string;
     active: boolean;
-    people_count: number;
+    count: number;
+    latitude?: number;
+    longitude?: number;
+}
+
+interface Extra {
+    latitude: string;
+    longitude: string;
 }
 
 const copy: Record<
-    OrgKind,
-    { title: string; one: string; about: string; example: string; filter: string }
+    ListKind,
+    {
+        title: string;
+        one: string;
+        about: string;
+        example: string;
+        filter: string | null;
+        noun: [string, string];
+        used: string;
+    }
 > = {
     teams: {
         title: 'Teams',
@@ -42,6 +68,8 @@ const copy: Record<
         about: 'The duty group a person works in.',
         example: 'For example, Traffic control.',
         filter: 'team',
+        noun: ['person', 'people'],
+        used: 'in',
     },
     departments: {
         title: 'Departments',
@@ -49,14 +77,35 @@ const copy: Record<
         about: 'The college or office a person belongs to.',
         example: 'For example, College of Nursing.',
         filter: 'department',
+        noun: ['person', 'people'],
+        used: 'in',
+    },
+    'event-types': {
+        title: 'Event types',
+        one: 'event type',
+        about: 'The kind of event, shown on the event form and the Events filter.',
+        example: 'For example, Outreach.',
+        filter: null,
+        noun: ['event', 'events'],
+        used: 'using',
+    },
+    locations: {
+        title: 'Locations',
+        one: 'location',
+        about: 'The campus places an event can happen at.',
+        example: 'For example, ZPPSU Gymnasium.',
+        filter: null,
+        noun: ['event', 'events'],
+        used: 'using',
     },
 };
 
 const iconButton =
     'inline-flex size-12 items-center justify-center rounded-control text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900 active:bg-stone-200 md:size-10';
 
-function count(n: number) {
-    return n === 1 ? '1 person' : `${n} people`;
+function count(n: number, kind: ListKind) {
+    const [one, many] = copy[kind].noun;
+    return n === 1 ? `1 ${one}` : `${n} ${many}`;
 }
 
 function SkeletonRows() {
@@ -75,31 +124,71 @@ function SkeletonRows() {
     );
 }
 
-function Section({ kind }: { kind: OrgKind }) {
+function Section({ kind }: { kind: ListKind }) {
     const c = copy[kind];
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const list = useQuery({
         queryKey: [kind],
-        queryFn: async (): Promise<Unit[]> =>
-            kind === 'teams'
-                ? (await listTeams()).map((t) => ({ ...t, key: t.code }))
-                : (await listDepartments()).map((d) => ({ ...d, key: d.id })),
+        queryFn: async (): Promise<Unit[]> => {
+            if (kind === 'teams')
+                return (await listTeams()).map((t) => ({
+                    ...t,
+                    key: t.code,
+                    count: t.people_count,
+                }));
+            if (kind === 'departments')
+                return (await listDepartments()).map((d) => ({
+                    ...d,
+                    key: d.id,
+                    count: d.people_count,
+                }));
+            if (kind === 'event-types')
+                return (await listEventTypes()).map((t) => ({
+                    ...t,
+                    key: t.code,
+                    count: t.events_count,
+                }));
+            return (await listLocations()).map((l) => ({
+                ...l,
+                key: l.id,
+                count: l.events_count,
+            }));
+        },
     });
     // editing: null = closed, 'new' = add dialog, else the unit being edited.
     const [editing, setEditing] = useState<Unit | 'new' | null>(null);
     const [name, setName] = useState('');
     const [active, setActive] = useState(true);
+    const [extra, setExtra] = useState<Extra>({ latitude: '', longitude: '' });
     const [removing, setRemoving] = useState<Unit | null>(null);
 
     const refresh = () =>
         Promise.all([
             queryClient.invalidateQueries({ queryKey: [kind] }),
             queryClient.invalidateQueries({ queryKey: ['people'] }),
+            queryClient.invalidateQueries({ queryKey: ['event-lookups'] }),
+            queryClient.invalidateQueries({ queryKey: ['events'] }),
         ]);
     const save = useMutation({
-        mutationFn: (input: { key: string | number | null; name: string; active: boolean }) =>
-            saveOrgUnit(kind, input.key, { name: input.name, active: input.active }),
+        mutationFn: (input: {
+            key: string | number | null;
+            name: string;
+            active: boolean;
+            latitude?: number;
+            longitude?: number;
+        }) => {
+            const body = { name: input.name, active: input.active };
+            if (kind === 'event-types')
+                return saveEventType(input.key === null ? null : String(input.key), body);
+            if (kind === 'locations')
+                return saveLocation(input.key === null ? null : Number(input.key), {
+                    ...body,
+                    latitude: input.latitude ?? 0,
+                    longitude: input.longitude ?? 0,
+                });
+            return saveOrgUnit(kind, input.key, body);
+        },
         onSuccess: async () => {
             await refresh();
             setEditing(null);
@@ -107,7 +196,11 @@ function Section({ kind }: { kind: OrgKind }) {
         },
     });
     const remove = useMutation({
-        mutationFn: (unit: Unit) => deleteOrgUnit(kind, unit.key),
+        mutationFn: (unit: Unit) => {
+            if (kind === 'event-types') return deleteEventType(String(unit.key));
+            if (kind === 'locations') return deleteLocation(Number(unit.key));
+            return deleteOrgUnit(kind, unit.key);
+        },
         onSuccess: async () => {
             await refresh();
             setRemoving(null);
@@ -118,26 +211,37 @@ function Section({ kind }: { kind: OrgKind }) {
         save.reset();
         setName(unit === 'new' ? '' : unit.name);
         setActive(unit === 'new' ? true : unit.active);
+        setExtra({
+            latitude: unit === 'new' ? '' : String(unit.latitude ?? ''),
+            longitude: unit === 'new' ? '' : String(unit.longitude ?? ''),
+        });
         setEditing(unit);
     }
 
+    const isLocation = kind === 'locations';
+    const coordsMissing =
+        isLocation && (extra.latitude.trim() === '' || extra.longitude.trim() === '');
+
     function submit(e?: FormEvent) {
         e?.preventDefault();
-        if (name.trim() === '' || save.isPending) return;
+        if (name.trim() === '' || coordsMissing || save.isPending) return;
         save.mutate({
             key: editing === 'new' || editing === null ? null : editing.key,
             name: name.trim(),
             active,
+            latitude: Number(extra.latitude),
+            longitude: Number(extra.longitude),
         });
     }
 
     const nameError = fieldErrors(save.error).name;
     const units = list.data ?? [];
     const inactive = units.filter((u) => !u.active).length;
-    const peopleLink = (u: Unit) => `/admin/people?${c.filter}=${encodeURIComponent(u.key)}`;
+    const peopleLink = (u: Unit) =>
+        c.filter ? `/admin/people?${c.filter}=${encodeURIComponent(u.key)}` : null;
 
     // A unit with people cannot be deleted. The dialog says why and offers the next best step.
-    const inUse = removing !== null && removing.people_count > 0;
+    const inUse = removing !== null && removing.count > 0;
     let removeDialog: {
         title: string;
         description: string;
@@ -149,7 +253,7 @@ function Section({ kind }: { kind: OrgKind }) {
     if (removing && !inUse) {
         removeDialog = {
             title: `Delete ${removing.name}?`,
-            description: `No one is in this ${c.one}. Deleting it removes it from every list. You cannot undo this.`,
+            description: `Nothing uses this ${c.one}. Deleting it removes it from every list. You cannot undo this.`,
             confirm: 'Delete',
             loading: 'Deleting...',
             tone: 'danger',
@@ -157,8 +261,8 @@ function Section({ kind }: { kind: OrgKind }) {
         };
     } else if (removing && removing.active) {
         removeDialog = {
-            title: `${removing.name} still has people`,
-            description: `${count(removing.people_count)} ${removing.people_count === 1 ? 'is' : 'are'} in this ${c.one}, so it cannot be deleted. Set it inactive to hide it from the choices for new people. The people keep it.`,
+            title: `${removing.name} is still in use`,
+            description: `${count(removing.count, kind)} ${c.used === 'in' ? (removing.count === 1 ? 'is' : 'are') + ' in' : (removing.count === 1 ? 'is' : 'are') + ' using'} this ${c.one}, so it cannot be deleted. Set it inactive to hide it from the choices for new entries. Existing ones keep it.`,
             confirm: 'Set inactive',
             loading: 'Saving...',
             tone: 'primary',
@@ -166,12 +270,16 @@ function Section({ kind }: { kind: OrgKind }) {
         };
     } else if (removing) {
         removeDialog = {
-            title: `${removing.name} still has people`,
-            description: `${count(removing.people_count)} ${removing.people_count === 1 ? 'is' : 'are'} in this ${c.one}, so it cannot be deleted yet. Move them to another ${c.one} first.`,
-            confirm: 'View people',
+            title: `${removing.name} is still in use`,
+            description: `${count(removing.count, kind)} ${removing.count === 1 ? 'is' : 'are'} still on this ${c.one}, so it cannot be deleted yet. Move ${removing.count === 1 ? 'it' : 'them'} to another ${c.one} first.`,
+            confirm: peopleLink(removing) ? 'View people' : 'OK',
             loading: 'Opening...',
             tone: 'primary',
-            run: () => navigate(peopleLink(removing)),
+            run: () => {
+                const link = peopleLink(removing);
+                if (link) navigate(link);
+                else setRemoving(null);
+            },
         };
     }
 
@@ -199,9 +307,7 @@ function Section({ kind }: { kind: OrgKind }) {
             <div className="flex flex-col items-center px-6 py-12 text-center">
                 <PeopleIcon className="size-6 text-stone-400" />
                 <p className="mt-3 text-stone-700">No {c.title.toLowerCase()} yet.</p>
-                <p className="mt-1 text-sm text-stone-500">
-                    Add the first one to use it on people.
-                </p>
+                <p className="mt-1 text-sm text-stone-500">Add the first one to start using it.</p>
             </div>
         );
     } else {
@@ -227,15 +333,17 @@ function Section({ kind }: { kind: OrgKind }) {
                                     </span>
                                 )}
                             </div>
-                            {u.people_count > 0 ? (
+                            {u.count > 0 && peopleLink(u) ? (
                                 <Link
-                                    to={peopleLink(u)}
+                                    to={peopleLink(u) ?? ''}
                                     className="mt-0.5 inline-flex rounded-sm text-sm font-medium text-maroon-700 tabular-nums underline-offset-2 hover:underline"
                                 >
-                                    {count(u.people_count)}
+                                    {count(u.count, kind)}
                                 </Link>
                             ) : (
-                                <p className="mt-0.5 text-sm text-stone-500">No one yet</p>
+                                <p className="mt-0.5 text-sm text-stone-500 tabular-nums">
+                                    {u.count > 0 ? count(u.count, kind) : 'None yet'}
+                                </p>
                             )}
                         </div>
                         <div className="flex shrink-0">
@@ -306,13 +414,13 @@ function Section({ kind }: { kind: OrgKind }) {
                 title={editing === 'new' ? `Add a ${c.one}` : `Edit ${c.one}`}
                 description={
                     editing === 'new'
-                        ? `It shows up in the ${c.one} choices on the person form and the people filters.`
-                        : `A new name shows on everyone already in this ${c.one}.`
+                        ? `It shows up in the ${c.one} choices on the forms and filters.`
+                        : `A new name shows everywhere this ${c.one} is already used.`
                 }
                 confirmLabel={editing === 'new' ? `Add ${c.one}` : 'Save changes'}
                 loadingLabel="Saving..."
                 loading={save.isPending && editing !== null}
-                confirmDisabled={name.trim() === ''}
+                confirmDisabled={name.trim() === '' || coordsMissing}
                 error={
                     save.isError && !nameError && editing !== null ? errorMessage(save.error) : null
                 }
@@ -329,6 +437,26 @@ function Section({ kind }: { kind: OrgKind }) {
                         maxLength={100}
                         autoFocus
                     />
+                    {isLocation && (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <TextField
+                                label="Latitude"
+                                inputMode="decimal"
+                                value={extra.latitude}
+                                onChange={(e) => setExtra({ ...extra, latitude: e.target.value })}
+                                error={fieldErrors(save.error).latitude}
+                                hint="For example, 7.8325."
+                            />
+                            <TextField
+                                label="Longitude"
+                                inputMode="decimal"
+                                value={extra.longitude}
+                                onChange={(e) => setExtra({ ...extra, longitude: e.target.value })}
+                                error={fieldErrors(save.error).longitude}
+                                hint="For example, 123.4398."
+                            />
+                        </div>
+                    )}
                     <label className="flex min-h-12 items-start gap-3 py-1 text-stone-800">
                         <input
                             type="checkbox"
@@ -339,8 +467,8 @@ function Section({ kind }: { kind: OrgKind }) {
                         <span>
                             <span className="block text-sm font-medium">Active</span>
                             <span className="block text-sm text-stone-500">
-                                Can be picked for new people. Turn off to retire it without changing
-                                anyone.
+                                Can be picked for new entries. Turn off to retire it without
+                                changing existing ones.
                             </span>
                         </span>
                     </label>
@@ -367,22 +495,26 @@ function Section({ kind }: { kind: OrgKind }) {
     );
 }
 
-export function TeamsAndDepartments() {
+export function ManageLists() {
+    const permissions = useMe().data?.permissions ?? [];
+    const canEvents = permissions.includes('events.manage');
     return (
         <div className="mx-auto max-w-[1440px]">
             <header>
                 <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
                 <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
-                    Teams and departments
+                    Manage lists
                 </h1>
                 <p className="mt-1 max-w-2xl text-pretty text-stone-600">
-                    Every person can have one team and one department. These lists fill those
-                    choices on the person form and the People filters.
+                    The choices used across the system. Teams and departments fill the person form
+                    and People filters. Event types and locations fill the event form.
                 </p>
             </header>
             <div className="mt-8 grid gap-6 lg:grid-cols-2 lg:items-start">
                 <Section kind="teams" />
                 <Section kind="departments" />
+                {canEvents && <Section kind="event-types" />}
+                {canEvents && <Section kind="locations" />}
             </div>
         </div>
     );

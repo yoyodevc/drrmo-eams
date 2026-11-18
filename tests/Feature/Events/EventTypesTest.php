@@ -65,3 +65,29 @@ it('forbids a volunteer from managing event types', function () {
     $as()->patchJson('/api/event-types/drill', ['name' => 'Sneaky'])->assertForbidden();
     $as()->deleteJson('/api/event-types/other')->assertForbidden();
 });
+
+it('adds, edits and deactivates a campus location and hides it from the event form', function () {
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    $as = fn () => withAuthCookies(loginCookies($admin));
+
+    $id = $as()->postJson('/api/campus-locations', ['name' => ' New  gym ', 'latitude' => 7.83, 'longitude' => 123.43])
+        ->assertCreated()->assertJsonPath('data.name', 'New gym')->json('data.id');
+    $as()->postJson('/api/campus-locations', ['name' => 'Bad', 'latitude' => 200, 'longitude' => 1])->assertUnprocessable()->assertJsonValidationErrors('latitude');
+
+    expect(collect($as()->getJson('/api/event-lookups')->json('data.locations'))->pluck('id'))->toContain($id);
+
+    $as()->patchJson("/api/campus-locations/{$id}", ['name' => 'New gym', 'latitude' => 7.83, 'longitude' => 123.43, 'active' => false])->assertOk();
+
+    expect(collect($as()->getJson('/api/event-lookups')->json('data.locations'))->pluck('id'))->not->toContain($id)
+        ->and(AuditLog::query()->whereIn('action', ['location.created', 'location.updated'])->count())->toBe(2);
+});
+
+it('blocks deleting a location that events use and forbids volunteers', function () {
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    $event = Event::factory()->create();
+    $volunteer = User::factory()->role(RoleCode::Volunteer)->create();
+
+    withAuthCookies(loginCookies($admin))->deleteJson("/api/campus-locations/{$event->campus_location_id}")->assertUnprocessable();
+    withAuthCookies(loginCookies($volunteer))->getJson('/api/campus-locations')->assertForbidden();
+    withAuthCookies(loginCookies($volunteer))->deleteJson("/api/campus-locations/{$event->campus_location_id}")->assertForbidden();
+});

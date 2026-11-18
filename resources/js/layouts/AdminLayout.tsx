@@ -75,16 +75,6 @@ const groups: { label: string; items: Item[] }[] = [
                 ),
             },
             {
-                to: '/admin/event-types',
-                label: 'Event types',
-                icon: (
-                    <NavIcon>
-                        <path d="M3.5 12.5V4.5h8l9 9-8 8-9-9Z" />
-                        <circle cx="8" cy="9" r="1" />
-                    </NavIcon>
-                ),
-            },
-            {
                 to: '/admin/map',
                 label: 'Map',
                 icon: (
@@ -122,8 +112,8 @@ const groups: { label: string; items: Item[] }[] = [
                 ),
             },
             {
-                to: '/admin/teams',
-                label: 'Teams and departments',
+                to: '/admin/lists',
+                label: 'Manage lists',
                 icon: (
                     <NavIcon>
                         <rect x="4" y="3.5" width="16" height="17" rx="1.5" />

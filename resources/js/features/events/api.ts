@@ -280,3 +280,31 @@ export async function saveEventType(
 export async function deleteEventType(code: string): Promise<void> {
     await api(`/api/event-types/${code}`, { method: 'DELETE' });
 }
+
+export interface LocationRow {
+    id: number;
+    name: string;
+    latitude: number;
+    longitude: number;
+    active: boolean;
+    events_count: number;
+}
+
+export async function listLocations(): Promise<LocationRow[]> {
+    const body = await api<{ data: LocationRow[] }>('/api/campus-locations');
+    return body.data;
+}
+
+export async function saveLocation(
+    id: number | null,
+    input: { name: string; latitude: number; longitude: number; active: boolean },
+): Promise<void> {
+    await api(id === null ? '/api/campus-locations' : `/api/campus-locations/${id}`, {
+        method: id === null ? 'POST' : 'PATCH',
+        body: JSON.stringify(input),
+    });
+}
+
+export async function deleteLocation(id: number): Promise<void> {
+    await api(`/api/campus-locations/${id}`, { method: 'DELETE' });
+}

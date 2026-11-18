@@ -21,7 +21,7 @@ class LookupController
         return response()->json(['data' => [
             'event_types' => EventType::query()->where('active', true)->orderBy('name')->get(['code', 'name'])->map(fn (EventType $t) => ['value' => $t->code, 'label' => $t->name])->values(),
             'task_types' => DutyType::query()->orderBy('name')->get(['id', 'name']),
-            'locations' => CampusLocation::query()->orderBy('name')->get(['id', 'name']),
+            'locations' => CampusLocation::query()->where('active', true)->orderBy('name')->get(['id', 'name']),
         ]]);
     }
 }

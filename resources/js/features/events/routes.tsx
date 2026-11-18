@@ -4,7 +4,6 @@ import { Dashboard } from './pages/admin/Dashboard';
 import { Events } from './pages/admin/Events';
 import { EventNotices } from './pages/mobile/EventNotices';
 import { EventDetail } from './pages/admin/EventDetail';
-import { EventTypes } from './pages/admin/EventTypes';
 import { NewEvent } from './pages/admin/NewEvent';
 import { MyAssignments } from './pages/mobile/MyAssignments';
 
@@ -29,7 +28,6 @@ export const adminEventRoutes: RouteObject[] = [
     // The calendar now lives on the Events page. Old links still land there.
     { path: 'calendar', element: <Navigate to="/admin/events?show=calendar" replace /> },
     { path: 'events', element: <Events /> },
-    { path: 'event-types', element: <EventTypes /> },
     { path: 'events/new', element: <NewEvent /> },
     { path: 'events/:id/edit', element: <NewEvent /> },
     { path: 'events/:id', element: <EventDetail /> },

@@ -327,6 +327,16 @@ export function NewEvent() {
                                     {location.name}
                                 </SelectOption>
                             ))}
+                            {/* An event may still use a location that was retired after it was made. */}
+                            {existing.data?.location &&
+                                String(existing.data.location.id) === locationId &&
+                                !lookups.data?.locations.some(
+                                    (l) => l.id === existing.data.location?.id,
+                                ) && (
+                                    <SelectOption value={existing.data.location.id}>
+                                        {existing.data.location.name}
+                                    </SelectOption>
+                                )}
                         </SelectField>
                         {lookups.isError && (
                             <div className="mt-3 space-y-3">
