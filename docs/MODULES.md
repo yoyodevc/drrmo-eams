@@ -159,9 +159,11 @@ Count: 4 + 4 + 5 + 1 + 2 + 2 + 2 = 20 tables. Each appears once.
 - **Endpoints:**
   - `GET /api/memos?q=&category=`, `GET /api/memos/{memo}`, `GET /api/memos/{memo}/file`, `GET /api/memos/{memo}/preview` (PDF copy of a Word file)
   - `POST /api/memos`, `PATCH /api/memos/{memo}`, `DELETE /api/memos/{memo}` (admin)
-  - `GET /api/messages/threads`, `GET /api/messages/threads/{user}`, `POST /api/messages`, `POST /api/messages/{message}/read`
+  - Person: `GET /api/me/messages`, `POST /api/me/messages`, `POST /api/me/messages/read`, `GET /api/me/messages/unread`
+  - Person to person: `GET /api/me/chats`, `GET /api/me/chats/people?q=`, `GET /api/me/chats/{user}`, `POST /api/me/chats/{user}`, `POST /api/me/chats/{user}/read`
+  - DRRMO inbox: `GET /api/inbox`, `GET /api/inbox/unread`, `GET /api/inbox/{user}`, `POST /api/inbox/{user}/reply`, `POST /api/inbox/{user}/read`
 - **Policies:** `MemoPolicy`, `MessagePolicy`.
-- **Frontend:** `features/information` with admin page Memo manager and DRRMO inbox, mobile pages Memo search, Memo viewer, Messages.
+- **Frontend:** `features/information` with admin page Memo manager and DRRMO inbox, mobile pages Memo search, Memo viewer, Messages. Admins use one Messages screen with the DRRMO inbox and My chats. Person to person chats are private to the two people and never appear in the DRRMO inbox.
 - **Must not touch:** anything outside its two tables.
 
 ## Records (audit and consent)

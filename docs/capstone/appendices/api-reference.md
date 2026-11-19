@@ -44,3 +44,24 @@ These need `access.manage`, which only the Admin role holds and nobody can be gr
 | `POST /api/roles/{id}/members` | admin | `user_ids` (1 to 100) | 200 with the role. Each person leaves their old role. 422 on `user_ids` for the admin themselves, an account not yet approved, or when no active admin would remain. Each move is audited as `person.role_changed` |
 | `GET /api/role-options` | `people.view` or `people.manage` | none | 200 with `data`: list of `code`, `name`, `is_system`, `can_assign` (false when the role has an admin permission the signed-in person does not hold) |
 | `GET /api/me/access` | signed in | none | 200 with `data.role` (`code`, `name`, `description`) and `data.permissions`: the role's permissions with `label`, `description`, `group`, `admin` |
+
+## Messages (Information)
+
+A person writes to the DRRMO office. Any admin can read and answer. Text only, up to 1000 characters, no attachments. Every route needs a signed in person. `messages.use` belongs to every role. The inbox needs `messages.office_inbox`, and anyone without it gets 403 on every inbox route.
+
+| Method and path | Who | Request | Response |
+|---|---|---|---|
+| `GET /api/me/messages` | signed in | none | 200 with `data` (the newest 200 messages of this person's own conversation, oldest first: `id`, `body`, `sent_at`, `from_office`, `sender` which is `You` or `DRRMO`, and `seen`, true on the person's own messages once an admin opened the conversation) and `unread` (answers not opened yet) |
+| `POST /api/me/messages` | signed in | `body` (required, trimmed, 1000 characters at most) | 201 with `data`. 422 for an empty or too long text. 429 `too_many_messages` after 20 in a minute |
+| `POST /api/me/messages/read` | signed in | none | 200 with `unread: 0`. Marks the answers to this person as read |
+| `GET /api/me/messages/unread` | signed in | none | 200 with `unread`. The app asks every 60 seconds for the Messages tab |
+| `GET /api/inbox` | inbox | none | 200 with `data` (one row per person, newest activity first, at most 200: `person` with `id` and `name`, `last` with `body`, `sent_at`, `from_office`, and `unread`) and `unread` (the total) |
+| `GET /api/inbox/unread` | inbox | none | 200 with `unread` for the sidebar |
+| `GET /api/inbox/{user}` | inbox | none | 200 with `person` and `data` (the conversation, oldest first, with the real `sender` names, and `seen`, true on office answers the person has opened) |
+| `POST /api/inbox/{user}/reply` | inbox | `body` (same rules) | 201 with `data`. 404 when that person never wrote, because a conversation starts with the person. 429 as above |
+| `POST /api/inbox/{user}/read` | inbox | none | 200 with `unread` (the new total). Marks what the person wrote as read for every admin |
+| `GET /api/me/chats` | signed in | none | 200 with the person's direct chats, newest first, with the last message and unread count |
+| `GET /api/me/chats/people?q=` | signed in | `q` (name) | 200 with active people matching the full name. Names only |
+| `GET /api/me/chats/{user}` | signed in | none | 200 with the conversation between the two people. Only they can read it |
+| `POST /api/me/chats/{user}` | signed in | `body` (same rules) | 201 with `data`. 404 or 422 for a closed or waiting account |
+| `POST /api/me/chats/{user}/read` | signed in | none | 200 with `unread`. Marks what the other person wrote as read |

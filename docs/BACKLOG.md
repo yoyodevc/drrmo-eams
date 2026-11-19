@@ -59,10 +59,10 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S4.7 | Overdue alerts | Done |
 | S4.8 | Report feed | Done |
 | S4.9 | Ping retention | Done |
-| S5.1 | Memo manager | Not started |
-| S5.2 | Memo search | Not started |
-| S5.3 | Memo viewer | Not started |
-| S5.4 | Messages | Not started |
+| S5.1 | Memo manager | Done |
+| S5.2 | Memo search | Done |
+| S5.3 | Memo viewer | Done |
+| S5.4 | Messages | Done |
 | S6.1 | Audit log viewer | Not started |
 | S6.2 | My data export | Not started |
 | S6.3 | Retention and pruning | Not started |
@@ -263,6 +263,8 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 **S5.4 Messages** `information` `both` **M**
 - A person writes to DRRMO. Any admin can read and answer in the DRRMO inbox.
 - Unread count in the bottom navigation. Polls every 60 seconds while the page is open.
+- Built as one messaging screen: a chat list with the DRRMO office pinned on top, and the open chat beside it (or in turn on a phone). Anyone can also message any other active person. Those direct chats are private to the two people, so admins cannot read them.
+- Sent and Seen status on your newest message. Admins get a DRRMO inbox and My chats on the same screen.
 
 ## M6 Records and launch
 
@@ -283,3 +285,8 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 
 **S6.6 Field test** `core` `both` **M**
 - Two marshals run a 1-hour mock duty on real phones on campus data. Notes on GPS gaps, battery and signal go into an issue.
+
+## Later
+
+**Improve the overall site report logic** `monitoring` `both` **TBD**
+- Not started. Scope to be decided with the owner. Review how report slots, due times, late and overdue states, and the report feed work as a whole.

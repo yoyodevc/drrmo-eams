@@ -85,7 +85,8 @@ One tap starts one sign out. The label changes to "Signing out..." and the butto
 | M-Event notices | Coordinator | List of upcoming events for their department or campus wide. Read only. | Two-column cards |
 | M-Memo search | Everyone | Search box at top, category chips, results list with title, category, date, file size. | Results in two columns |
 | M-Memo viewer | Everyone | Title, date, body text, or Open file button. | Same, wider |
-| M-Messages | Everyone | Conversation with DRRMO, newest at bottom, text box and Send button. Simple, no attachments in v1. | Two panes |
+| M-Messages | Everyone | Chat list with the DRRMO office pinned on top, then people, newest first, with a name search to start a chat. Open chat shows bubbles by day, a box with Send, and Sent or Seen under your newest message. Text only, no attachments in v1. | List and chat side by side from 768 px |
+| A-Messages | Admin | Same frame as M-Messages with two lists: DRRMO inbox and My chats. Admins can chat person to person here. | Two panes |
 | M-My access | Everyone | Your role with its description, what it lets you do (Everyday and Office screens), any extra access with its end time, and a link to the office screens when the person has some. Read only. | Wider column |
 | M-My profile | Everyone | Name, role, team, department (read only), contact number (editable), emergency contacts list with add, edit, delete, "Download my data", "Stop location consent", Logout. | Wider column |
 

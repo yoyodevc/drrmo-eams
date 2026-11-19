@@ -148,7 +148,7 @@ These are the ten "day in the life" flows. Each one lists the device, the steps,
 **What can go wrong**
 - Typos ("fire dril"): search uses MySQL FULLTEXT in boolean mode with prefix matching, then falls back to `LIKE` on title words. Results are ranked with title matches first.
 - Large PDF on weak data: the list shows file size before opening.
-- No results: show the categories and "Ask DRRMO" which opens Messages.
+- No results: show the categories and "Ask DRRMO" which opens the DRRMO chat in Messages.
 
 ---
 

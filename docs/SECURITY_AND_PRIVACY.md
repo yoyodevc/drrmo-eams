@@ -26,7 +26,7 @@ The table below is the **default** matrix: what the four built-in roles hold on 
 | `reports.view` | Read the site report feed | ✓ | | | | ✓ |
 | `memos.view` | Search and read memos | ✓ | ✓ | ✓ | ✓ | |
 | `memos.manage` | Post, edit, delete memos | ✓ | | | |  ✓ |
-| `messages.use` | Send and read own messages | ✓ | ✓ | ✓ | ✓ | |
+| `messages.use` | Send and read own messages and chats | ✓ | ✓ | ✓ | ✓ | |
 | `messages.office_inbox` | Read and answer the DRRMO inbox | ✓ | | | |  ✓ |
 | `notifications.view` | Read the notification log | ✓ | | | |  ✓ |
 | `audit.view` | Read the audit log | ✓ | | | |  ✓ |
@@ -74,6 +74,8 @@ Scoping rule: every list query is filtered to the user's own rows unless the use
 | Security measures | HTTPS only, hashed passwords (bcrypt), private file storage, encrypted backups, least privilege on the server | Planned (M6) |
 | Breach response | See section 7 | Procedure written, needs a named responsible person |
 | Data Protection Officer | None today. NPC Advisory 2017-01 says each government agency "shall designate a DPO" and allows a Compliance Officer for Privacy for a sub-unit under the DPO. | **Open decision for the owner** |
+
+Direct messages: a person to person message is private to the two people. Admins cannot read it, and the DRRMO inbox does not list it. The people search shows names only, for active accounts only. Closed and waiting accounts cannot receive messages.
 
 ## 3. Consent flow
 

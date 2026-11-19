@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
+import { useMyUnreadMessages } from '@/features/information/messages';
 import { useAlerts } from '@/features/notifications/unread';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
@@ -49,6 +50,7 @@ const tabs: { to: string; label: string; icon: ReactNode; also?: string[] }[] = 
     {
         to: '/me/messages',
         label: 'Messages',
+        also: ['/me/messages/'],
         icon: (
             <TabIcon>
                 <path d="M20.5 12a8 8 0 0 1-11.7 7.1L3.5 20.5l1.4-5A8 8 0 1 1 20.5 12Z" />
@@ -102,16 +104,35 @@ function useOnline() {
 export function MobileLayout({ children }: { children?: ReactNode }) {
     const online = useOnline();
     const { unread } = useAlerts();
+    const messages = useMyUnreadMessages();
     const { pathname } = useLocation();
     const current = (tab: (typeof tabs)[number], isActive: boolean) =>
         isActive || (tab.also ?? []).some((path) => pathname.startsWith(path));
-    // The dot sits on the bell's top right corner. A white ring cuts it out of the icon.
-    const dot = (to: string, place: string) =>
-        unread && to === '/me/notifications' ? (
+    // The dot sits on the bell's top right corner. A white ring cuts it out of the icon. Messages
+    // show how many answers wait, in a small red pill on the same corner.
+    const dot = (to: string, place: string, count: string) => {
+        if (to === '/me/messages' && messages > 0) {
+            return (
+                <span
+                    className={`absolute flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[0.625rem] leading-none font-bold text-white tabular-nums ring-2 ring-white ${count}`}
+                    aria-hidden="true"
+                >
+                    {messages > 9 ? '9+' : messages}
+                </span>
+            );
+        }
+        return unread && to === '/me/notifications' ? (
             <span
                 className={`absolute size-2.5 rounded-full bg-red-600 ring-2 ring-white ${place}`}
                 aria-hidden="true"
             />
+        ) : null;
+    };
+    const hint = (to: string) =>
+        to === '/me/notifications' && unread ? (
+            <span className="sr-only"> (new)</span>
+        ) : to === '/me/messages' && messages > 0 ? (
+            <span className="sr-only"> ({messages} unread)</span>
         ) : null;
 
     return (
@@ -137,12 +158,10 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                                     >
                                         <span className="relative">
                                             {tab.icon}
-                                            {dot(tab.to, '-top-0.5 -right-0.5')}
+                                            {dot(tab.to, '-top-0.5 -right-0.5', '-top-1.5 left-3')}
                                         </span>
                                         {tab.label}
-                                        {unread && tab.to === '/me/notifications' && (
-                                            <span className="sr-only"> (new)</span>
-                                        )}
+                                        {hint(tab.to)}
                                     </NavLink>
                                 </li>
                             ))}
@@ -188,12 +207,14 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                                         className={`relative flex h-8 w-14 items-center justify-center rounded-full transition-colors ${current(tab, isActive) ? 'bg-maroon-100' : 'group-hover:bg-stone-100'}`}
                                     >
                                         {tab.icon}
-                                        {dot(tab.to, 'top-0.5 left-1/2 ml-1')}
+                                        {dot(
+                                            tab.to,
+                                            'top-0.5 left-1/2 ml-1',
+                                            'top-0 left-1/2 ml-1',
+                                        )}
                                     </span>
                                     {tab.label}
-                                    {unread && tab.to === '/me/notifications' && (
-                                        <span className="sr-only"> (new)</span>
-                                    )}
+                                    {hint(tab.to)}
                                 </>
                             )}
                         </NavLink>

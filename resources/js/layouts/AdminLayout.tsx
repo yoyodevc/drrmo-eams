@@ -2,6 +2,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { canOpen, permissionFor } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
+import { useInboxUnread, useMyUnreadMessages } from '@/features/information/messages';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -236,6 +237,11 @@ function Tip({ children, always = false }: { children: ReactNode; always?: boole
 function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: () => void }) {
     const id = useId();
     const me = useMe().data;
+    // Unread messages in the DRRMO inbox plus the admin's own chats, shown on the Messages item.
+    // Gold reads well on the maroon.
+    const inbox = useInboxUnread() + useMyUnreadMessages();
+    const badge = (to: string) =>
+        to === '/admin/messages' && inbox > 0 ? (inbox > 99 ? '99+' : String(inbox)) : null;
     // Admins see everything. Anyone else sees only the screens their grants open, plus a way back.
     const visible = (
         me
@@ -276,19 +282,36 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
                                     {({ isActive }) => (
                                         <>
                                             <span
-                                                className={
+                                                className={`relative ${
                                                     isActive
                                                         ? 'text-gold-300'
                                                         : 'text-white/55 transition-colors group-hover:text-white/90'
-                                                }
+                                                }`}
                                             >
                                                 {item.icon}
+                                                {/* On the icon rail the count sits on the icon's corner. */}
+                                                {rail && badge(item.to) && (
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-400 px-1 text-[0.625rem] leading-none font-bold text-stone-900 tabular-nums ring-2 ring-maroon-900 lg:hidden"
+                                                    >
+                                                        {badge(item.to)}
+                                                    </span>
+                                                )}
                                             </span>
                                             <span
                                                 className={`truncate ${rail ? 'max-lg:sr-only' : ''}`}
                                             >
                                                 {item.label}
                                             </span>
+                                            {badge(item.to) && (
+                                                <span
+                                                    className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gold-400 px-1.5 text-xs font-bold text-stone-900 tabular-nums ${rail ? 'max-lg:sr-only' : ''}`}
+                                                >
+                                                    {badge(item.to)}
+                                                    <span className="sr-only"> unread</span>
+                                                </span>
+                                            )}
                                             {rail && <Tip>{item.label}</Tip>}
                                         </>
                                     )}
@@ -434,7 +457,7 @@ export function AdminLayout() {
                 )}
             </header>
 
-            <aside className="on-dark sticky top-0 hidden h-dvh w-20 shrink-0 flex-col bg-maroon-900 text-white md:flex lg:w-64">
+            <aside className="on-dark sticky top-0 hidden h-dvh max-h-dvh w-20 shrink-0 flex-col self-start overflow-hidden bg-maroon-900 text-white md:flex lg:w-64">
                 <div className="flex flex-col items-center border-b border-white/10 px-4 pt-6 pb-5 lg:items-start lg:px-6">
                     <BrandLink to="/admin" className="flex-col items-center lg:items-start">
                         <BrandLogos
@@ -450,7 +473,7 @@ export function AdminLayout() {
                         </div>
                     </BrandLink>
                 </div>
-                <div className="nav-scroll flex-1 lg:overflow-y-auto">
+                <div className="nav-scroll min-h-0 flex-1 overflow-y-auto">
                     <AdminNav rail />
                 </div>
                 <Account rail />

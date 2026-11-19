@@ -10,6 +10,7 @@ import { ClipboardIcon } from '@/features/events/components/icons';
 import { ChevronIcon, FileIcon, SearchIcon } from '@/features/personnel/components/ui';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
+import { ChatIcon } from '../../components/chat';
 import { fileKind, fileSize, listMemos, postedOn, type Memo } from '../../api';
 
 const MIN_TERM = 2;
@@ -353,6 +354,15 @@ export function MemoSearch() {
                                 >
                                     Clear search
                                 </button>
+                                <div className="mt-4 flex flex-col items-center border-t border-stone-200 pt-4">
+                                    <p className="text-sm text-pretty text-stone-600">
+                                        Still can&apos;t find it?
+                                    </p>
+                                    <Link to="/me/messages/office" className={`${textLink} gap-2`}>
+                                        <ChatIcon className="size-5" />
+                                        Ask DRRMO
+                                    </Link>
+                                </div>
                             </EmptyPanel>
                         ) : (
                             <ul
