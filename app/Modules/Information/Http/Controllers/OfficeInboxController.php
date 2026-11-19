@@ -109,6 +109,8 @@ class OfficeInboxController
             'from_office' => $m->recipient_id !== null,
             // Admins see which admin answered.
             'sender' => $m->sender->name ?? 'Unknown',
+            // For the office's answers: the person has opened them since.
+            'seen' => $m->recipient_id !== null && $m->read_at !== null,
         ];
     }
 }

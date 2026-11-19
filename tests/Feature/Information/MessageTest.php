@@ -225,3 +225,28 @@ it('keeps direct messages away from signed out visitors', function () {
     $this->getJson('/api/me/chats/people')->assertUnauthorized();
     $this->postJson('/api/me/chats/1', ['body' => 'Hi'])->assertUnauthorized();
 });
+
+it('tells the sender when their message was seen, on every kind of conversation', function () {
+    $ana = User::factory()->role(RoleCode::Volunteer)->create();
+    $ben = User::factory()->role(RoleCode::Marshal)->create();
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    $anaCookies = loginCookies($ana);
+
+    // To the office: seen once an admin opens the conversation.
+    withAuthCookies($anaCookies)->postJson('/api/me/messages', ['body' => 'Is the drill on?'])->assertJsonPath('data.seen', false);
+    $adminCookies = loginCookies($admin);
+    withAuthCookies($adminCookies)->postJson("/api/inbox/{$ana->id}/read")->assertOk();
+    withAuthCookies($anaCookies)->getJson('/api/me/messages')->assertJsonPath('data.0.seen', true);
+
+    // The office answer: seen once the person opens it.
+    withAuthCookies($adminCookies)->postJson("/api/inbox/{$ana->id}/reply", ['body' => 'Yes, at 8.'])->assertJsonPath('data.seen', false);
+    withAuthCookies($anaCookies)->postJson('/api/me/messages/read')->assertOk();
+    withAuthCookies($adminCookies)->getJson("/api/inbox/{$ana->id}")->assertJsonPath('data.1.seen', true)->assertJsonPath('data.0.seen', false);
+
+    // Person to person: seen once the other person opens it, and never set on their side.
+    withAuthCookies($anaCookies)->postJson("/api/me/chats/{$ben->id}", ['body' => 'Hi Ben'])->assertJsonPath('data.seen', false);
+    $benCookies = loginCookies($ben);
+    withAuthCookies($benCookies)->postJson("/api/me/chats/{$ana->id}/read")->assertOk();
+    withAuthCookies($benCookies)->getJson("/api/me/chats/{$ana->id}")->assertJsonPath('data.0.seen', false);
+    withAuthCookies($anaCookies)->getJson("/api/me/chats/{$ben->id}")->assertJsonPath('data.0.seen', true);
+});

@@ -141,6 +141,8 @@ class DirectMessageController
             'from_office' => false,
             'mine' => $mine,
             'sender' => $mine ? 'You' : $other->name,
+            // For your own messages: the other person has opened them since.
+            'seen' => $mine && $m->read_at !== null,
         ];
     }
 }

@@ -423,3 +423,12 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: the people list shows names only, active accounts only, never the sender. Closed and waiting accounts cannot receive messages
 - Evidence: tests/Feature/Information/MessageTest.php (41 Information tests pass). Admin screens have no person to person page yet
 - Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 5.4)
+
+## 2026-11-19 · S5.4 Messages redesign (information)
+- What was built: Messages now works like a messaging app. One screen holds the list of chats and the open chat. On a phone they take turns, and the screen fills the space between the top bar and the tab bar so only the messages scroll. From 768 px they sit side by side in one panel
+- What was built: the DRRMO office is pinned on top of the list with its seal, then direct messages, newest first, with initials, the last message, the time and an unread count. A search finds anyone by name to start a chat
+- What was built: every chat has a header with a back button, the avatar and a short line about who can read it. Bubbles carry the other side's avatar, messages from one sender within 5 minutes form a run, and days are split by a hairline. A sent message shows at once with "Sending...", and your newest message says "Sent" or "Seen". An empty office chat offers three ready questions to start with
+- What was built: the admin Messages screen uses the same frame, with two lists on the left: DRRMO inbox and My chats. Admins can now chat person to person from the admin area. The sidebar badge counts both
+- Decision and why: "Seen" comes from the read time the server already keeps, so no new table or column was needed. For the office chat, "Seen" means an admin opened the conversation
+- Evidence: tests/Feature/Information/MessageTest.php adds a test for "seen" on office messages, office answers and direct messages. Full suite 370 PHP tests and 141 JS tests pass
+- Paper: Chapter 4 (feature 5.4)

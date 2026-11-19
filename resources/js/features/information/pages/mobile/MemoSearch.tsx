@@ -10,7 +10,7 @@ import { ClipboardIcon } from '@/features/events/components/icons';
 import { ChevronIcon, FileIcon, SearchIcon } from '@/features/personnel/components/ui';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
-import { ChatIcon } from '../../components/Conversation';
+import { ChatIcon } from '../../components/chat';
 import { fileKind, fileSize, listMemos, postedOn, type Memo } from '../../api';
 
 const MIN_TERM = 2;
@@ -358,7 +358,7 @@ export function MemoSearch() {
                                     <p className="text-sm text-pretty text-stone-600">
                                         Still can&apos;t find it?
                                     </p>
-                                    <Link to="/me/messages" className={`${textLink} gap-2`}>
+                                    <Link to="/me/messages/office" className={`${textLink} gap-2`}>
                                         <ChatIcon className="size-5" />
                                         Ask DRRMO
                                     </Link>

@@ -1,14 +1,24 @@
-// A conversation with one other person. Plain text, marked read while it is on screen. Checks for
-// new messages every 60 seconds while open.
+// A chat with one other person. Shown on the right of the Messages list (on its own on phones), and
+// in the admin Messages screen under My chats. Plain text, marked read while it is on screen. Checks
+// for new messages every 60 seconds while open.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
+import { ApiError } from '@/shared/api/client';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
+import { ChatAvatar, ChatHeader, ThreadSkeleton } from '../../components/chat';
 import { Conversation } from '../../components/Conversation';
 import { POLL_MS, getDirectChat, markDirectRead, sendDirect } from '../../messages';
 
-export function DirectChat() {
+// back: the list this chat belongs to, on the phone or in the admin area.
+export function DirectChat({
+    back = '/me/messages',
+    dense = false,
+}: {
+    back?: string;
+    dense?: boolean;
+}) {
     const personId = Number(useParams().id) || 0;
     const client = useQueryClient();
     const chat = useQuery({
@@ -42,49 +52,63 @@ export function DirectChat() {
         ]);
     }
 
-    return (
-        <div className="mx-auto flex h-[calc(100dvh-10rem)] max-w-2xl flex-col md:h-[calc(100dvh-9rem)]">
-            <header>
-                <Link
-                    to="/me/messages"
-                    className="inline-flex min-h-10 items-center text-sm font-semibold text-maroon-700 hover:underline"
-                >
-                    All messages
-                </Link>
-                <h1 className="text-2xl font-bold tracking-tight text-stone-900">
-                    {chat.data?.person.name ?? 'Message'}
-                </h1>
-            </header>
+    if (chat.isPending) {
+        return (
+            <>
+                <ChatHeader back={back} avatar={<ChatAvatar />} title="Loading..." />
+                <ThreadSkeleton />
+            </>
+        );
+    }
 
-            {chat.isPending && (
-                <p role="status" className="mt-6 text-sm text-stone-600">
-                    Loading the conversation...
-                </p>
-            )}
-            {chat.isError && (
-                <div className="mt-6 space-y-3">
+    if (chat.isError) {
+        const missing = chat.error instanceof ApiError && chat.error.status === 404;
+        return (
+            <>
+                <ChatHeader back={back} avatar={<ChatAvatar />} title="Chat" />
+                <div className="space-y-3 p-4 md:p-6">
                     <Alert tone="error">
-                        The conversation did not load. Check your connection and try again.
+                        {missing
+                            ? 'This person is not in the system.'
+                            : 'The chat did not load. Check your connection and try again.'}
                     </Alert>
-                    <Button
-                        variant="secondary"
-                        block
-                        loading={chat.isFetching}
-                        onClick={() => void chat.refetch()}
-                    >
-                        {chat.isFetching ? 'Retrying...' : 'Retry'}
-                    </Button>
+                    {!missing && (
+                        <Button
+                            variant="secondary"
+                            block={!dense}
+                            size={dense ? 'md' : 'lg'}
+                            loading={chat.isFetching}
+                            onClick={() => void chat.refetch()}
+                        >
+                            {chat.isFetching ? 'Retrying...' : 'Retry'}
+                        </Button>
+                    )}
                 </div>
-            )}
-            {chat.data && (
-                <Conversation
-                    messages={chat.data.data}
-                    mine={(m) => m.mine === true}
-                    emptyText={`No messages yet. Say hello to ${chat.data.person.name}.`}
-                    placeholder={`Write to ${chat.data.person.name}`}
-                    onSend={send}
-                />
-            )}
-        </div>
+            </>
+        );
+    }
+
+    const name = chat.data.person.name;
+    return (
+        <>
+            <ChatHeader
+                back={back}
+                avatar={<ChatAvatar name={name} />}
+                title={name}
+                subtitle="Direct message. Only the two of you can read it."
+            />
+            <Conversation
+                key={personId}
+                messages={chat.data.data}
+                mine={(m) => m.mine === true}
+                theirAvatar={<ChatAvatar name={name} size="sm" />}
+                emptyTitle={`Message ${name}`}
+                emptyText="Only the two of you can read this chat. Keep it about your duties."
+                placeholder={`Message ${name}`}
+                dense={dense}
+                inset="px-4 md:px-6"
+                onSend={send}
+            />
+        </>
     );
 }

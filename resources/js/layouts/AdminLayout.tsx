@@ -2,7 +2,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { canOpen, permissionFor } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
-import { useInboxUnread } from '@/features/information/messages';
+import { useInboxUnread, useMyUnreadMessages } from '@/features/information/messages';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -237,8 +237,9 @@ function Tip({ children, always = false }: { children: ReactNode; always?: boole
 function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: () => void }) {
     const id = useId();
     const me = useMe().data;
-    const inbox = useInboxUnread();
-    // Unread messages in the DRRMO inbox, shown on its nav item. Gold reads well on the maroon.
+    // Unread messages in the DRRMO inbox plus the admin's own chats, shown on the Messages item.
+    // Gold reads well on the maroon.
+    const inbox = useInboxUnread() + useMyUnreadMessages();
     const badge = (to: string) =>
         to === '/admin/messages' && inbox > 0 ? (inbox > 99 ? '99+' : String(inbox)) : null;
     // Admins see everything. Anyone else sees only the screens their grants open, plus a way back.

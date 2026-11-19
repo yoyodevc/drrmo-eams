@@ -87,6 +87,8 @@ class MyMessageController
             'from_office' => $fromOffice,
             // The person sees the office, not which admin answered.
             'sender' => $fromOffice ? 'DRRMO' : 'You',
+            // For the person's own messages: an admin has opened the conversation since.
+            'seen' => ! $fromOffice && $m->read_at !== null,
         ];
     }
 }

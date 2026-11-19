@@ -14,6 +14,8 @@ export interface Message {
     sender: string;
     // Set on person-to-person messages: true when the signed in person wrote it.
     mine?: boolean;
+    // On your own messages: the other side has opened them since.
+    seen?: boolean;
 }
 
 export interface MyConversation {
