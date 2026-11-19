@@ -68,9 +68,8 @@ class DirectMessageController
         $users = User::query()
             ->where('account_status', AccountStatus::Active)->whereNull('disabled_at')
             ->whereKeyNot($this->me($request)->id)
-            ->when($q !== '', fn ($query) => $query->where(fn ($w) => $w
-                ->where('first_name', 'like', '%'.$q.'%')
-                ->orWhere('last_name', 'like', '%'.$q.'%')))
+            // Matches the full name, so "demo vol" finds "Demo Volunteer".
+            ->when($q !== '', fn ($query) => $query->whereRaw("concat(first_name, ' ', last_name) like ?", ['%'.$q.'%']))
             ->orderBy('first_name')->orderBy('last_name')->limit(self::PEOPLE_LIMIT)
             ->get(['id', 'first_name', 'last_name']);
 

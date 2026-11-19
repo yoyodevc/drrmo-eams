@@ -250,3 +250,12 @@ it('tells the sender when their message was seen, on every kind of conversation'
     withAuthCookies($benCookies)->getJson("/api/me/chats/{$ana->id}")->assertJsonPath('data.0.seen', false);
     withAuthCookies($anaCookies)->getJson("/api/me/chats/{$ben->id}")->assertJsonPath('data.0.seen', true);
 });
+
+it('finds people by their full name', function () {
+    $ana = User::factory()->role(RoleCode::Volunteer)->create();
+    User::factory()->role(RoleCode::Marshal)->create(['first_name' => 'Demo', 'last_name' => 'Marshal']);
+
+    $response = withAuthCookies(loginCookies($ana))->getJson('/api/me/chats/people?q=demo%20mar')->assertOk();
+
+    expect(array_column($response->json('data'), 'name'))->toBe(['Demo Marshal']);
+});
