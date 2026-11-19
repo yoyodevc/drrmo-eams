@@ -457,7 +457,7 @@ export function AdminLayout() {
                 )}
             </header>
 
-            <aside className="on-dark sticky top-0 hidden h-dvh w-20 shrink-0 flex-col bg-maroon-900 text-white md:flex lg:w-64">
+            <aside className="on-dark sticky top-0 hidden h-dvh max-h-dvh w-20 shrink-0 flex-col self-start overflow-hidden bg-maroon-900 text-white md:flex lg:w-64">
                 <div className="flex flex-col items-center border-b border-white/10 px-4 pt-6 pb-5 lg:items-start lg:px-6">
                     <BrandLink to="/admin" className="flex-col items-center lg:items-start">
                         <BrandLogos
@@ -473,7 +473,7 @@ export function AdminLayout() {
                         </div>
                     </BrandLink>
                 </div>
-                <div className="nav-scroll flex-1 lg:overflow-y-auto">
+                <div className="nav-scroll min-h-0 flex-1 overflow-y-auto">
                     <AdminNav rail />
                 </div>
                 <Account rail />
