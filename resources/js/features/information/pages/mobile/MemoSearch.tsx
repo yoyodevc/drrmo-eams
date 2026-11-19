@@ -353,6 +353,9 @@ export function MemoSearch() {
                                 >
                                     Clear search
                                 </button>
+                                <Link to="/me/messages" className={textLink}>
+                                    Ask DRRMO
+                                </Link>
                             </EmptyPanel>
                         ) : (
                             <ul

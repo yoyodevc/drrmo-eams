@@ -107,3 +107,17 @@ One row per refresh token. A family is one sign in on one device; every refresh 
 | created_at, updated_at | timestamps | |
 
 Index: (user_id, revoked_at) to revoke all of a user's tokens quickly.
+
+## M5 tables
+
+### messages (Information)
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint | primary key |
+| sender_id | bigint | foreign key to users, restrict on delete |
+| recipient_id | bigint, nullable | foreign key to users, restrict on delete. Null means the DRRMO office inbox, which every admin can read and answer. An answer from the office names the person it is for |
+| body | text | plain text, 1000 characters at most (checked by the request, not the column) |
+| sent_at | datetime | when it was sent |
+| read_at | datetime, nullable | when it was opened. For a message to the office, when any admin opened it. For an answer, when the person opened it |
+
+Indexes: (recipient_id, read_at) for the unread counts, and (sender_id, sent_at) for a person's conversation. A conversation belongs to one person: what they sent (recipient null) plus every row addressed to them. The table has no created_at or updated_at, and rows are never edited.

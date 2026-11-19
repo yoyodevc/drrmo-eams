@@ -59,10 +59,10 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S4.7 | Overdue alerts | Done |
 | S4.8 | Report feed | Done |
 | S4.9 | Ping retention | Done |
-| S5.1 | Memo manager | Not started |
-| S5.2 | Memo search | Not started |
-| S5.3 | Memo viewer | Not started |
-| S5.4 | Messages | Not started |
+| S5.1 | Memo manager | Done |
+| S5.2 | Memo search | Done |
+| S5.3 | Memo viewer | Done |
+| S5.4 | Messages | Done |
 | S6.1 | Audit log viewer | Not started |
 | S6.2 | My data export | Not started |
 | S6.3 | Retention and pruning | Not started |

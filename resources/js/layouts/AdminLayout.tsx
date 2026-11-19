@@ -2,6 +2,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { canOpen, permissionFor } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
+import { useInboxUnread } from '@/features/information/messages';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -236,6 +237,7 @@ function Tip({ children, always = false }: { children: ReactNode; always?: boole
 function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: () => void }) {
     const id = useId();
     const me = useMe().data;
+    const inbox = useInboxUnread();
     // Admins see everything. Anyone else sees only the screens their grants open, plus a way back.
     const visible = (
         me
@@ -289,6 +291,14 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
                                             >
                                                 {item.label}
                                             </span>
+                                            {item.to === '/admin/messages' && inbox > 0 && (
+                                                <span
+                                                    className={`rounded-full bg-gold-400 px-1.5 text-xs font-bold text-stone-900 ${rail ? 'ml-auto max-lg:absolute max-lg:top-0.5 max-lg:right-1 max-lg:ml-0' : 'ml-auto'}`}
+                                                >
+                                                    {inbox}
+                                                    <span className="sr-only"> unread</span>
+                                                </span>
+                                            )}
                                             {rail && <Tip>{item.label}</Tip>}
                                         </>
                                     )}

@@ -57,6 +57,11 @@ class AppServiceProvider extends ServiceProvider
             ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()))
             ->response(fn () => response()->json(['message' => 'Too many location uploads. Try again in a minute.', 'code' => 'too_many_pings'], 429)));
 
+        // Messages to the office: 20 a minute per user is far above a real conversation.
+        RateLimiter::for('messages', fn (Request $request) => Limit::perMinute(20)
+            ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()))
+            ->response(fn () => response()->json(['message' => 'You are sending messages too fast. Wait a minute and try again.', 'code' => 'too_many_messages'], 429)));
+
         RateLimiter::for('register', fn (Request $request) => Limit::perHour(5)
             ->by((string) $request->ip())
             ->response(fn () => $this->tooManyAttempts()));

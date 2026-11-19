@@ -391,3 +391,24 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: setting a location inactive from the delete dialog now keeps its coordinates. Before, it sent 0, 0
 - Evidence: resources/js/features/monitoring/mapView.test.ts (campus border check, coordinate parsing)
 - Paper: Chapter 4 (admin lists, campus locations)
+
+## 2026-11-19 · S5.1 to S5.3 Memo library (information)
+- What was built: an admin Memos page to post, edit and delete memos with a title, a category, and text, a file, or both. Files are PDF, DOCX, JPG or PNG up to 5 MB, and the type is read from the file content. Files sit in private storage under a random name and open only through `GET /api/memos/{id}/file`
+- What was built: phone search with category chips that show a count for the current search. Search starts at 2 letters. MySQL uses FULLTEXT with prefix match, so "fire dril" finds "Fire Drill Procedure", and LIKE takes over when FULLTEXT finds nothing or the database has no FULLTEXT
+- What was built: a memo viewer for admin and phone with the text inline and the file in a preview pane. A Word file gets a PDF copy made by LibreOffice in a queued job. Until it is ready, or if it fails, the page shows the quick browser preview
+- Decision and why: delete is soft and audited as `memo.deleted`, so the audit trail can still name what was removed. Everyone reads (`memos.view`), only `memos.manage` writes
+- Decision and why: when a file is replaced, the old file and its PDF copy are removed only after the new state is saved, so a failed save loses nothing
+- Evidence: tests/Feature/Information/MemoTest.php and MemoPreviewTest.php (18 tests, all pass, run on MariaDB 10.4 on 19 Nov 2026). The 300 ms search test with 500 memos should be run again on MySQL 8
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (features 5.1 to 5.3)
+
+## 2026-11-19 · S5.4 Messages (information)
+- What was built: a phone Messages tab with one conversation with DRRMO. Newest at the bottom, grouped by day, a text box with a character count, and a Send button. The bottom navigation shows how many answers are unread, and the app checks every 60 seconds while it is open. Answers on screen are marked read
+- What was built: an admin DRRMO inbox with two panes, people on the left with the newest activity first and unread counts, the conversation on the right. On a phone one pane shows at a time. The sidebar shows the unread total. Admins type an answer from the same box
+- What was built: `GET` and `POST /api/me/messages` (plus `/read` and `/unread`) and `GET /api/inbox`, `/inbox/unread`, `/inbox/{user}`, `POST /inbox/{user}/reply` and `/read`. New table `messages` as planned in docs/DATABASE.md gap G11
+- Decision and why: the inbox is shared. A message to the office has no recipient, so any admin with `messages.office_inbox` can read and answer, and opening a conversation marks it read for every admin. Two admins do not both chase the same message
+- Decision and why: a person sees answers as "DRRMO", not the admin's name, because they wrote to the office and not to one person. Admins see which admin answered
+- Decision and why: the office can only answer. A conversation starts when the person writes, so the answer route returns 404 for someone who never wrote. This keeps the inbox from becoming a way to message anyone
+- Decision and why: no audit row and no email for a message. The audit rules in docs/SECURITY_AND_PRIVACY.md do not list messages, and the story asks only for an unread count. Both are easy to add later if the owner wants them
+- Decision and why: sending is limited to 20 a minute per person. A real conversation never gets near it
+- Evidence: tests/Feature/Information/MessageTest.php (15 tests: every role may write, each person sees only their own conversation, read and unread counts, shared inbox, forbidden for volunteer, marshal and coordinator on every inbox route, signed out 401, rate limit), resources/js/features/information/messages.test.tsx (day labels, grouping, send, failed send keeps the text, empty and over-long blocked). Full suite 361 PHP tests and 141 JS tests pass
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 5.4)
