@@ -90,6 +90,8 @@ Foreign key rules: `restrict` on delete for people and events (we soft-close, no
 
 MEMO also has `preview_path` and `preview_status` (pending, ready, failed) for the PDF copy of a Word file (migration `2026_01_01_600002`).
 | messages | (recipient_id, read_at), (sender_id, sent_at) | inbox, threads |
+
+MESSAGE also has `is_direct` (boolean, migration `2026_01_01_600004`). False means a message to or from the DRRMO office. True means a private person to person message, which the office inbox never lists.
 | audit_logs | (actor_id, created_at), (entity, entity_id), (action, created_at) | audit filters |
 | consent_records | (user_id, purpose, consented_at) | consent check |
 

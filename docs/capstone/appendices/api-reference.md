@@ -60,3 +60,8 @@ A person writes to the DRRMO office. Any admin can read and answer. Text only, u
 | `GET /api/inbox/{user}` | inbox | none | 200 with `person` and `data` (the conversation, oldest first, with the real `sender` names, and `seen`, true on office answers the person has opened) |
 | `POST /api/inbox/{user}/reply` | inbox | `body` (same rules) | 201 with `data`. 404 when that person never wrote, because a conversation starts with the person. 429 as above |
 | `POST /api/inbox/{user}/read` | inbox | none | 200 with `unread` (the new total). Marks what the person wrote as read for every admin |
+| `GET /api/me/chats` | signed in | none | 200 with the person's direct chats, newest first, with the last message and unread count |
+| `GET /api/me/chats/people?q=` | signed in | `q` (name) | 200 with active people matching the full name. Names only |
+| `GET /api/me/chats/{user}` | signed in | none | 200 with the conversation between the two people. Only they can read it |
+| `POST /api/me/chats/{user}` | signed in | `body` (same rules) | 201 with `data`. 404 or 422 for a closed or waiting account |
+| `POST /api/me/chats/{user}/read` | signed in | none | 200 with `unread`. Marks what the other person wrote as read |

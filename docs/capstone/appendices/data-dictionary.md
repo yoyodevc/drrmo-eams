@@ -117,6 +117,7 @@ Index: (user_id, revoked_at) to revoke all of a user's tokens quickly.
 | sender_id | bigint | foreign key to users, restrict on delete |
 | recipient_id | bigint, nullable | foreign key to users, restrict on delete. Null means the DRRMO office inbox, which every admin can read and answer. An answer from the office names the person it is for |
 | body | text | plain text, 1000 characters at most (checked by the request, not the column) |
+| is_direct | boolean | false for a message to or from the DRRMO office, true for a private person to person message. Direct messages never show in the office inbox and admins cannot read them |
 | sent_at | datetime | when it was sent |
 | read_at | datetime, nullable | when it was opened. For a message to the office, when any admin opened it. For an answer, when the person opened it |
 
