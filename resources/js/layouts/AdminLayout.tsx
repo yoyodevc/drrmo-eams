@@ -238,6 +238,9 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
     const id = useId();
     const me = useMe().data;
     const inbox = useInboxUnread();
+    // Unread messages in the DRRMO inbox, shown on its nav item. Gold reads well on the maroon.
+    const badge = (to: string) =>
+        to === '/admin/messages' && inbox > 0 ? (inbox > 99 ? '99+' : String(inbox)) : null;
     // Admins see everything. Anyone else sees only the screens their grants open, plus a way back.
     const visible = (
         me
@@ -278,24 +281,33 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
                                     {({ isActive }) => (
                                         <>
                                             <span
-                                                className={
+                                                className={`relative ${
                                                     isActive
                                                         ? 'text-gold-300'
                                                         : 'text-white/55 transition-colors group-hover:text-white/90'
-                                                }
+                                                }`}
                                             >
                                                 {item.icon}
+                                                {/* On the icon rail the count sits on the icon's corner. */}
+                                                {rail && badge(item.to) && (
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-400 px-1 text-[0.625rem] leading-none font-bold text-stone-900 tabular-nums ring-2 ring-maroon-900 lg:hidden"
+                                                    >
+                                                        {badge(item.to)}
+                                                    </span>
+                                                )}
                                             </span>
                                             <span
                                                 className={`truncate ${rail ? 'max-lg:sr-only' : ''}`}
                                             >
                                                 {item.label}
                                             </span>
-                                            {item.to === '/admin/messages' && inbox > 0 && (
+                                            {badge(item.to) && (
                                                 <span
-                                                    className={`rounded-full bg-gold-400 px-1.5 text-xs font-bold text-stone-900 ${rail ? 'ml-auto max-lg:absolute max-lg:top-0.5 max-lg:right-1 max-lg:ml-0' : 'ml-auto'}`}
+                                                    className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gold-400 px-1.5 text-xs font-bold text-stone-900 tabular-nums ${rail ? 'max-lg:sr-only' : ''}`}
                                                 >
-                                                    {inbox}
+                                                    {badge(item.to)}
                                                     <span className="sr-only"> unread</span>
                                                 </span>
                                             )}

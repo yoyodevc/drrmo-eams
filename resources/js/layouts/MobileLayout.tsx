@@ -109,11 +109,11 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
         isActive || (tab.also ?? []).some((path) => pathname.startsWith(path));
     // The dot sits on the bell's top right corner. A white ring cuts it out of the icon. Messages
     // show how many answers wait, in a small red pill on the same corner.
-    const dot = (to: string, place: string) => {
+    const dot = (to: string, place: string, count: string) => {
         if (to === '/me/messages' && messages > 0) {
             return (
                 <span
-                    className={`absolute flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[0.625rem] leading-none font-bold text-white ring-2 ring-white ${place}`}
+                    className={`absolute flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[0.625rem] leading-none font-bold text-white tabular-nums ring-2 ring-white ${count}`}
                     aria-hidden="true"
                 >
                     {messages > 9 ? '9+' : messages}
@@ -157,7 +157,7 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                                     >
                                         <span className="relative">
                                             {tab.icon}
-                                            {dot(tab.to, '-top-0.5 -right-0.5')}
+                                            {dot(tab.to, '-top-0.5 -right-0.5', '-top-1.5 left-3')}
                                         </span>
                                         {tab.label}
                                         {hint(tab.to)}
@@ -206,7 +206,11 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                                         className={`relative flex h-8 w-14 items-center justify-center rounded-full transition-colors ${current(tab, isActive) ? 'bg-maroon-100' : 'group-hover:bg-stone-100'}`}
                                     >
                                         {tab.icon}
-                                        {dot(tab.to, 'top-0.5 left-1/2 ml-1')}
+                                        {dot(
+                                            tab.to,
+                                            'top-0.5 left-1/2 ml-1',
+                                            'top-0 left-1/2 ml-1',
+                                        )}
                                     </span>
                                     {tab.label}
                                     {hint(tab.to)}
