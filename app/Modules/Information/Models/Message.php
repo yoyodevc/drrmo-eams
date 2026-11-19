@@ -27,12 +27,12 @@ class Message extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['sender_id', 'recipient_id', 'body', 'sent_at', 'read_at'];
+    protected $fillable = ['sender_id', 'recipient_id', 'is_direct', 'body', 'sent_at', 'read_at'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['sent_at' => 'datetime', 'read_at' => 'datetime'];
+        return ['sent_at' => 'datetime', 'read_at' => 'datetime', 'is_direct' => 'boolean'];
     }
 
     /**
@@ -43,7 +43,7 @@ class Message extends Model
      */
     public function scopeConversationOf(Builder $query, int $personId): Builder
     {
-        return $query->where(fn (Builder $q) => $q
+        return $query->where('is_direct', false)->where(fn (Builder $q) => $q
             ->where(fn (Builder $s) => $s->where('sender_id', $personId)->whereNull('recipient_id'))
             ->orWhere('recipient_id', $personId));
     }
@@ -56,7 +56,7 @@ class Message extends Model
      */
     public function scopeUnreadFor(Builder $query, int $personId): Builder
     {
-        return $query->where('recipient_id', $personId)->whereNull('read_at');
+        return $query->where('is_direct', false)->where('recipient_id', $personId)->whereNull('read_at');
     }
 
     /**
@@ -68,7 +68,31 @@ class Message extends Model
      */
     public function scopeUnreadByOffice(Builder $query): Builder
     {
-        return $query->whereNull('recipient_id')->whereNull('read_at');
+        return $query->where('is_direct', false)->whereNull('recipient_id')->whereNull('read_at');
+    }
+
+    /**
+     * Person-to-person messages between two people, either direction.
+     *
+     * @param  Builder<Message>  $query
+     * @return Builder<Message>
+     */
+    public function scopeBetween(Builder $query, int $a, int $b): Builder
+    {
+        return $query->where('is_direct', true)->where(fn (Builder $q) => $q
+            ->where(fn (Builder $s) => $s->where('sender_id', $a)->where('recipient_id', $b))
+            ->orWhere(fn (Builder $s) => $s->where('sender_id', $b)->where('recipient_id', $a)));
+    }
+
+    /**
+     * Person-to-person messages sent to this person that they have not opened.
+     *
+     * @param  Builder<Message>  $query
+     * @return Builder<Message>
+     */
+    public function scopeDirectUnreadFor(Builder $query, int $personId): Builder
+    {
+        return $query->where('is_direct', true)->where('recipient_id', $personId)->whereNull('read_at');
     }
 
     /** @return BelongsTo<User, $this> */

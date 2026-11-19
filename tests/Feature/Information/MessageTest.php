@@ -155,3 +155,73 @@ it('limits how fast one person can send', function () {
     withAuthCookies($cookies)->postJson('/api/me/messages', ['body' => 'One too many'])
         ->assertTooManyRequests()->assertJsonPath('code', 'too_many_messages');
 });
+
+it('lets any person write to any other active person and keeps it out of the office inbox', function (RoleCode $from, RoleCode $to) {
+    $ana = User::factory()->role($from)->create(['first_name' => 'Ana', 'last_name' => 'Cruz']);
+    $ben = User::factory()->role($to)->create(['first_name' => 'Ben', 'last_name' => 'Lim']);
+
+    withAuthCookies(loginCookies($ana))->postJson("/api/me/chats/{$ben->id}", ['body' => ' Can you cover my shift? '])
+        ->assertCreated()->assertJsonPath('data.body', 'Can you cover my shift?')->assertJsonPath('data.mine', true);
+
+    $cookies = loginCookies($ben);
+    withAuthCookies($cookies)->getJson('/api/me/messages/unread')->assertJsonPath('unread', 1);
+    withAuthCookies($cookies)->getJson("/api/me/chats/{$ana->id}")->assertOk()
+        ->assertJsonPath('person.name', 'Ana Cruz')->assertJsonPath('data.0.mine', false)->assertJsonPath('data.0.sender', 'Ana Cruz');
+    withAuthCookies($cookies)->getJson('/api/me/chats')->assertOk()
+        ->assertJsonPath('data.0.person.name', 'Ana Cruz')->assertJsonPath('data.0.unread', 1)->assertJsonPath('unread', 1);
+    // The office conversation stays empty on both sides.
+    withAuthCookies($cookies)->getJson('/api/me/messages')->assertJsonPath('data', [])->assertJsonPath('unread', 0);
+
+    withAuthCookies($cookies)->postJson("/api/me/chats/{$ana->id}/read")->assertOk()->assertJsonPath('unread', 0);
+    withAuthCookies($cookies)->getJson('/api/me/messages/unread')->assertJsonPath('unread', 0);
+
+    $admin = User::factory()->role(RoleCode::Admin)->create();
+    withAuthCookies(loginCookies($admin))->getJson('/api/inbox')->assertJsonPath('data', [])->assertJsonPath('unread', 0);
+})->with([
+    [RoleCode::Volunteer, RoleCode::Marshal],
+    [RoleCode::Marshal, RoleCode::Volunteer],
+    [RoleCode::Coordinator, RoleCode::Admin],
+    [RoleCode::Admin, RoleCode::Volunteer],
+]);
+
+it('hides a direct conversation from everyone who is not in it', function () {
+    $ana = User::factory()->role(RoleCode::Volunteer)->create();
+    $ben = User::factory()->role(RoleCode::Volunteer)->create();
+    $eve = User::factory()->role(RoleCode::Admin)->create();
+    withAuthCookies(loginCookies($ana))->postJson("/api/me/chats/{$ben->id}", ['body' => 'Private'])->assertCreated();
+
+    // Eve, even as an admin, sees an empty conversation with Ana, and no thread with Ben.
+    $cookies = loginCookies($eve);
+    withAuthCookies($cookies)->getJson("/api/me/chats/{$ana->id}")->assertOk()->assertJsonPath('data', []);
+    withAuthCookies($cookies)->getJson('/api/me/chats')->assertJsonPath('data', []);
+});
+
+it('does not let a person message themselves or someone who cannot sign in', function () {
+    $ana = User::factory()->role(RoleCode::Volunteer)->create();
+    $gone = User::factory()->role(RoleCode::Volunteer)->create(['disabled_at' => now()]);
+    $cookies = loginCookies($ana);
+
+    withAuthCookies($cookies)->postJson("/api/me/chats/{$ana->id}", ['body' => 'Hi me'])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/chats/{$gone->id}", ['body' => 'Hi'])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson('/api/me/chats/'.User::factory()->create()->id, ['body' => ' '])->assertUnprocessable();
+
+    expect(Message::query()->count())->toBe(0);
+});
+
+it('finds people by name for a new conversation, without the caller or closed accounts', function () {
+    $ana = User::factory()->role(RoleCode::Volunteer)->create(['first_name' => 'Ana', 'last_name' => 'Cruz']);
+    User::factory()->role(RoleCode::Marshal)->create(['first_name' => 'Anabel', 'last_name' => 'Reyes']);
+    User::factory()->role(RoleCode::Marshal)->create(['first_name' => 'Anders', 'last_name' => 'Gone', 'disabled_at' => now()]);
+    User::factory()->role(RoleCode::Marshal)->create(['first_name' => 'Ben', 'last_name' => 'Lim']);
+
+    $response = withAuthCookies(loginCookies($ana))->getJson('/api/me/chats/people?q=an')->assertOk();
+
+    expect(array_column($response->json('data'), 'name'))->toBe(['Anabel Reyes']);
+    expect(array_keys($response->json('data.0')))->toBe(['id', 'name']);
+});
+
+it('keeps direct messages away from signed out visitors', function () {
+    $this->getJson('/api/me/chats')->assertUnauthorized();
+    $this->getJson('/api/me/chats/people')->assertUnauthorized();
+    $this->postJson('/api/me/chats/1', ['body' => 'Hi'])->assertUnauthorized();
+});

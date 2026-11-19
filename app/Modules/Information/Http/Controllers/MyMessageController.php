@@ -61,7 +61,10 @@ class MyMessageController
     {
         Gate::authorize('useOwn', Message::class);
 
-        return response()->json(['unread' => Message::query()->unreadFor($this->me($request)->id)->count()]);
+        $id = $this->me($request)->id;
+
+        // The tab counts the office's answers and what people wrote to this person.
+        return response()->json(['unread' => Message::query()->unreadFor($id)->count() + Message::query()->directUnreadFor($id)->count()]);
     }
 
     private function me(Request $request): User

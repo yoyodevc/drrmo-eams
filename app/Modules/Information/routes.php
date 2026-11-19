@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Information\Http\Controllers\DirectMessageController;
 use App\Modules\Information\Http\Controllers\MemoController;
 use App\Modules\Information\Http\Controllers\MyMessageController;
 use App\Modules\Information\Http\Controllers\OfficeInboxController;
@@ -24,6 +25,13 @@ Route::get('/me/messages', [MyMessageController::class, 'index']);
 Route::post('/me/messages', [MyMessageController::class, 'store'])->middleware('throttle:messages');
 Route::post('/me/messages/read', [MyMessageController::class, 'read']);
 Route::get('/me/messages/unread', [MyMessageController::class, 'unread']);
+
+// Person-to-person messages. Anyone can write to any active person.
+Route::get('/me/chats', [DirectMessageController::class, 'index']);
+Route::get('/me/chats/people', [DirectMessageController::class, 'people']);
+Route::get('/me/chats/{user}', [DirectMessageController::class, 'show']);
+Route::post('/me/chats/{user}', [DirectMessageController::class, 'store'])->middleware('throttle:messages');
+Route::post('/me/chats/{user}/read', [DirectMessageController::class, 'read']);
 
 // The DRRMO inbox: one conversation per person.
 Route::get('/inbox', [OfficeInboxController::class, 'index']);

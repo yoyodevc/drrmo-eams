@@ -415,3 +415,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Design pass: the inbox rows show initials, name, time and the last message, with unread rows in bold and a maroon count. The open row gets a maroon bar on its left edge. The search matches the People filters. With nothing open, the right pane says what to do. Each conversation has a link to the person's profile for admins who can see People
 - Design pass: the memo search empty state ends with "Still can't find it?" and an Ask DRRMO link. The unread count sits on the Messages icon in the tab bars and on the inbox icon in the collapsed admin rail
 - Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 5.4)
+
+## 2026-11-19 · S5.4 Messages between people (information)
+- What was built: anyone can now write to any other active person, not only to the DRRMO office. The phone Messages tab is a list: the DRRMO office first, then people, newest first, with a name search to start a new conversation. Each conversation has its own screen and unread count, and the Messages tab total includes both
+- What was built: `GET /api/me/chats`, `/me/chats/people?q=`, `/me/chats/{user}`, `POST /me/chats/{user}` and `/read`. The `messages` table has a new `is_direct` column, so the office inbox never mixes with person to person messages
+- Decision and why: only the two people in a conversation can read it. Admins do not see it, because the inbox is for the office and not for reading private talk
+- Decision and why: the people list shows names only, active accounts only, never the sender. Closed and waiting accounts cannot receive messages
+- Evidence: tests/Feature/Information/MessageTest.php (41 Information tests pass). Admin screens have no person to person page yet
+- Paper: Chapter 3 (system design, data privacy), Chapter 4 (feature 5.4)

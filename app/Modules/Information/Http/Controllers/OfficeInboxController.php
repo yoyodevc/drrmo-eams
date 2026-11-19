@@ -25,7 +25,7 @@ class OfficeInboxController
         Gate::authorize('office', Message::class);
 
         // The person of a message is its sender when it goes to the office, and its recipient when it is an answer.
-        $rows = Message::query()->toBase()
+        $rows = Message::query()->toBase()->where('is_direct', false)
             ->selectRaw('coalesce(recipient_id, sender_id) as person_id, max(id) as last_id')
             ->selectRaw('sum(case when recipient_id is null and read_at is null then 1 else 0 end) as unread')
             ->groupBy(DB::raw('coalesce(recipient_id, sender_id)'))

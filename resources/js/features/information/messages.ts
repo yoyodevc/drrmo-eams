@@ -12,6 +12,8 @@ export interface Message {
     from_office: boolean;
     // "You" or "DRRMO" for a person. The real names for an admin.
     sender: string;
+    // Set on person-to-person messages: true when the signed in person wrote it.
+    mine?: boolean;
 }
 
 export interface MyConversation {
@@ -28,6 +30,17 @@ export interface InboxRow {
 export interface Inbox {
     data: InboxRow[];
     unread: number;
+}
+
+export interface DirectRow {
+    person: { id: number; name: string };
+    last: { body: string; sent_at: string; mine: boolean };
+    unread: number;
+}
+
+export interface Person {
+    id: number;
+    name: string;
 }
 
 export interface InboxThread {
@@ -87,6 +100,22 @@ export function useInboxUnread(): number {
     });
     return allowed ? (query.data?.unread ?? 0) : 0;
 }
+
+// Person-to-person messages: anyone can write to any active person.
+export const getDirectChats = () => api<{ data: DirectRow[]; unread: number }>('/api/me/chats');
+
+export const findPeople = (q: string) =>
+    api<{ data: Person[] }>(`/api/me/chats/people?q=${encodeURIComponent(q)}`);
+
+export const getDirectChat = (personId: number) =>
+    api<{ person: Person; data: Message[] }>(`/api/me/chats/${personId}`);
+
+export async function sendDirect(personId: number, body: string): Promise<Message> {
+    return (await api<{ data: Message }>(`/api/me/chats/${personId}`, json({ body }))).data;
+}
+
+export const markDirectRead = (personId: number) =>
+    api<{ unread: number }>(`/api/me/chats/${personId}/read`, { method: 'POST' });
 
 const time = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 const dayName = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });

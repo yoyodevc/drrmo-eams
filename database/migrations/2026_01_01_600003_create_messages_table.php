@@ -16,12 +16,16 @@ return new class extends Migration
             $table->foreignId('sender_id')->constrained('users')->restrictOnDelete();
             // Null means the DRRMO office inbox, which every admin can read and answer (gap G11).
             $table->foreignId('recipient_id')->nullable()->constrained('users')->restrictOnDelete();
+            // True for a person-to-person message. False is the office conversation (recipient null: to the
+            // office, recipient set: an admin answering for the office).
+            $table->boolean('is_direct')->default(false);
             $table->text('body');
             $table->dateTime('sent_at');
             $table->dateTime('read_at')->nullable();
 
             $table->index(['recipient_id', 'read_at']);
             $table->index(['sender_id', 'sent_at']);
+            $table->index(['recipient_id', 'sender_id', 'is_direct']);
         });
     }
 

@@ -2,6 +2,7 @@
 // button. Checks for answers every 60 seconds while open, and marks them read when they are on screen.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { Link } from 'react-router';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Conversation } from '../../components/Conversation';
@@ -40,9 +41,15 @@ export function MyMessages() {
         // box stays at thumb reach. On phones it runs edge to edge; from 768 px it sits in a panel.
         <div className="-mx-6 -mb-8 flex h-[calc(100dvh-9.5rem-env(safe-area-inset-bottom))] min-h-80 flex-col md:mx-auto md:mb-0 md:h-[calc(100dvh-10.5rem)] md:max-w-2xl">
             <header className="px-6 md:px-0">
+                <Link
+                    to="/me/messages"
+                    className="inline-flex min-h-10 items-center text-sm font-semibold text-maroon-700 hover:underline"
+                >
+                    All messages
+                </Link>
                 <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
                 <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
-                    Messages
+                    DRRMO office
                 </h1>
                 <p className="mt-1 text-base text-pretty text-stone-600">
                     Questions for the DRRMO office. Any of our staff can answer.

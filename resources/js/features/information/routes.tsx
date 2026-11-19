@@ -5,6 +5,8 @@ import { MemoView } from './pages/admin/MemoView';
 import { OfficeInbox } from './pages/admin/OfficeInbox';
 import { MemoRead } from './pages/mobile/MemoRead';
 import { MemoSearch } from './pages/mobile/MemoSearch';
+import { DirectChat } from './pages/mobile/DirectChat';
+import { MessagesHub } from './pages/mobile/MessagesHub';
 import { MyMessages } from './pages/mobile/MyMessages';
 
 // Added to the admin layout in the Core router.
@@ -21,5 +23,7 @@ export const adminInformationRoutes: RouteObject[] = [
 export const myInformationRoutes: RouteObject[] = [
     { path: 'memos', element: <MemoSearch /> },
     { path: 'memos/:id', element: <MemoRead /> },
-    { path: 'messages', element: <MyMessages /> },
+    { path: 'messages', element: <MessagesHub /> },
+    { path: 'messages/office', element: <MyMessages /> },
+    { path: 'messages/with/:id', element: <DirectChat /> },
 ];
