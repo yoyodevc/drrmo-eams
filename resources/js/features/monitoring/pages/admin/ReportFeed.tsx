@@ -1,4 +1,4 @@
-// A-Report feed (S4.8). Site reports, newest first, with filters by event, place and date.
+// A-Reports, Report feed tab (S4.8). Site reports, newest first, with filters by event, place and date.
 // Desktop first. Filters sit in the URL so a view can be shared. A photo opens in a lightbox.
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
@@ -18,7 +18,7 @@ const stamp = new Intl.DateTimeFormat(undefined, {
 
 const badges: Record<string, { label: string; chip: string } | undefined> = {
     late: { label: 'Late', chip: 'bg-amber-50 text-amber-900 ring-amber-200' },
-    overdue: { label: 'Overdue', chip: 'bg-red-50 text-red-800 ring-red-200' },
+    overdue: { label: 'Overdue', chip: 'bg-ember-50 text-ember-700 ring-ember-200' },
     missed: { label: 'Missed', chip: 'bg-red-100 text-red-900 ring-red-300' },
 };
 
@@ -62,7 +62,9 @@ function ReportCard({ report, onPhoto }: { report: FeedReport; onPhoto: () => vo
     const badge = badges[report.status];
 
     return (
-        <li className="rounded-card bg-white p-4 ring-1 ring-stone-200">
+        <li
+            className={`rounded-card bg-white p-4 ring-1 ${report.status === 'missed' ? 'border-l-4 border-red-700 ring-red-200' : 'ring-stone-200'}`}
+        >
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold text-stone-900">{report.event.title}</p>
                 {badge && (
@@ -140,11 +142,10 @@ export function ReportFeed() {
 
     return (
         <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Reports</h1>
-            <p className="mt-1 text-stone-600">Site reports from the field, newest first.</p>
+            <p className="text-stone-600">Site reports from the field, newest first.</p>
 
             <form
-                className="mt-6 flex flex-wrap items-end gap-4"
+                className="mt-4 flex flex-wrap items-end gap-4"
                 onSubmit={(e) => e.preventDefault()}
             >
                 <label className="flex flex-col gap-1 text-sm font-medium text-stone-800">
@@ -206,7 +207,12 @@ export function ReportFeed() {
             {feed.isPending ? (
                 <p className="mt-6 text-stone-600">Loading...</p>
             ) : rows.length === 0 ? (
-                <p className="mt-6 text-stone-600">No reports match these filters.</p>
+                <div className="mt-6 max-w-4xl rounded-card bg-white p-8 text-center ring-1 ring-stone-200">
+                    <p className="font-semibold text-stone-900">No reports match these filters</p>
+                    <p className="mt-1 text-sm text-stone-600">
+                        Try another event or a wider date range.
+                    </p>
+                </div>
             ) : (
                 <ul className="mt-6 grid max-w-4xl gap-3">
                     {rows.map((report) => (

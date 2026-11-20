@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router';
 import { canOpen, permissionFor } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
 import { useInboxUnread, useMyUnreadMessages } from '@/features/information/messages';
+import { useOpenEmergencies } from '@/features/monitoring/hooks/useOpenEmergencies';
 import { EmergencyAlertBanner } from '@/features/notifications/components/EmergencyAlertBanner';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
@@ -94,36 +95,6 @@ const groups: { label: string; items: Item[] }[] = [
                         <path d="M9 4.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-13a2 2 0 0 0-2-2h-2" />
                         <rect x="9" y="3" width="6" height="3" rx="1" />
                         <path d="m9 13.5 2 2 4-4" />
-                    </NavIcon>
-                ),
-            },
-            {
-                to: '/admin/attention',
-                label: 'Needs attention',
-                icon: (
-                    <NavIcon>
-                        <circle cx="12" cy="12" r="8.5" />
-                        <path d="M12 7.5v5M12 16v.01" />
-                    </NavIcon>
-                ),
-            },
-            {
-                to: '/admin/emergencies',
-                label: 'Emergencies',
-                icon: (
-                    <NavIcon>
-                        <path d="M12 3.5 2.5 20h19L12 3.5Z" />
-                        <path d="M12 10v4.5M12 17.5v.01" />
-                    </NavIcon>
-                ),
-            },
-            {
-                to: '/admin/report-reviewers',
-                label: 'Report reviewers',
-                icon: (
-                    <NavIcon>
-                        <circle cx="12" cy="8" r="3.5" />
-                        <path d="M5 20a7 7 0 0 1 14 0" />
                     </NavIcon>
                 ),
             },
@@ -233,6 +204,18 @@ const groups: { label: string; items: Item[] }[] = [
                     </NavIcon>
                 ),
             },
+            {
+                to: '/admin/access/reviewers',
+                label: 'Report reviewers',
+                icon: (
+                    <NavIcon>
+                        <circle cx="10" cy="8" r="3.5" />
+                        <path d="M3.5 20a6.5 6.5 0 0 1 10.5-5.1" />
+                        <circle cx="17.5" cy="17" r="2.5" />
+                        <path d="m19.3 18.8 1.7 1.7" />
+                    </NavIcon>
+                ),
+            },
         ],
     },
     {
@@ -271,8 +254,17 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
     // Unread messages in the DRRMO inbox plus the admin's own chats, shown on the Messages item.
     // Gold reads well on the maroon.
     const inbox = useInboxUnread() + useMyUnreadMessages();
+    // Emergencies nobody has acknowledged yet, on the Reports item. White on the maroon so it never
+    // reads as one more unread message.
+    const { waiting } = useOpenEmergencies();
+    const cap = (n: number) => (n > 99 ? '99+' : String(n));
     const badge = (to: string) =>
-        to === '/admin/messages' && inbox > 0 ? (inbox > 99 ? '99+' : String(inbox)) : null;
+        to === '/admin/messages' && inbox > 0
+            ? cap(inbox)
+            : to === '/admin/reports' && waiting > 0
+              ? cap(waiting)
+              : null;
+    const urgent = (to: string) => to === '/admin/reports';
     // Admins see everything. Anyone else sees only the screens their grants open, plus a way back.
     const visible = (
         me
@@ -324,7 +316,7 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
                                                 {rail && badge(item.to) && (
                                                     <span
                                                         aria-hidden="true"
-                                                        className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-400 px-1 text-[0.625rem] leading-none font-bold text-stone-900 tabular-nums ring-2 ring-maroon-900 lg:hidden"
+                                                        className={`absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[0.625rem] leading-none font-bold tabular-nums ring-2 ring-maroon-900 lg:hidden ${urgent(item.to) ? 'bg-white text-red-700' : 'bg-gold-400 text-stone-900'}`}
                                                     >
                                                         {badge(item.to)}
                                                     </span>
@@ -337,10 +329,14 @@ function AdminNav({ rail = false, onNavigate }: { rail?: boolean; onNavigate?: (
                                             </span>
                                             {badge(item.to) && (
                                                 <span
-                                                    className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gold-400 px-1.5 text-xs font-bold text-stone-900 tabular-nums ${rail ? 'max-lg:sr-only' : ''}`}
+                                                    className={`ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums ${urgent(item.to) ? 'bg-white text-red-700' : 'bg-gold-400 text-stone-900'} ${rail ? 'max-lg:sr-only' : ''}`}
                                                 >
                                                     {badge(item.to)}
-                                                    <span className="sr-only"> unread</span>
+                                                    <span className="sr-only">
+                                                        {urgent(item.to)
+                                                            ? ' emergencies not acknowledged'
+                                                            : ' unread'}
+                                                    </span>
                                                 </span>
                                             )}
                                             {rail && <Tip>{item.label}</Tip>}
@@ -515,7 +511,7 @@ export function AdminLayout() {
                 tabIndex={-1}
                 className="min-w-0 flex-1 px-6 py-6 outline-none lg:px-10 lg:py-8"
             >
-                <EmergencyAlertBanner to="/admin/emergencies" />
+                <EmergencyAlertBanner to="/admin/reports/emergencies" />
                 <Guarded />
             </main>
         </div>

@@ -432,3 +432,13 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: "Seen" comes from the read time the server already keeps, so no new table or column was needed. For the office chat, "Seen" means an admin opened the conversation
 - Evidence: tests/Feature/Information/MessageTest.php adds a test for "seen" on office messages, office answers and direct messages. Full suite 370 PHP tests and 141 JS tests pass
 - Paper: Chapter 4 (feature 5.4)
+
+## 2026-11-20 · Reports redesign (monitoring)
+- What was built: one Reports page with three tabs. Needs attention is the landing tab, then Emergencies, then the report Feed. The old Needs attention and Emergencies pages and their sidebar items are gone, and their old addresses redirect
+- What was built: Needs attention opens with four counts (not acknowledged, open and taken on, overdue, missed). Open emergencies come first, each with an Acknowledge button and a link to its details. Each event name in the summary table opens the Feed filtered to that event
+- What was built: on a wide screen the Emergencies tab shows the list and the open report side by side, with the note, place, photo and a short history. On a phone a report opens under its row
+- What was built: Report reviewers moved to Access control, next to Roles and Temporary access. It shows the two reviewer places, a searchable list of active marshals and the same save bar as the role screens
+- Decision and why: unacknowledged emergencies must never hide behind a tab. The sidebar Reports item shows their count in a white badge, the Emergencies tab carries a red count, the Feed tab shows a red strip, and the red alert banner stays
+- Decision and why: no report opens by itself in the side by side view, because opening one shows where the person was and is audited
+- Evidence: no backend change. The full JS suite passes (141 tests). The screens were checked in a browser at 1280, 900 and 390 px with sample data
+- Paper: Chapter 4 (monitoring features)

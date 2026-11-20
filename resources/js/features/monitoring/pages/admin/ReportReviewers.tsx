@@ -1,15 +1,77 @@
-// A-Report reviewers. An admin picks the (at most 2) marshals who review every site report and every
-// emergency, for every event. They get the alerts and can read the reports and the emergency inbox.
+// Access control, Report reviewers. An admin picks the (at most 2) marshals who review every site
+// report and every emergency, for every event. They get the alerts and can read the reports and
+// the emergency inbox. It lives with Access control because it decides who may read.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router';
+import { PageHeader, SaveBar } from '@/features/access/components/ui';
+import { Avatar } from '@/features/personnel/components/ui';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { getReportReviewers, saveReportReviewers } from '../../api';
 
+type Candidate = { id: number; name: string; email: string };
+
+function nameParts(name: string): [string, string] {
+    const parts = name.trim().split(/\s+/);
+    return [parts[0] ?? '', parts.length > 1 ? (parts[parts.length - 1] ?? '') : ''];
+}
+
+function Slot({
+    index,
+    person,
+    onRemove,
+}: {
+    index: number;
+    person: Candidate | undefined;
+    onRemove: () => void;
+}) {
+    if (!person) {
+        return (
+            <div className="flex min-h-20 items-center gap-3 rounded-card border-2 border-dashed border-stone-300 px-4 py-3">
+                <span
+                    aria-hidden="true"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-stone-50 text-sm font-semibold text-stone-400 ring-1 ring-stone-200 ring-inset"
+                >
+                    {index + 1}
+                </span>
+                <div>
+                    <p className="font-semibold text-stone-700">Reviewer {index + 1} not set</p>
+                    <p className="text-sm text-stone-600">Pick a marshal from the list below.</p>
+                </div>
+            </div>
+        );
+    }
+    const [first, last] = nameParts(person.name);
+    return (
+        <div className="flex min-h-20 items-center gap-3 rounded-card bg-white px-4 py-3 ring-1 ring-maroon-200">
+            <Avatar first={first} last={last} />
+            <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold tracking-[0.14em] text-maroon-700 uppercase">
+                    Reviewer {index + 1}
+                </p>
+                <p className="truncate font-semibold text-stone-900">{person.name}</p>
+                <p className="truncate text-sm text-stone-600">{person.email}</p>
+            </div>
+            <button
+                type="button"
+                onClick={onRemove}
+                className="inline-flex min-h-10 items-center rounded-control px-3 text-sm font-semibold text-stone-700 hover:bg-stone-100"
+            >
+                Remove<span className="sr-only"> {person.name}</span>
+            </button>
+        </div>
+    );
+}
+
 export function ReportReviewers() {
     const queryClient = useQueryClient();
-    const settings = useQuery({ queryKey: ['report-reviewers'], queryFn: getReportReviewers });
+    const settings = useQuery({
+        queryKey: ['report-reviewers'],
+        queryFn: getReportReviewers,
+    });
     const [picked, setPicked] = useState<number[] | null>(null);
+    const [search, setSearch] = useState('');
     const save = useMutation({
         mutationFn: (ids: number[]) => saveReportReviewers(ids),
         onSuccess: async () => {
@@ -18,89 +80,174 @@ export function ReportReviewers() {
         },
     });
 
-    if (settings.isPending) return <p className="text-stone-600">Loading...</p>;
-    if (settings.isError) return <Alert tone="error">The reviewers did not load.</Alert>;
+    const header = (
+        <PageHeader title="Report reviewers">
+            The marshals who read every site report and every emergency, for every event, and get
+            the alerts. The same people apply to all events. To let someone read reports for a short
+            time instead, use{' '}
+            <Link
+                to="/admin/access/grants"
+                className="font-medium text-maroon-700 underline-offset-2 hover:underline"
+            >
+                Temporary access
+            </Link>
+            .
+        </PageHeader>
+    );
 
-    const { max, candidates } = settings.data;
-    const ids = picked ?? settings.data.user_ids;
-    const toggle = (id: number) =>
-        setPicked(ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id].slice(-max));
+    if (settings.isPending)
+        return (
+            <div className="max-w-3xl">
+                {header}
+                <div
+                    aria-hidden="true"
+                    className="mt-8 h-48 animate-pulse rounded-card bg-stone-200"
+                />
+            </div>
+        );
+    if (settings.isError)
+        return (
+            <div className="max-w-3xl">
+                {header}
+                <div className="mt-8 max-w-xl space-y-3">
+                    <Alert tone="error">The reviewers did not load. Check your connection.</Alert>
+                    <Button variant="secondary" size="md" onClick={() => void settings.refetch()}>
+                        Retry
+                    </Button>
+                </div>
+            </div>
+        );
+
+    const { max, candidates, user_ids: saved } = settings.data;
+    const ids = picked ?? saved;
+    const byId = new Map(candidates.map((c) => [c.id, c]));
+    const full = ids.length >= max;
+    const changes =
+        ids.filter((id) => !saved.includes(id)).length +
+        saved.filter((id) => !ids.includes(id)).length;
+    const toggle = (id: number) => {
+        save.reset();
+        setPicked(ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
+    };
+    const q = search.trim().toLowerCase();
+    const shown = q
+        ? candidates.filter(
+              (c) => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q),
+          )
+        : candidates;
 
     return (
-        <div className="mx-auto max-w-2xl">
-            <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
-                Report reviewers
-            </h1>
-            <p className="mt-1 text-base text-pretty text-stone-600">
-                Pick up to {max} marshals. They read every site report and every emergency, for
-                every event, and get the alerts. The same two people apply to all events.
-            </p>
+        <div className="max-w-3xl">
+            {header}
 
-            {ids.length < max && (
-                <div className="mt-4">
-                    <Alert tone="warning">
-                        {ids.length === 0
-                            ? 'No reviewers are set.'
-                            : `Only ${ids.length} reviewer is set.`}{' '}
-                        Emergencies still go to the admins.
-                    </Alert>
-                </div>
-            )}
-
-            <fieldset className="mt-6">
-                <legend className="flex w-full items-baseline justify-between">
-                    <span className="text-lg font-semibold text-stone-900">Marshals</span>
-                    <span className="text-sm text-stone-600 tabular-nums">
-                        {ids.length} of {max} picked
-                    </span>
-                </legend>
-                {candidates.length === 0 && (
-                    <p className="text-stone-600">There are no active marshals yet.</p>
-                )}
-                <ul className="mt-2 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
-                    {candidates.map((c) => (
-                        <li key={c.id}>
-                            <label
-                                className={`flex min-h-14 cursor-pointer items-center gap-3 px-4 py-3 ${ids.includes(c.id) ? 'bg-maroon-50' : 'hover:bg-stone-50'}`}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={ids.includes(c.id)}
-                                    onChange={() => toggle(c.id)}
-                                    className="size-5 accent-maroon-700"
-                                />
-                                <span>
-                                    <span className="block font-medium text-stone-900">
-                                        {c.name}
-                                    </span>
-                                    <span className="block text-sm text-stone-600">{c.email}</span>
-                                </span>
-                            </label>
-                        </li>
+            <section aria-labelledby="reviewers-now" className="mt-8">
+                <h2 id="reviewers-now" className="text-lg font-semibold text-stone-900">
+                    Reviewers
+                </h2>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {Array.from({ length: max }, (_, i) => (
+                        <Slot
+                            key={i}
+                            index={i}
+                            person={ids[i] !== undefined ? byId.get(ids[i]) : undefined}
+                            onRemove={() => ids[i] !== undefined && toggle(ids[i])}
+                        />
                     ))}
-                </ul>
-            </fieldset>
-
-            {save.isError && (
-                <div className="mt-4">
-                    <Alert tone="error">{save.error.message}</Alert>
                 </div>
-            )}
-            {save.isSuccess && picked === null && (
-                <div className="mt-4">
-                    <Alert tone="success">Saved.</Alert>
-                </div>
-            )}
+                {ids.length < max && (
+                    <p className="mt-3 text-sm text-stone-600">
+                        {ids.length === 0 ? 'No reviewers are set.' : 'Only one reviewer is set.'}{' '}
+                        Emergencies still go to the admins.
+                    </p>
+                )}
+                {save.isSuccess && picked === null && (
+                    <div className="mt-3">
+                        <Alert tone="success">Reviewers saved.</Alert>
+                    </div>
+                )}
+            </section>
 
-            <Button
-                className="mt-6"
-                loading={save.isPending}
-                disabled={picked === null}
-                onClick={() => save.mutate(ids)}
-            >
-                Save reviewers
-            </Button>
+            <section aria-labelledby="reviewers-pick" className="mt-8">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                    <h2 id="reviewers-pick" className="text-lg font-semibold text-stone-900">
+                        Active marshals
+                    </h2>
+                    <label className="w-full sm:w-64">
+                        <span className="sr-only">Search marshals</span>
+                        <input
+                            type="search"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search by name or email"
+                            className="block min-h-10 w-full rounded-control border border-stone-300 bg-white px-3 text-base text-stone-900 focus:border-maroon-700 focus:outline-none sm:text-sm"
+                        />
+                    </label>
+                </div>
+                {full && (
+                    <p className="mt-2 text-sm text-stone-600">
+                        Both places are taken. Remove a reviewer to pick someone else.
+                    </p>
+                )}
+
+                {candidates.length === 0 ? (
+                    <div className="mt-3 rounded-card bg-white p-8 text-center ring-1 ring-stone-200">
+                        <p className="font-semibold text-stone-900">No active marshals yet</p>
+                        <p className="mt-1 text-sm text-stone-600">
+                            Give someone the Marshal role in People first.
+                        </p>
+                    </div>
+                ) : shown.length === 0 ? (
+                    <p className="mt-3 text-stone-600">No marshal matches "{search}".</p>
+                ) : (
+                    <ul className="mt-3 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
+                        {shown.map((c) => {
+                            const on = ids.includes(c.id);
+                            const locked = !on && full;
+                            const [first, last] = nameParts(c.name);
+                            return (
+                                <li key={c.id}>
+                                    <label
+                                        className={`flex min-h-16 items-center gap-3 px-4 py-3 ${locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-stone-50'} ${on ? 'bg-maroon-50 hover:bg-maroon-50' : ''}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={on}
+                                            disabled={locked}
+                                            onChange={() => toggle(c.id)}
+                                            className="size-5 accent-maroon-700"
+                                        />
+                                        <Avatar first={first} last={last} dim={locked} />
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate font-medium text-stone-900">
+                                                {c.name}
+                                            </span>
+                                            <span className="block truncate text-sm text-stone-600">
+                                                {c.email}
+                                            </span>
+                                        </span>
+                                        {on && (
+                                            <span className="text-sm font-semibold text-maroon-700">
+                                                Reviewer {ids.indexOf(c.id) + 1}
+                                            </span>
+                                        )}
+                                    </label>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                )}
+            </section>
+
+            <SaveBar
+                changes={changes}
+                saving={save.isPending}
+                error={save.isError ? save.error.message : null}
+                onSave={() => save.mutate(ids)}
+                onDiscard={() => {
+                    save.reset();
+                    setPicked(null);
+                }}
+            />
         </div>
     );
 }

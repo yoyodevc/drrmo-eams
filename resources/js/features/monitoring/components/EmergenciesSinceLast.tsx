@@ -29,7 +29,7 @@ export function EmergenciesSinceLast({
     if (items.length === 0) return null;
     const inboxLink = me?.permissions.includes('reports.view')
         ? me.home === '/admin'
-            ? '/admin/emergencies'
+            ? '/admin/reports/emergencies'
             : '/me/emergencies'
         : null;
 
