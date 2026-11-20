@@ -10,8 +10,10 @@ use App\Modules\Monitoring\Events\EmergencyReported;
 use App\Modules\Monitoring\Http\Requests\StoreEmergencyRequest;
 use App\Modules\Monitoring\Models\EmergencyReport;
 use App\Modules\Monitoring\Models\LocationPing;
+use App\Modules\Monitoring\Models\SiteReport;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +78,33 @@ class EmergencyController
             ->orderByDesc('id')->limit(20)->get();
 
         return response()->json(['data' => $rows->map(fn (EmergencyReport $r) => self::ownRow($r))->values()]);
+    }
+
+    /**
+     * Emergencies in the same event since the previous report slot fell due (or since the shift began),
+     * so the reporter can sum them up. No place and no photo: only type, time, status and note.
+     */
+    public function sinceLastReport(Request $request, SiteReport $report): JsonResponse
+    {
+        Gate::authorize('submit', $report);
+        $report->loadMissing('assignment.requirement', 'assignment.event');
+        $assignment = $report->assignment;
+
+        $previous = SiteReport::query()->where('assignment_id', $assignment->id)->where('due_at', '<', $report->due_at)->max('due_at');
+        $since = $previous !== null ? Carbon::parse($previous) : ($assignment->requirement->shift_starts_at ?? $assignment->event->starts_at);
+
+        $rows = EmergencyReport::query()->with('reporter:id,first_name,last_name')
+            ->where('event_id', $assignment->event_id)->where('created_at', '>=', $since)->where('created_at', '<=', now())
+            ->orderBy('id')->limit(50)->get();
+
+        return response()->json(['data' => $rows->map(fn (EmergencyReport $e) => [
+            'id' => $e->id,
+            'type' => $e->type->value,
+            'note' => $e->note,
+            'status' => $e->status->value,
+            'reporter' => $e->reporter->name ?? null,
+            'sent_at' => $e->created_at->toIso8601String(),
+        ])->values()]);
     }
 
     /** The reporter may look at the photo they sent. */

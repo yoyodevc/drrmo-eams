@@ -102,6 +102,7 @@ Write an AUDIT_LOG row for:
 - Volunteer status change
 - Person created, role changed, account disabled
 - Any view of location data: map load, trail view (one row per request, not per pin)
+- Reading site reports: `report.feed_viewed` (one row for each feed request), `report.viewed`, `report.photo_viewed`, and `attention.viewed`.
 - Reviewer marshals changed: `report_reviewers.changed` (before and after ids).
 - Emergency reports: `emergency.sent`, `emergency.acknowledged`, `emergency.resolved`, and every time a reviewer opens one (`emergency.location_viewed` when it carries a place, otherwise `emergency.viewed`) or its photo (`emergency.photo_viewed`). The place is location data: only the two global reviewer marshals and holders of `reports.view` can read it.
 - Any delete: memo, event, requirement, emergency contact

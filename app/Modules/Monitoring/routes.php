@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Monitoring\Http\Controllers\AttentionController;
 use App\Modules\Monitoring\Http\Controllers\DutyController;
 use App\Modules\Monitoring\Http\Controllers\EmergencyController;
 use App\Modules\Monitoring\Http\Controllers\MapController;
@@ -32,3 +33,5 @@ Route::post('/emergencies/{emergency}/acknowledge', [EmergencyController::class,
 Route::post('/emergencies/{emergency}/resolve', [EmergencyController::class, 'resolve']);
 Route::get('/report-reviewers', [ReportReviewerController::class, 'show']);
 Route::put('/report-reviewers', [ReportReviewerController::class, 'update']);
+Route::get('/me/report-slots/{report}/emergencies', [EmergencyController::class, 'sinceLastReport']);
+Route::get('/attention', [AttentionController::class, 'index']);

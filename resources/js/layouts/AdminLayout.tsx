@@ -98,6 +98,16 @@ const groups: { label: string; items: Item[] }[] = [
                 ),
             },
             {
+                to: '/admin/attention',
+                label: 'Needs attention',
+                icon: (
+                    <NavIcon>
+                        <circle cx="12" cy="12" r="8.5" />
+                        <path d="M12 7.5v5M12 16v.01" />
+                    </NavIcon>
+                ),
+            },
+            {
                 to: '/admin/emergencies',
                 label: 'Emergencies',
                 icon: (

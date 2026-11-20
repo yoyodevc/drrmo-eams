@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
+import { EmergenciesSinceLast } from '../../components/EmergenciesSinceLast';
 import { listReportSlots, submitReport } from '../../api';
 import { clearDraft, isNetworkError, MAX_SUMMARY, readDraft, saveDraft } from '../../reportDraft';
 import { resizePhoto } from '../../resizePhoto';
@@ -101,6 +102,10 @@ export function ReportForm() {
                         if (!send.isPending) send.mutate();
                     }}
                 >
+                    <EmergenciesSinceLast
+                        slotId={slotId}
+                        onAdd={(line) => onText(summary ? `${summary}\n${line}` : line)}
+                    />
                     <label
                         htmlFor="report-summary"
                         className="block text-sm font-medium text-stone-800"

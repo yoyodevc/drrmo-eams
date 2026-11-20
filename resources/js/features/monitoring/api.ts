@@ -235,3 +235,54 @@ export async function saveReportReviewers(userIds: number[]): Promise<void> {
         body: JSON.stringify({ user_ids: userIds }),
     });
 }
+
+// Emergencies of the event since the last report, for the report form. No place and no photo.
+export type SinceEmergency = {
+    id: number;
+    type: EmergencyType;
+    note: string | null;
+    status: 'sent' | 'acknowledged' | 'resolved';
+    reporter: string | null;
+    sent_at: string;
+};
+
+export async function listEmergenciesSinceLastReport(slotId: number): Promise<SinceEmergency[]> {
+    const response = await api<{ data: SinceEmergency[] }>(
+        `/api/me/report-slots/${slotId}/emergencies`,
+    );
+    return response.data;
+}
+
+// The needs attention view (admins and reviewer marshals).
+export type Attention = {
+    emergencies: {
+        id: number;
+        type: EmergencyType;
+        status: 'sent' | 'acknowledged';
+        escalated: boolean;
+        sent_at: string;
+        event: string | null;
+        reporter: string | null;
+        acknowledged_by: string | null;
+    }[];
+    reports: {
+        id: number;
+        status: 'overdue' | 'missed';
+        due_at: string;
+        event: string | null;
+        author: string | null;
+    }[];
+    events: {
+        event_id: number;
+        event: string | null;
+        on_time: number;
+        late: number;
+        overdue: number;
+        missed: number;
+    }[];
+};
+
+export async function getAttention(): Promise<Attention> {
+    const response = await api<{ data: Attention }>('/api/attention');
+    return response.data;
+}
