@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { useMe } from '@/app/auth';
 import { listEmergenciesSinceLastReport, type SinceEmergency } from '../api';
+import { TypeIcon } from './emergencyUi';
 
 const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 
@@ -35,26 +36,36 @@ export function EmergenciesSinceLast({
     return (
         <section
             aria-label="Emergencies since the last report"
-            className="mt-6 rounded-card bg-red-50 p-4 ring-1 ring-red-200"
+            className="mt-6 rounded-card border-l-4 border-red-700 bg-white p-4 ring-1 ring-stone-200"
         >
-            <h2 className="text-sm font-semibold text-red-900">
+            <h2 className="text-base font-semibold text-red-800">
                 {items.length === 1
                     ? '1 emergency since the last report'
                     : `${items.length} emergencies since the last report`}
             </h2>
-            <ul className="mt-2 space-y-2">
+            <ul className="mt-3 divide-y divide-stone-100">
                 {items.map((e) => (
-                    <li key={e.id} className="text-sm text-stone-800">
-                        <span className="font-medium capitalize">{e.type}</span> ·{' '}
-                        {e.reporter ?? 'Unknown'} · {clock.format(new Date(e.sent_at))} · {e.status}
-                        {e.note && <span className="block text-stone-700">{e.note}</span>}
-                        <button
-                            type="button"
-                            className="mt-0.5 font-semibold text-maroon-700 underline"
-                            onClick={() => onAdd(summaryLine(e))}
-                        >
-                            Add to summary
-                        </button>
+                    <li key={e.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                        <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-control text-red-700 ring-1 ring-red-200">
+                            <TypeIcon type={e.type} className="size-5" />
+                        </span>
+                        <div className="min-w-0 flex-1 text-sm">
+                            <p className="font-semibold text-stone-900">
+                                <span className="capitalize">{e.type}</span> ·{' '}
+                                {e.reporter ?? 'Unknown'}
+                            </p>
+                            <p className="text-stone-600 tabular-nums">
+                                {clock.format(new Date(e.sent_at))} · {e.status}
+                            </p>
+                            {e.note && <p className="mt-1 text-pretty text-stone-800">{e.note}</p>}
+                            <button
+                                type="button"
+                                className="mt-1 inline-flex min-h-8 items-center font-semibold text-maroon-700 underline"
+                                onClick={() => onAdd(summaryLine(e))}
+                            >
+                                Add to summary
+                            </button>
+                        </div>
                     </li>
                 ))}
             </ul>

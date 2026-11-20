@@ -80,8 +80,12 @@ export function ReportForm() {
             </p>
 
             {slot.status === 'missed' ? (
-                <div className="mt-6">
-                    <Alert tone="error">This report was missed and is now closed.</Alert>
+                <div className="mt-6 rounded-card border-l-4 border-red-700 bg-red-50 p-4 ring-1 ring-red-200">
+                    <p className="font-semibold text-red-900">Missed</p>
+                    <p className="mt-1 text-sm text-pretty text-red-900">
+                        This report was not sent in time and is now closed. If something happened at
+                        your post, tell your marshal directly.
+                    </p>
                 </div>
             ) : done ? (
                 <div className="mt-6">

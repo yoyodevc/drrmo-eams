@@ -28,10 +28,11 @@ export function ReportReviewers() {
 
     return (
         <div className="mx-auto max-w-2xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
+            <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
+            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
                 Report reviewers
             </h1>
-            <p className="mt-1 text-base text-stone-600">
+            <p className="mt-1 text-base text-pretty text-stone-600">
                 Pick up to {max} marshals. They read every site report and every emergency, for
                 every event, and get the alerts. The same two people apply to all events.
             </p>
@@ -47,20 +48,27 @@ export function ReportReviewers() {
                 </div>
             )}
 
-            <fieldset className="mt-4">
-                <legend className="sr-only">Marshals</legend>
+            <fieldset className="mt-6">
+                <legend className="flex w-full items-baseline justify-between">
+                    <span className="text-lg font-semibold text-stone-900">Marshals</span>
+                    <span className="text-sm text-stone-600 tabular-nums">
+                        {ids.length} of {max} picked
+                    </span>
+                </legend>
                 {candidates.length === 0 && (
                     <p className="text-stone-600">There are no active marshals yet.</p>
                 )}
-                <ul className="divide-y divide-stone-100 rounded-card bg-white ring-1 ring-stone-200">
+                <ul className="mt-2 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
                     {candidates.map((c) => (
                         <li key={c.id}>
-                            <label className="flex min-h-12 cursor-pointer items-center gap-3 px-4 py-3">
+                            <label
+                                className={`flex min-h-14 cursor-pointer items-center gap-3 px-4 py-3 ${ids.includes(c.id) ? 'bg-maroon-50' : 'hover:bg-stone-50'}`}
+                            >
                                 <input
                                     type="checkbox"
                                     checked={ids.includes(c.id)}
                                     onChange={() => toggle(c.id)}
-                                    className="size-5"
+                                    className="size-5 accent-maroon-700"
                                 />
                                 <span>
                                     <span className="block font-medium text-stone-900">
@@ -86,7 +94,7 @@ export function ReportReviewers() {
             )}
 
             <Button
-                className="mt-4"
+                className="mt-6"
                 loading={save.isPending}
                 disabled={picked === null}
                 onClick={() => save.mutate(ids)}

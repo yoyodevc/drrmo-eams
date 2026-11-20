@@ -75,18 +75,28 @@ export function EmergencyAlertBanner({ to }: { to: string }) {
                     <div
                         key={a.id}
                         role="alert"
-                        className={`rounded-control px-4 py-3 ${l.red ? 'bg-red-700 text-white' : 'bg-amber-100 text-amber-950 ring-1 ring-amber-300'}`}
+                        className={`flex items-center gap-3 rounded-control px-4 py-3 ${l.red ? 'border-l-4 border-gold-400 bg-red-700 text-white' : 'bg-amber-100 text-amber-950 ring-1 ring-amber-300'}`}
                     >
-                        <p className="text-sm">
-                            {l.text}{' '}
-                            <Link
-                                to={l.to}
-                                onClick={() => read.mutate()}
-                                className="font-semibold underline"
-                            >
-                                {l.open}
-                            </Link>
-                        </p>
+                        <svg
+                            viewBox="0 0 24 24"
+                            className="size-6 shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M12 8v5M12 16.5v.5M4 20h16L12 4 4 20Z" />
+                        </svg>
+                        <p className="min-w-0 flex-1 text-sm font-medium text-pretty">{l.text}</p>
+                        <Link
+                            to={l.to}
+                            onClick={() => read.mutate()}
+                            className={`shrink-0 rounded-control px-3 py-2 text-sm font-semibold ${l.red ? 'bg-white text-red-800 hover:bg-red-50' : 'bg-amber-950 text-white hover:bg-amber-900'}`}
+                        >
+                            {l.open}
+                        </Link>
                     </div>
                 );
             })}

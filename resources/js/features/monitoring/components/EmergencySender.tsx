@@ -15,6 +15,7 @@ import { blobToDataUrl, enqueueEmergency, newClientId } from '../emergencyQueue'
 import { QUEUE_EVENT } from '../hooks/useEmergencyOutbox';
 import { isNetworkError } from '../reportDraft';
 import { resizePhoto } from '../resizePhoto';
+import { StatusChip, TypeIcon, type ChipKey } from './emergencyUi';
 
 const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 
@@ -42,22 +43,47 @@ export function MyEmergencyList() {
     if (items.length === 0) return null;
 
     return (
-        <ul className="mt-3 space-y-2" aria-label="My emergency reports">
-            {items.map((e) => (
-                <li
-                    key={e.id}
-                    className="rounded-control bg-white px-3 py-2 text-sm ring-1 ring-stone-200"
-                >
-                    <p className="font-semibold text-stone-900 capitalize">
-                        {e.type} · {e.status}
-                        <span className="ml-1 font-normal text-stone-500">
-                            sent {clock.format(new Date(e.sent_at))}
-                        </span>
-                    </p>
-                    <p className="text-stone-700">{statusSentence(e)}</p>
-                </li>
-            ))}
-        </ul>
+        <section className="mt-4" aria-label="My emergency reports">
+            <h3 className="text-xs font-semibold tracking-[0.14em] text-stone-600 uppercase">
+                Your emergency reports
+            </h3>
+            <ul className="mt-2 space-y-2">
+                {items.map((e) => {
+                    const open = e.status === 'sent' || e.status === 'escalated';
+                    return (
+                        <li
+                            key={e.id}
+                            className={`flex gap-3 rounded-card bg-white p-3 ring-1 ${e.status === 'escalated' ? 'ring-red-300' : 'ring-stone-200'}`}
+                        >
+                            <span
+                                className={`flex size-10 shrink-0 items-center justify-center rounded-control ring-1 ${open ? 'text-red-700 ring-red-200' : 'text-stone-500 ring-stone-200'}`}
+                            >
+                                <TypeIcon type={e.type} className="size-5" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                                    <p className="font-semibold text-stone-900 capitalize">
+                                        {e.type}
+                                    </p>
+                                    <StatusChip
+                                        kind={e.status as ChipKey}
+                                        label={
+                                            e.status === 'sent' ? 'Sent, not seen yet' : undefined
+                                        }
+                                    />
+                                </div>
+                                <p className="text-sm text-stone-600 tabular-nums">
+                                    Sent {clock.format(new Date(e.sent_at))}
+                                </p>
+                                <p className="mt-1 text-sm text-pretty text-stone-700">
+                                    {statusSentence(e)}
+                                </p>
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+        </section>
     );
 }
 
@@ -115,41 +141,50 @@ export function EmergencySender({ assignmentId }: { assignmentId: number }) {
         <div className="mt-3">
             {queued && (
                 <div className="mb-3">
-                    <Alert tone="warning">
-                        Not sent yet. There is no signal, so your emergency is saved on this phone
-                        and will go out when you are back online.
-                    </Alert>
+                    <div
+                        role="status"
+                        className="rounded-card border-2 border-amber-400 bg-amber-50 p-4 text-amber-950"
+                    >
+                        <p className="text-base font-bold">Not sent yet</p>
+                        <p className="mt-1 text-sm text-pretty">
+                            There is no signal. Your emergency is saved on this phone and goes out
+                            by itself when you are back online. If it is urgent, call your marshal
+                            or the DRRMO.
+                        </p>
+                    </div>
                 </div>
             )}
 
             {!open ? (
                 <Button
                     block
-                    className="bg-red-700 text-white hover:bg-red-800"
+                    variant="danger"
+                    className="min-h-14 text-lg"
                     onClick={() => {
                         setQueued(false);
                         setOpen(true);
                     }}
                 >
+                    <TypeIcon type="other" className="size-6" />
                     Report an emergency
                 </Button>
             ) : (
                 <form
-                    className="rounded-card bg-white p-4 ring-1 ring-red-200"
+                    className="rounded-card border-t-4 border-red-700 bg-white p-4 ring-1 ring-red-200"
                     onSubmit={(e) => {
                         e.preventDefault();
                         if (!send.isPending) send.mutate();
                     }}
                 >
                     <fieldset>
-                        <legend className="text-sm font-semibold text-stone-900">
+                        <legend className="text-lg font-semibold text-stone-900">
                             What kind of emergency?
                         </legend>
-                        <div className="mt-2 grid grid-cols-2 gap-2">
+                        <div className="mt-3 grid grid-cols-2 gap-3">
                             {emergencyTypes.map((t) => (
                                 <label
                                     key={t.value}
-                                    className={`flex min-h-12 items-center justify-center rounded-control border px-3 text-base font-medium ${type === t.value ? 'border-red-700 bg-red-50 text-red-800' : 'border-stone-300 text-stone-800'}`}
+                                    className={`flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-card border-2 px-3 text-lg font-semibold transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-maroon-600 ${type === t.value ? 'border-red-700 bg-red-700 text-white' : 'border-stone-300 bg-white text-stone-800 active:bg-stone-100'}`}
                                 >
                                     <input
                                         type="radio"
@@ -159,6 +194,7 @@ export function EmergencySender({ assignmentId }: { assignmentId: number }) {
                                         onChange={() => setType(t.value)}
                                         className="sr-only"
                                     />
+                                    <TypeIcon type={t.value} className="size-8" />
                                     {t.label}
                                 </label>
                             ))}
@@ -214,18 +250,24 @@ export function EmergencySender({ assignmentId }: { assignmentId: number }) {
                         </div>
                     )}
 
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                        <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            className="bg-red-700 text-white hover:bg-red-800"
-                            loading={send.isPending}
-                        >
-                            {send.isPending ? 'Sending...' : 'Send emergency'}
-                        </Button>
-                    </div>
+                    <Button
+                        type="submit"
+                        variant="danger"
+                        block
+                        className="mt-5 min-h-14 text-lg"
+                        loading={send.isPending}
+                    >
+                        {send.isPending ? 'Sending...' : 'Send emergency'}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        block
+                        className="mt-2"
+                        onClick={() => setOpen(false)}
+                    >
+                        Cancel
+                    </Button>
                 </form>
             )}
 

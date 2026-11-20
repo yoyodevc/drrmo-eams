@@ -1,6 +1,6 @@
 // Emergency inbox for the people who review emergencies: the two global reviewer marshals (on their
 // phone) and admins (on desktop). One page for both. Opening a report loads its place, and the
-// server audits that. Functional first: styling comes later.
+// server audits that.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from '@/shared/ui/Alert';
@@ -13,6 +13,7 @@ import {
     resolveEmergency,
     type ReviewEmergency,
 } from '../api';
+import { StatusChip, TypeIcon, type ChipKey } from '../components/emergencyUi';
 
 const stamp = new Intl.DateTimeFormat(undefined, {
     month: 'short',
@@ -21,10 +22,10 @@ const stamp = new Intl.DateTimeFormat(undefined, {
     minute: '2-digit',
 });
 
-function stateLabel(e: ReviewEmergency): string {
-    if (e.status === 'resolved') return 'Resolved';
-    if (e.status === 'acknowledged') return 'Acknowledged';
-    return e.escalated ? 'Escalated, not acknowledged' : 'New, not acknowledged';
+function chipFor(e: ReviewEmergency): { kind: ChipKey; label: string } {
+    if (e.status === 'resolved') return { kind: 'resolved', label: 'Resolved' };
+    if (e.status === 'acknowledged') return { kind: 'acknowledged', label: 'Acknowledged' };
+    return e.escalated ? { kind: 'escalated', label: 'Escalated' } : { kind: 'new', label: 'New' };
 }
 
 function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
@@ -53,15 +54,19 @@ function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
     const failed = ack.error ?? resolve.error;
 
     return (
-        <div className="mt-3 space-y-3 border-t border-stone-100 pt-3 text-sm">
-            {e.note && <p className="whitespace-pre-wrap text-stone-800">{e.note}</p>}
+        <div className="mt-4 space-y-4 border-t border-stone-200 pt-4 text-sm">
+            {e.note && (
+                <p className="rounded-control bg-stone-50 p-3 text-base whitespace-pre-wrap text-stone-900">
+                    {e.note}
+                </p>
+            )}
             {loc ? (
-                <p>
+                <p className="text-stone-700">
                     Place from their last ping (
                     {loc.captured_at ? stamp.format(new Date(loc.captured_at)) : 'time unknown'}
                     {loc.accuracy_m ? `, within ${loc.accuracy_m} m` : ''}):{' '}
                     <a
-                        className="font-semibold text-maroon-700 underline"
+                        className="inline-flex min-h-10 items-center font-semibold text-maroon-700 underline"
                         href={`https://www.openstreetmap.org/?mlat=${loc.lat}&mlon=${loc.lng}#map=18/${loc.lat}/${loc.lng}`}
                         target="_blank"
                         rel="noreferrer"
@@ -94,7 +99,7 @@ function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
             )}
             {failed && <Alert tone="error">{failed.message}</Alert>}
             {e.status === 'sent' && (
-                <Button loading={ack.isPending} onClick={() => ack.mutate()}>
+                <Button block loading={ack.isPending} onClick={() => ack.mutate()}>
                     Acknowledge
                 </Button>
             )}
@@ -109,11 +114,12 @@ function Detail({ id, onChanged }: { id: number; onChanged: () => void }) {
                         onChange={(ev) => setNote(ev.target.value)}
                         maxLength={500}
                         rows={2}
-                        className="mt-1 block w-full rounded-control border border-stone-300 bg-white px-3 py-2 text-base"
+                        className="mt-1.5 block w-full rounded-control border border-stone-300 bg-white px-3.5 py-3 text-base text-stone-900 focus:border-maroon-700 focus:outline-none"
                     />
                     <Button
                         variant="secondary"
-                        className="mt-2"
+                        block
+                        className="mt-2 sm:w-auto"
                         loading={resolve.isPending}
                         onClick={() => resolve.mutate()}
                     >
@@ -139,65 +145,104 @@ export function EmergencyInbox() {
         void queryClient.invalidateQueries({ queryKey: ['emergency'] });
     };
 
+    const rows = list.data ?? [];
+    const waiting = rows.filter((e) => e.status === 'sent').length;
+
     return (
         <div className="mx-auto max-w-3xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Emergencies</h1>
-            <p className="mt-1 text-base text-stone-600">
+            <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
+            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
+                Emergencies
+            </h1>
+            <p className="mt-1 text-base text-pretty text-stone-600">
                 Reports sent by people on duty. Open one to see where it came from.
             </p>
 
-            <div className="mt-4 flex gap-2" role="group" aria-label="Show">
-                {[
-                    ['open', 'Open'],
-                    ['', 'All'],
-                ].map(([value, label]) => (
-                    <Button
-                        key={label}
-                        variant={filter === value ? 'primary' : 'secondary'}
-                        onClick={() => setFilter(value ?? '')}
-                    >
-                        {label}
-                    </Button>
-                ))}
+            <div className="mt-5 flex items-center justify-between gap-3">
+                <div
+                    className="inline-flex rounded-control border border-stone-300 bg-white p-0.5"
+                    role="group"
+                    aria-label="Show"
+                >
+                    {[
+                        ['open', 'Open'],
+                        ['', 'All'],
+                    ].map(([value, label]) => (
+                        <button
+                            key={label}
+                            type="button"
+                            aria-pressed={filter === value}
+                            onClick={() => setFilter(value ?? '')}
+                            className={`min-h-10 min-w-20 rounded-[6px] px-4 text-sm font-semibold ${filter === value ? 'bg-maroon-700 text-white' : 'text-stone-700 hover:bg-stone-50'}`}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                {filter === 'open' && waiting > 0 && (
+                    <p className="text-sm font-semibold text-red-800 tabular-nums">
+                        {waiting} not acknowledged
+                    </p>
+                )}
             </div>
 
-            {list.isPending && <p className="mt-4 text-stone-600">Loading...</p>}
+            {list.isPending && <p className="mt-6 text-stone-600">Loading...</p>}
             {list.isError && (
-                <div className="mt-4">
+                <div className="mt-6">
                     <Alert tone="error">
                         Emergencies did not load. Check your connection and try again.
                     </Alert>
                 </div>
             )}
-            {list.data?.length === 0 && <p className="mt-4 text-stone-600">No emergencies here.</p>}
+            {list.data?.length === 0 && (
+                <div className="mt-6 rounded-card bg-white p-8 text-center ring-1 ring-stone-200">
+                    <p className="font-semibold text-stone-900">
+                        {filter === 'open' ? 'No open emergencies' : 'No emergencies yet'}
+                    </p>
+                    <p className="mt-1 text-sm text-stone-600">
+                        New reports show up here by themselves.
+                    </p>
+                </div>
+            )}
 
             <ul className="mt-4 space-y-3">
-                {list.data?.map((e) => (
-                    <li key={e.id} className="rounded-card bg-white p-4 ring-1 ring-stone-200">
-                        <button
-                            type="button"
-                            className="block w-full text-left"
-                            aria-expanded={openId === e.id}
-                            onClick={() => setOpenId(openId === e.id ? null : e.id)}
+                {rows.map((e) => {
+                    const chip = chipFor(e);
+                    const live = e.status !== 'resolved';
+                    return (
+                        <li
+                            key={e.id}
+                            className={`rounded-card bg-white p-4 ring-1 sm:p-5 ${chip.kind === 'escalated' ? 'border-l-4 border-red-700 ring-red-200' : live ? 'ring-stone-300' : 'ring-stone-200'}`}
                         >
-                            <span className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="font-semibold text-stone-900 capitalize">
-                                    {e.type} · {e.reporter ?? 'Unknown'}
-                                </span>
+                            <button
+                                type="button"
+                                className="flex w-full items-start gap-3 text-left"
+                                aria-expanded={openId === e.id}
+                                onClick={() => setOpenId(openId === e.id ? null : e.id)}
+                            >
                                 <span
-                                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${e.status === 'resolved' ? 'bg-stone-50 text-stone-700 ring-stone-200' : e.status === 'sent' ? 'bg-red-50 text-red-800 ring-red-200' : 'bg-amber-50 text-amber-900 ring-amber-200'}`}
+                                    className={`flex size-11 shrink-0 items-center justify-center rounded-control ring-1 ${live ? 'text-red-700 ring-red-200' : 'text-stone-500 ring-stone-200'}`}
                                 >
-                                    {stateLabel(e)}
+                                    <TypeIcon type={e.type} />
                                 </span>
-                            </span>
-                            <span className="mt-0.5 block text-sm text-stone-600">
-                                {e.event.title ?? 'Event'} · sent{' '}
-                                {stamp.format(new Date(e.sent_at))}
-                            </span>
-                        </button>
-                        {openId === e.id && <Detail id={e.id} onChanged={changed} />}
-                    </li>
-                ))}
+                                <span className="min-w-0 flex-1">
+                                    <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                                        <span className="font-semibold text-stone-900">
+                                            <span className="capitalize">{e.type}</span> ·{' '}
+                                            {e.reporter ?? 'Unknown'}
+                                        </span>
+                                        <StatusChip kind={chip.kind} label={chip.label} />
+                                    </span>
+                                    <span className="mt-0.5 block text-sm text-stone-600 tabular-nums">
+                                        {e.event.title ?? 'Event'} · sent{' '}
+                                        {stamp.format(new Date(e.sent_at))}
+                                    </span>
+                                </span>
+                            </button>
+                            {openId === e.id && <Detail id={e.id} onChanged={changed} />}
+                        </li>
+                    );
+                })}
             </ul>
         </div>
     );
