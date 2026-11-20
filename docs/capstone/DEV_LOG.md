@@ -450,3 +450,13 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: the extra red strip on the Feed tab was removed. The admin red banner and the sidebar and tab counts already show open emergencies on every page
 - Evidence: no backend change. Checked in a browser at 1280, 900 and 390 px with sample data
 - Paper: Chapter 4 (monitoring features)
+
+### Reports page second pass (monitoring)
+- What was built: the tabs now match the Roles tabs. Needs attention shows how many items wait, and the Emergencies count turns red while any emergency is not acknowledged. On a phone the first tab reads Attention so all three fit without scrolling. A Report reviewers button sits in the page header for admins
+- What was built: Needs attention puts the oldest waiting emergency first and shows "Sent 14 min ago" next to the clock time. Each summary number has a short line that says what it counts. Late site reports is a table on desktop with who, which event and when it was due. Site reports by event adds an on time rate bar on wide screens and four small numbers per event on a phone
+- What was built: an open emergency now shows Acknowledge in a red box at the top, so it never sits below the fold. The note, who sent it, the event and the place sit in labelled rows, and the history shows when it was escalated. Once someone acknowledges it, Mark resolved becomes the main button
+- What was built: All reports leads each row with the person and a status chip (On time, Late, Overdue or Missed), and shows "Showing 1 to 15 of 40" like People. The date filters cannot be set so that From is after To
+- What was built: Report reviewers gets a search icon, a count of active marshals and a line that says how many may be picked
+- Decision and why: Acknowledge on Needs attention still does not load the place. Only View details opens an emergency, and that open is audited, so nothing opens by itself
+- Evidence: no backend change. Types, lint and formatting pass. Checked in a browser at 1280, 900 and 390 px with sample data
+- Paper: Chapter 4 (monitoring features)

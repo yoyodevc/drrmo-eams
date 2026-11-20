@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { PageHeader, SaveBar } from '@/features/access/components/ui';
-import { Avatar } from '@/features/personnel/components/ui';
+import { Avatar, SearchIcon } from '@/features/personnel/components/ui';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { getReportReviewers, saveReportReviewers } from '../../api';
@@ -169,18 +169,32 @@ export function ReportReviewers() {
 
             <section aria-labelledby="reviewers-pick" className="mt-8">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                    <h2 id="reviewers-pick" className="text-lg font-semibold text-stone-900">
-                        Active marshals
-                    </h2>
+                    <div>
+                        <h2
+                            id="reviewers-pick"
+                            className="flex items-center gap-2 text-lg font-semibold text-stone-900"
+                        >
+                            Active marshals
+                            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-600 tabular-nums">
+                                {candidates.length}
+                            </span>
+                        </h2>
+                        <p className="mt-0.5 text-sm text-stone-600">
+                            Tick up to {max}. Only marshals can review reports.
+                        </p>
+                    </div>
                     <label className="w-full sm:w-64">
                         <span className="sr-only">Search marshals</span>
-                        <input
-                            type="search"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by name or email"
-                            className="block min-h-10 w-full rounded-control border border-stone-300 bg-white px-3 text-base text-stone-900 focus:border-maroon-700 focus:outline-none sm:text-sm"
-                        />
+                        <span className="relative block">
+                            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-stone-500 md:size-4" />
+                            <input
+                                type="search"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Name or email"
+                                className="block min-h-12 w-full rounded-control border border-stone-300 bg-white pr-3 pl-10 text-base text-stone-900 transition-colors hover:border-stone-400 focus:border-maroon-700 focus:ring-3 focus:ring-maroon-700/15 focus:outline-none md:min-h-10 md:pl-9 md:text-sm"
+                            />
+                        </span>
                     </label>
                 </div>
                 {full && (
