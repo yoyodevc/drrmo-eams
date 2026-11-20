@@ -38,6 +38,18 @@ const tabs: { to: string; label: string; icon: ReactNode; also?: string[] }[] = 
         ),
     },
     {
+        to: '/me/reports',
+        label: 'Reports',
+        // A report you open keeps the Reports tab highlighted. The emergency inbox is a reviewer's page.
+        also: ['/me/reports/', '/me/emergencies'],
+        icon: (
+            <TabIcon>
+                <path d="M12 3.5 2.8 19.5h18.4Z" />
+                <path d="M12 10v4.5M12 17.2v.1" />
+            </TabIcon>
+        ),
+    },
+    {
         to: '/me/memos',
         label: 'Memos',
         // A memo you open keeps the Memos tab highlighted.
@@ -195,7 +207,7 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                 aria-label="Main"
                 className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
             >
-                <div className="mx-auto grid max-w-2xl grid-cols-5 px-2">
+                <div className="mx-auto grid max-w-2xl grid-cols-6 px-1">
                     {tabs.map((tab) => (
                         <NavLink
                             key={tab.to}
