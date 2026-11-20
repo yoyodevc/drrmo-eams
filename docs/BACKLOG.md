@@ -300,4 +300,5 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 ## Later
 
 **Improve the overall site report logic** `monitoring` `both` **TBD**
-- Not started. Scope to be decided with the owner. Review how report slots, due times, late and overdue states, and the report feed work as a whole.
+- Done (site report rework, 3 steps). Emergency reports (type, note, photo, place from the latest ping, sent, acknowledged, resolved, escalated after 5 minutes, offline queue). Two global reviewer marshals set by an admin. Reminders 15 minutes before and at the due time, a reminder for unacknowledged emergencies, and a missed state 60 minutes after the due time. Emergencies on the report form, one Reports page with needs attention, and audit of report views.
+- Left for later: Web Push (S6.4b) so alerts also reach the phone.
