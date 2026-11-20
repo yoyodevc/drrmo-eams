@@ -141,9 +141,9 @@ function Detail({
             {panel && (
                 <header className="flex items-start gap-3 border-b border-stone-200 pb-5">
                     <span
-                        className={`flex size-12 shrink-0 items-center justify-center rounded-control ring-1 ${typeTone(waiting)}`}
+                        className={`flex size-10 shrink-0 items-center justify-center rounded-control ring-1 ${typeTone(waiting)}`}
                     >
-                        <TypeIcon type={e.type} className="size-7" />
+                        <TypeIcon type={e.type} className="size-5" />
                     </span>
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -161,7 +161,7 @@ function Detail({
 
             <div className={`space-y-5 ${panel ? 'pt-5' : ''}`}>
                 {waiting && (
-                    <div className="rounded-control bg-red-50 p-4 ring-1 ring-red-200">
+                    <div className="rounded-control bg-red-50/60 p-4 ring-1 ring-red-200">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-pretty text-red-900">
                                 <span className="font-semibold">Nobody has taken this on.</span>{' '}
@@ -318,11 +318,10 @@ function Row({
             aria-expanded={selected}
             onClick={onSelect}
         >
-            <span
-                className={`flex size-11 shrink-0 items-center justify-center rounded-control bg-white ring-1 ${typeTone(live)}`}
-            >
-                <TypeIcon type={e.type} />
-            </span>
+            <TypeIcon
+                type={e.type}
+                className={`mt-0.5 size-5 shrink-0 ${live ? 'text-red-700' : 'text-stone-400'}`}
+            />
             <span className="min-w-0 flex-1">
                 <span className="flex items-start justify-between gap-3">
                     <span className="font-semibold text-stone-900">{typeName(e.type)}</span>
@@ -335,7 +334,7 @@ function Row({
                 <span className="mt-0.5 block text-sm text-stone-600">
                     {e.reporter ?? 'Unknown'} · {e.event.title ?? 'Event'}
                 </span>
-                <span className="mt-2 block">
+                <span className="mt-1.5 block">
                     <StatusChip kind={chip.kind} label={chip.label} />
                 </span>
             </span>
@@ -509,11 +508,14 @@ export function EmergencyInbox({ embedded = false }: { embedded?: boolean }) {
             {toolbar}
             {states}
             {rows.length > 0 && (
-                <ul className="mt-4 space-y-3">
+                <ul
+                    aria-label="Emergencies"
+                    className="mt-4 divide-y divide-stone-100 overflow-hidden rounded-card bg-white ring-1 ring-stone-200"
+                >
                     {rows.map((e) => (
                         <li
                             key={e.id}
-                            className={`relative overflow-hidden rounded-card bg-white p-4 ring-1 sm:p-5 ${e.status === 'sent' ? 'ring-red-200 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-red-700' : 'ring-stone-200'}`}
+                            className={`relative px-4 py-3.5 sm:px-5 ${e.status === 'sent' ? 'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-red-700' : ''}`}
                         >
                             <Row
                                 e={e}

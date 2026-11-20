@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { NavLink, Outlet, useLocation } from 'react-router';
+import { listReportSlots } from '@/features/monitoring/api';
+import { useOpenEmergencies } from '@/features/monitoring/hooks/useOpenEmergencies';
 import { useMyUnreadMessages } from '@/features/information/messages';
 import { useAlerts } from '@/features/notifications/unread';
 import { EmergencyAlertBanner } from '@/features/notifications/components/EmergencyAlertBanner';
@@ -25,6 +28,8 @@ function TabIcon({ children }: { children: ReactNode }) {
     );
 }
 
+// Five tabs, the most a 360 px phone holds with readable labels. Alerts moved to the bell in
+// the top bar (DESIGN_SYSTEM.md section 7), so Reports, with the emergency button, fits in one tap.
 const tabs: { to: string; label: string; icon: ReactNode; also?: string[] }[] = [
     {
         to: '/me',
@@ -50,18 +55,6 @@ const tabs: { to: string; label: string; icon: ReactNode; also?: string[] }[] = 
         ),
     },
     {
-        to: '/me/memos',
-        label: 'Memos',
-        // A memo you open keeps the Memos tab highlighted.
-        also: ['/me/memos/'],
-        icon: (
-            <TabIcon>
-                <path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10Z" />
-                <path d="M14 3.5v5h5M9 13h6M9 17h6" />
-            </TabIcon>
-        ),
-    },
-    {
         to: '/me/messages',
         label: 'Messages',
         also: ['/me/messages/'],
@@ -72,12 +65,14 @@ const tabs: { to: string; label: string; icon: ReactNode; also?: string[] }[] = 
         ),
     },
     {
-        to: '/me/notifications',
-        label: 'Alerts',
+        to: '/me/memos',
+        label: 'Memos',
+        // A memo you open keeps the Memos tab highlighted.
+        also: ['/me/memos/'],
         icon: (
             <TabIcon>
-                <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z" />
-                <path d="M10 20a2 2 0 0 0 4 0" />
+                <path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10Z" />
+                <path d="M14 3.5v5h5M9 13h6M9 17h6" />
             </TabIcon>
         ),
     },
@@ -112,42 +107,102 @@ function useOnline() {
     return online;
 }
 
-// Mobile first (DESIGN_SYSTEM.md section 7): white top bar, stone-50 page, one column,
+// What a tab shows on its icon's top right corner: a number in a red pill, or a plain dot.
+type Badge = { count: number; label: string } | { dot: string; label: string } | null;
+
+// Messages: how many answers wait. Reports: for the reviewer marshals, emergencies nobody has
+// acknowledged yet (red pill). For a designated reporter, an ember dot while a site report is due.
+function useTabBadges(): (to: string) => Badge {
+    const messages = useMyUnreadMessages();
+    const { waiting } = useOpenEmergencies();
+    // Same query as the "reports due" card on Duties and Reports, so they share one cache.
+    const slots = useQuery({
+        queryKey: ['report-slots'],
+        queryFn: listReportSlots,
+        refetchInterval: 60_000,
+    });
+    const due = (slots.data ?? []).filter(
+        (s) => s.status === 'pending' || s.status === 'overdue',
+    ).length;
+
+    return (to) => {
+        if (to === '/me/messages' && messages > 0) {
+            return { count: messages, label: `${messages} unread` };
+        }
+        if (to === '/me/reports') {
+            if (waiting > 0) {
+                return {
+                    count: waiting,
+                    label: `${waiting} ${waiting === 1 ? 'emergency' : 'emergencies'} not acknowledged`,
+                };
+            }
+            if (due > 0) return { dot: 'bg-ember-600', label: 'report due' };
+        }
+        return null;
+    };
+}
+
+function BadgeMark({ badge, pill, dot }: { badge: Badge; pill: string; dot: string }) {
+    if (!badge) return null;
+    if ('count' in badge) {
+        return (
+            <span
+                className={`absolute flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[0.625rem] leading-none font-bold text-white tabular-nums ring-2 ring-white ${pill}`}
+                aria-hidden="true"
+            >
+                {badge.count > 9 ? '9+' : badge.count}
+            </span>
+        );
+    }
+    return (
+        <span
+            className={`absolute size-2.5 rounded-full ring-2 ring-white ${badge.dot} ${dot}`}
+            aria-hidden="true"
+        />
+    );
+}
+
+// The bell in the top bar opens Alerts, the emails the system sent. A red dot means one came in
+// since the page was last opened. Same place on phone and desktop.
+function AlertsBell() {
+    const { unread } = useAlerts();
+    return (
+        <NavLink
+            to="/me/notifications"
+            end
+            className={({ isActive }) =>
+                `relative flex size-12 shrink-0 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-maroon-100 text-maroon-700' : 'text-stone-700 hover:bg-stone-100 active:bg-stone-200'}`
+            }
+        >
+            <TabIcon>
+                <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z" />
+                <path d="M10 20a2 2 0 0 0 4 0" />
+            </TabIcon>
+            {unread && (
+                <span
+                    className="absolute top-3 right-3 size-2.5 rounded-full bg-red-600 ring-2 ring-white"
+                    aria-hidden="true"
+                />
+            )}
+            <span className="sr-only">Alerts{unread ? ' (new)' : ''}</span>
+        </NavLink>
+    );
+}
+
+// Mobile first (DESIGN_SYSTEM.md section 7): white top bar with the bell, stone-50 page, one column,
 // bottom tab bar with 48 px or larger tap targets. From 768 px the tabs move into the top bar
 // and the content gets a wider column, so marshals and volunteers can use a desktop too.
+// On a phone, Sign out lives on the Me page. From 768 px it also sits in the top bar.
 export function MobileLayout({ children }: { children?: ReactNode }) {
     const online = useOnline();
-    const { unread } = useAlerts();
-    const messages = useMyUnreadMessages();
+    const badge = useTabBadges();
     const { pathname } = useLocation();
     const current = (tab: (typeof tabs)[number], isActive: boolean) =>
         isActive || (tab.also ?? []).some((path) => pathname.startsWith(path));
-    // The dot sits on the bell's top right corner. A white ring cuts it out of the icon. Messages
-    // show how many answers wait, in a small red pill on the same corner.
-    const dot = (to: string, place: string, count: string) => {
-        if (to === '/me/messages' && messages > 0) {
-            return (
-                <span
-                    className={`absolute flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[0.625rem] leading-none font-bold text-white tabular-nums ring-2 ring-white ${count}`}
-                    aria-hidden="true"
-                >
-                    {messages > 9 ? '9+' : messages}
-                </span>
-            );
-        }
-        return unread && to === '/me/notifications' ? (
-            <span
-                className={`absolute size-2.5 rounded-full bg-red-600 ring-2 ring-white ${place}`}
-                aria-hidden="true"
-            />
-        ) : null;
+    const hint = (to: string) => {
+        const b = badge(to);
+        return b ? <span className="sr-only"> ({b.label})</span> : null;
     };
-    const hint = (to: string) =>
-        to === '/me/notifications' && unread ? (
-            <span className="sr-only"> (new)</span>
-        ) : to === '/me/messages' && messages > 0 ? (
-            <span className="sr-only"> ({messages} unread)</span>
-        ) : null;
 
     return (
         <div className="min-h-dvh bg-stone-50">
@@ -172,7 +227,11 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                                     >
                                         <span className="relative">
                                             {tab.icon}
-                                            {dot(tab.to, '-top-0.5 -right-0.5', '-top-1.5 left-3')}
+                                            <BadgeMark
+                                                badge={badge(tab.to)}
+                                                pill="-top-1.5 left-3"
+                                                dot="-top-0.5 -right-0.5"
+                                            />
                                         </span>
                                         {tab.label}
                                         {hint(tab.to)}
@@ -181,7 +240,10 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                             ))}
                         </ul>
                     </nav>
-                    <SignOutButton className="inline-flex min-h-12 shrink-0 items-center rounded-control px-3 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 active:bg-stone-200" />
+                    <div className="flex shrink-0 items-center gap-1">
+                        <AlertsBell />
+                        <SignOutButton className="hidden min-h-12 shrink-0 items-center rounded-control px-3 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 active:bg-stone-200 md:inline-flex" />
+                    </div>
                 </div>
                 {!online && (
                     <p
@@ -207,7 +269,7 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                 aria-label="Main"
                 className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
             >
-                <div className="mx-auto grid max-w-2xl grid-cols-6 px-1">
+                <div className="mx-auto grid max-w-2xl grid-cols-5 px-1">
                     {tabs.map((tab) => (
                         <NavLink
                             key={tab.to}
@@ -223,11 +285,11 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                                         className={`relative flex h-8 w-14 items-center justify-center rounded-full transition-colors ${current(tab, isActive) ? 'bg-maroon-100' : 'group-hover:bg-stone-100'}`}
                                     >
                                         {tab.icon}
-                                        {dot(
-                                            tab.to,
-                                            'top-0.5 left-1/2 ml-1',
-                                            'top-0 left-1/2 ml-1',
-                                        )}
+                                        <BadgeMark
+                                            badge={badge(tab.to)}
+                                            pill="top-0 left-1/2 ml-1"
+                                            dot="top-0.5 left-1/2 ml-1"
+                                        />
                                     </span>
                                     {tab.label}
                                     {hint(tab.to)}
