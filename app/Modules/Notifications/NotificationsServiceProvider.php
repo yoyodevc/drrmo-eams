@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications;
 
+use App\Modules\Monitoring\Events\EmergencyEscalated;
+use App\Modules\Monitoring\Events\EmergencyReported;
 use App\Modules\Monitoring\Events\ReportOverdue;
 use App\Modules\Notifications\Console\SendShiftReminders;
 use App\Modules\Notifications\Contracts\AssignmentNotifier;
 use App\Modules\Notifications\Contracts\MailSender;
 use App\Modules\Notifications\Listeners\NotifyAdminsOfOverdueReport;
+use App\Modules\Notifications\Listeners\NotifyOfEmergency;
 use App\Modules\Notifications\Listeners\NotifyAdminsOfWithdrawal;
 use App\Modules\Notifications\Models\Notification;
 use App\Modules\Notifications\Policies\NotificationPolicy;
@@ -40,6 +43,8 @@ class NotificationsServiceProvider extends ServiceProvider
     {
         Event::listen(LocationConsentWithdrawn::class, NotifyAdminsOfWithdrawal::class);
         Event::listen(ReportOverdue::class, NotifyAdminsOfOverdueReport::class);
+        Event::listen(EmergencyReported::class, [NotifyOfEmergency::class, 'handleReported']);
+        Event::listen(EmergencyEscalated::class, [NotifyOfEmergency::class, 'handleEscalated']);
         $this->loadViewsFrom(__DIR__.'/Views', 'eams-notifications');
         Gate::policy(Notification::class, NotificationPolicy::class);
         if ($this->app->runningInConsole()) {

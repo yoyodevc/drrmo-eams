@@ -59,6 +59,10 @@ class SendNotificationEmail implements ShouldQueue
             return $this->composeOverdueReport($n);
         }
 
+        if ($n->type === NotificationType::EmergencyReported->value || $n->type === NotificationType::EmergencyEscalated->value) {
+            return $this->composeEmergency($n);
+        }
+
         $a = $n->assignment;
         $event = $a?->event->title ?? 'an event';
         $link = url('/').'?assignment='.($a->id ?? '');
@@ -102,6 +106,21 @@ class SendNotificationEmail implements ShouldQueue
             ->line($who.' has not sent a site report that was due at '.$due.'. It is now more than 15 minutes late.')
             ->details(['Event' => $event, 'Reporter' => $who, 'Due' => $due])
             ->button('Open the reports', url('/admin/reports'));
+    }
+
+    /** Tells a reviewer or admin that someone on duty sent an emergency. No location in the email: open the app. */
+    private function composeEmergency(Notification $n): EmailMessage
+    {
+        $escalated = $n->type === NotificationType::EmergencyEscalated->value;
+        $who = $n->subject_user_id === null ? 'Someone on duty' : $n->subject->name;
+        $event = $n->assignment->event->title ?? 'an event';
+
+        return EmailMessage::make(($escalated ? 'Emergency not acknowledged: ' : 'Emergency: ').$event, $escalated ? 'An emergency has not been acknowledged' : 'An emergency was reported')
+            ->preheader($who.' sent an emergency at '.$event.'.')
+            ->greeting($n->user->first_name ?? 'there')
+            ->line($escalated ? $who.' sent an emergency and nobody has acknowledged it yet. Please act now.' : $who.' sent an emergency from a duty. Please open it and acknowledge it.')
+            ->details(['Event' => $event, 'From' => $who])
+            ->button('Open the emergency', url('/'));
     }
 
     /** Tells an admin who stopped sharing location and which upcoming duties need a new person. */

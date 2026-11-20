@@ -114,3 +114,105 @@ export async function getReportFeed(filters: FeedFilters, page: number): Promise
 }
 
 export const reportPhotoUrl = (id: number) => `/api/reports/${id}/photo`;
+
+// Emergency reports. Any person on duty can send one. Reviewers (the two global marshals and admins) read them.
+export type EmergencyType = 'medical' | 'fire' | 'security' | 'other';
+export const emergencyTypes: { value: EmergencyType; label: string }[] = [
+    { value: 'medical', label: 'Medical' },
+    { value: 'fire', label: 'Fire' },
+    { value: 'security', label: 'Security' },
+    { value: 'other', label: 'Other' },
+];
+
+// What the sender sees. "escalated" means nobody took it on within 5 minutes.
+export type MyEmergencyStatus = 'sent' | 'acknowledged' | 'escalated' | 'resolved';
+
+export type MyEmergency = {
+    id: number;
+    client_id: string;
+    type: EmergencyType;
+    note: string | null;
+    event: string | null;
+    has_photo: boolean;
+    status: MyEmergencyStatus;
+    sent_at: string;
+    acknowledged_by: string | null;
+    acknowledged_at: string | null;
+    resolved_at: string | null;
+    resolution_note: string | null;
+};
+
+export async function sendEmergency(input: {
+    assignmentId: number;
+    clientId: string;
+    type: EmergencyType;
+    note: string;
+    photo: Blob | null;
+}): Promise<MyEmergency> {
+    const form = new FormData();
+    form.set('client_id', input.clientId);
+    form.set('type', input.type);
+    if (input.note) form.set('note', input.note);
+    if (input.photo) form.set('photo', input.photo, 'photo.jpg');
+    const response = await api<{ data: MyEmergency }>(
+        `/api/me/assignments/${input.assignmentId}/emergencies`,
+        { method: 'POST', body: form },
+    );
+    return response.data;
+}
+
+export async function listMyEmergencies(): Promise<MyEmergency[]> {
+    const response = await api<{ data: MyEmergency[] }>('/api/me/emergencies');
+    return response.data;
+}
+
+export type ReviewEmergency = {
+    id: number;
+    type: EmergencyType;
+    note: string | null;
+    has_photo: boolean;
+    has_location: boolean;
+    status: 'sent' | 'acknowledged' | 'resolved';
+    escalated: boolean;
+    sent_at: string;
+    escalated_at: string | null;
+    event: { id: number; title: string | null };
+    reporter: string | null;
+    acknowledged_by: string | null;
+    acknowledged_at: string | null;
+    resolved_by: string | null;
+    resolved_at: string | null;
+    resolution_note: string | null;
+    // Only in the single report. Opening it is audited.
+    location?: {
+        lat: number;
+        lng: number;
+        accuracy_m: number | null;
+        captured_at: string | null;
+    } | null;
+};
+
+export async function listEmergencies(status: string): Promise<ReviewEmergency[]> {
+    const query = status ? `?status=${status}` : '';
+    const response = await api<{ data: ReviewEmergency[] }>(`/api/emergencies${query}`);
+    return response.data;
+}
+
+export async function getEmergency(id: number): Promise<ReviewEmergency> {
+    const response = await api<{ data: ReviewEmergency }>(`/api/emergencies/${id}`);
+    return response.data;
+}
+
+export async function acknowledgeEmergency(id: number): Promise<void> {
+    await api(`/api/emergencies/${id}/acknowledge`, { method: 'POST' });
+}
+
+export async function resolveEmergency(id: number, note: string): Promise<void> {
+    await api(`/api/emergencies/${id}/resolve`, {
+        method: 'POST',
+        body: JSON.stringify({ note: note || null }),
+    });
+}
+
+export const emergencyPhotoUrl = (id: number) => `/api/emergencies/${id}/photo`;
+export const myEmergencyPhotoUrl = (id: number) => `/api/me/emergencies/${id}/photo`;

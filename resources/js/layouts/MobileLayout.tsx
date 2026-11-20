@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { useMyUnreadMessages } from '@/features/information/messages';
 import { useAlerts } from '@/features/notifications/unread';
+import { EmergencyAlertBanner } from '@/features/notifications/components/EmergencyAlertBanner';
+import { EmergencyOutboxNotice } from '@/features/monitoring/components/EmergencyOutboxNotice';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -184,6 +186,8 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                 tabIndex={-1}
                 className="mx-auto max-w-6xl px-6 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none md:px-10 md:pt-10 md:pb-16"
             >
+                <EmergencyAlertBanner to="/me/emergencies" />
+                <EmergencyOutboxNotice />
                 {children ?? <Outlet />}
             </main>
 

@@ -58,3 +58,21 @@ export async function listMyNotifications(): Promise<MyNotification[]> {
     const body = await api<{ data: MyNotification[] }>('/api/me/notifications');
     return body.data;
 }
+
+// In app alerts. Today they carry emergencies. Always the signed in person's own.
+export interface InAppAlert {
+    id: number;
+    type: string;
+    emergency_report_id: number | null;
+    about: string | null;
+    created_at: string;
+    read: boolean;
+}
+
+export async function listAlerts(): Promise<{ data: InAppAlert[]; unread: number }> {
+    return api<{ data: InAppAlert[]; unread: number }>('/api/me/alerts');
+}
+
+export async function markAlertsRead(): Promise<void> {
+    await api('/api/me/alerts/read', { method: 'POST' });
+}

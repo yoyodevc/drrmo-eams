@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router';
 import { canOpen, permissionFor } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
 import { useInboxUnread, useMyUnreadMessages } from '@/features/information/messages';
+import { EmergencyAlertBanner } from '@/features/notifications/components/EmergencyAlertBanner';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -93,6 +94,16 @@ const groups: { label: string; items: Item[] }[] = [
                         <path d="M9 4.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-13a2 2 0 0 0-2-2h-2" />
                         <rect x="9" y="3" width="6" height="3" rx="1" />
                         <path d="m9 13.5 2 2 4-4" />
+                    </NavIcon>
+                ),
+            },
+            {
+                to: '/admin/emergencies',
+                label: 'Emergencies',
+                icon: (
+                    <NavIcon>
+                        <path d="M12 3.5 2.5 20h19L12 3.5Z" />
+                        <path d="M12 10v4.5M12 17.5v.01" />
                     </NavIcon>
                 ),
             },
@@ -484,6 +495,7 @@ export function AdminLayout() {
                 tabIndex={-1}
                 className="min-w-0 flex-1 px-6 py-6 outline-none lg:px-10 lg:py-8"
             >
+                <EmergencyAlertBanner to="/admin/emergencies" />
                 <Guarded />
             </main>
         </div>

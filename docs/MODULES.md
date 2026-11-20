@@ -129,8 +129,8 @@ Count: 4 + 4 + 5 + 1 + 2 + 2 + 2 = 20 tables. Each appears once.
 ## Notifications
 
 - **Owns:** NOTIFICATION.
-- **Endpoints:** `GET /api/notifications` (admin log, filters: type, status, date), `POST /api/notifications/{notification}/retry`.
-- **Listens to:** `AssignmentCreated`, `AssignmentUpdated`, `AssignmentCancelled`, `ReportSlotCreated`, `ReportOverdue`, `PersonCreated` (welcome and set password email), `LocationConsentWithdrawn` (tells people with `location.view`).
+- **Endpoints:** `GET /api/me/alerts`, `POST /api/me/alerts/read` (in app alerts, today for emergencies), `GET /api/notifications` (admin log, filters: type, status, date), `POST /api/notifications/{notification}/retry`.
+- **Listens to:** `AssignmentCreated`, `AssignmentUpdated`, `AssignmentCancelled`, `ReportSlotCreated`, `ReportOverdue`, `EmergencyReported`, `EmergencyEscalated` (in app alert plus email for the reviewer marshals and admins), `PersonCreated` (welcome and set password email), `LocationConsentWithdrawn` (tells people with `location.view`).
 - **Jobs and commands:** `SendNotificationJob`, `notifications:shift-reminders`.
 - **Policies:** `NotificationPolicy`.
 - **Contracts offered:** `Notifier::queue(User $to, NotificationType $type, array $context)`. Any module may call this instead of sending mail itself.
@@ -139,7 +139,7 @@ Count: 4 + 4 + 5 + 1 + 2 + 2 + 2 = 20 tables. Each appears once.
 
 ## Monitoring (GPS and site reports)
 
-- **Owns:** LOCATION_PING, SITE_REPORT.
+- **Owns:** LOCATION_PING, SITE_REPORT, EMERGENCY_REPORT (added by the site report rework, step 1).
 - **Endpoints:**
   - `POST /api/me/assignments/{assignment}/start-duty`, `POST /api/me/assignments/{assignment}/end-duty` (calls `AssignmentLookup`)
   - `POST /api/me/assignments/{assignment}/pings` (batch, throttled)
@@ -147,9 +147,10 @@ Count: 4 + 4 + 5 + 1 + 2 + 2 + 2 = 20 tables. Each appears once.
   - `GET /api/map/trail/{assignment}` (pings for one assignment, writes audit entry)
   - `GET /api/me/report-slots`, `POST /api/me/report-slots/{report}` (summary, optional photo)
   - `GET /api/reports` (feed: event, location, date filters, newest first), `GET /api/reports/{report}`, `GET /api/reports/{report}/photo`
-- **Jobs and commands:** `monitoring:create-report-slots`, `monitoring:mark-overdue-reports`, `monitoring:auto-end-duty`, `monitoring:purge-pings`.
-- **Policies:** `LocationPolicy`, `SiteReportPolicy`.
-- **Events fired:** `ReportSlotCreated`, `ReportSubmitted`, `ReportOverdue`.
+  - Emergencies: `POST /api/me/assignments/{assignment}/emergencies` (type, note, photo, `client_id`; place comes from the latest ping), `GET /api/me/emergencies`, `GET /api/emergencies` (reviewers), `GET /api/emergencies/{emergency}` (adds the place, audited), `GET /api/emergencies/{emergency}/photo`, `POST /api/emergencies/{emergency}/acknowledge`, `POST /api/emergencies/{emergency}/resolve`
+- **Jobs and commands:** `monitoring:escalate-emergencies` (every minute, escalates after 5 minutes unacknowledged), `monitoring:create-report-slots`, `monitoring:mark-overdue-reports`, `monitoring:auto-end-duty`, `monitoring:purge-pings`.
+- **Policies:** `LocationPolicy`, `SiteReportPolicy`, `EmergencyReportPolicy`.
+- **Events fired:** `ReportSlotCreated`, `ReportSubmitted`, `ReportOverdue`, `EmergencyReported`, `EmergencyEscalated`.
 - **Frontend:** `features/monitoring` with admin pages Live map, Report feed, and mobile components Duty banner, Ping engine (hook `useDutyTracker`), Report form.
 - **Must not touch:** ASSIGNMENT directly. Status changes go through `AssignmentLookup`.
 
