@@ -442,3 +442,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: no report opens by itself in the side by side view, because opening one shows where the person was and is audited
 - Evidence: no backend change. The full JS suite passes (141 tests). The screens were checked in a browser at 1280, 900 and 390 px with sample data
 - Paper: Chapter 4 (monitoring features)
+
+### Reports page redesign (monitoring)
+- What was built: the Reports page now follows the same layout as People and Roles. Each section is one white panel with a title row. Needs attention has a single summary strip with a colored dot for each count, then panels for open emergencies, overdue and missed reports, and reports for each event
+- What was built: the Feed tab is now called All reports. Its filters match the People filters (on a phone they fold behind a Filters button), and the reports sit in one list with a count, Clear filters and paging
+- What was built: on a phone the emergency rows no longer break, and the event table fits without sideways scrolling
+- Decision and why: the extra red strip on the Feed tab was removed. The admin red banner and the sidebar and tab counts already show open emergencies on every page
+- Evidence: no backend change. Checked in a browser at 1280, 900 and 390 px with sample data
+- Paper: Chapter 4 (monitoring features)
