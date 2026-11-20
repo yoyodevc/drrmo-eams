@@ -460,3 +460,9 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: Acknowledge on Needs attention still does not load the place. Only View details opens an emergency, and that open is audited, so nothing opens by itself
 - Evidence: no backend change. Types, lint and formatting pass. Checked in a browser at 1280, 900 and 390 px with sample data
 - Paper: Chapter 4 (monitoring features)
+
+### Phone Reports tab and emergency alert fix (monitoring)
+- What was built: phones get a Reports tab where a marshal can send an emergency and write due site reports. The phone nav now has five tabs, with Alerts on a bell icon, and the Reports screen uses a quieter design. The medical emergency icon is a cross
+- What was built: the red emergency alert now disappears once the emergency is acknowledged, so it no longer shows on every page after someone has taken it on
+- Evidence: a new Pest test covers the alert clearing after acknowledge. Full backend suite (394 tests), JS suite (141 tests), Pint, Larastan and the build pass
+- Paper: Chapter 4 (monitoring features)
