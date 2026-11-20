@@ -3,6 +3,7 @@ import { adminAccessRoutes, myAccessRoutes } from '@/features/access/routes';
 import { adminEventRoutes, dashboardRoute, myDutiesRoute } from '@/features/events/routes';
 import { adminInformationRoutes, myInformationRoutes } from '@/features/information/routes';
 import { adminMonitoringRoutes, myMonitoringRoutes } from '@/features/monitoring/routes';
+import { adminRecordsRoutes } from '@/features/records/routes';
 import { adminNotificationRoutes, myNotificationRoutes } from '@/features/notifications/routes';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { MobileLayout } from '@/layouts/MobileLayout';
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
                     ...adminNotificationRoutes,
                     ...adminMonitoringRoutes,
                     ...adminAccessRoutes,
+                    ...adminRecordsRoutes,
                 ],
             },
         ],

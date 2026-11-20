@@ -466,3 +466,10 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - What was built: the red emergency alert now disappears once the emergency is acknowledged, so it no longer shows on every page after someone has taken it on
 - Evidence: a new Pest test covers the alert clearing after acknowledge. Full backend suite (394 tests), JS suite (141 tests), Pint, Larastan and the build pass
 - Paper: Chapter 4 (monitoring features)
+
+### Audit log viewer and a working dashboard (records, events)
+- What was built: the Records page (S6.1) lists the audit log with filters for actor, action, entity and date. A row expands to show its IP address and details. It is read only, and only people with `audit.view` can open it
+- What was built: the admin dashboard now shows real figures instead of the "Coming soon" preview: attendance this month, duty hours for 8 weeks, time to acknowledge, events by type, and an "Across the system" strip with open emergencies, reports needing attention, unread messages, access requests, active people and the latest memos. Each block only shows when the person's permissions cover it
+- Decision and why: the audit viewer does not audit itself, to keep the log free of noise from people reading it
+- Evidence: new Pest tests cover the filters and the forbidden case. Full backend suite, JS suite, Pint and Larastan pass
+- Paper: Chapter 4 (records and dashboard)

@@ -1,5 +1,5 @@
 // A-Dashboard (S3.7). Today at a glance. Four counts on top, then the people who need a nudge,
-// today's events and who is on duty, and a statistics preview. Refreshes every minute.
+// today's events and who is on duty, a system strip and statistics. Refreshes every minute.
 // Phones: one column, the "needs attention" lists come first. Desktop: events on the left,
 // people lists on the right. Lists switch layout by their own width (container queries).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -317,40 +317,77 @@ function TodayEvents({ events, now }: { events: TodayEvent[]; now: number }) {
     );
 }
 
-// Statistics preview. These are layout placeholders with no numbers in them yet. They fill in
-// once enough duties have been worked to make the figures mean something.
-const BARS = [40, 65, 50, 80, 55, 70, 45, 60];
+// Statistics from the finished duties, and a strip of what needs attention in the other modules.
+type Stats = DashboardData['stats'];
 
-function GhostBars() {
+function StatCard({
+    title,
+    period,
+    value,
+    unit,
+    children,
+}: {
+    title: string;
+    period: string;
+    value: string;
+    unit: string;
+    children: ReactNode;
+}) {
     return (
-        <div className="flex h-16 items-end gap-1.5" aria-hidden="true">
-            {BARS.map((height, index) => (
+        <article className="flex flex-col rounded-card bg-white p-4 ring-1 ring-stone-200 sm:p-5">
+            <h3 className="text-sm font-medium text-stone-800">{title}</h3>
+            <p className="text-xs text-stone-500">{period}</p>
+            <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-900 tabular-nums">
+                {value}
+                <span className="ml-1 text-sm font-medium text-stone-500">{unit}</span>
+            </p>
+            <div className="mt-auto pt-4">{children}</div>
+        </article>
+    );
+}
+
+function Bars({ values, labels }: { values: number[]; labels: string[] }) {
+    const max = Math.max(...values, 1);
+    return (
+        <div className="flex h-16 items-end gap-1.5">
+            {values.map((value, index) => (
                 <span
-                    key={index}
-                    className="flex-1 rounded-t-sm bg-stone-200"
-                    style={{ height: `${height}%` }}
+                    key={labels[index]}
+                    title={`${labels[index]}: ${value}`}
+                    className="flex-1 rounded-t-sm bg-maroon-700"
+                    style={{ height: `${Math.max(value > 0 ? 6 : 2, (value / max) * 100)}%` }}
                 />
             ))}
         </div>
     );
 }
 
-function GhostSplit() {
+function Split({ stats }: { stats: Stats['attendance'] }) {
+    const parts = [
+        { label: 'On time', n: stats.on_time, bar: 'bg-green-600' },
+        { label: 'Late', n: stats.late, bar: 'bg-amber-500' },
+        { label: 'No show', n: stats.no_show, bar: 'bg-red-600' },
+    ];
     return (
-        <div aria-hidden="true">
-            <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
-                <span className="w-3/5 bg-stone-300" />
-                <span className="w-1/4 bg-stone-200" />
-                <span className="flex-1 bg-stone-100" />
+        <div>
+            <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-stone-100">
+                {parts.map(
+                    (part) =>
+                        part.n > 0 && (
+                            <span
+                                key={part.label}
+                                className={part.bar}
+                                style={{ width: `${(part.n / stats.total) * 100}%` }}
+                            />
+                        ),
+                )}
             </div>
-            <ul className="mt-3 space-y-1.5 text-xs text-stone-500">
-                {['On time', 'Late', 'No show'].map((label, index) => (
-                    <li key={label} className="flex items-center gap-2">
-                        <span
-                            className={`size-2 rounded-full ${['bg-stone-300', 'bg-stone-200', 'bg-stone-100 ring-1 ring-stone-200'][index]}`}
-                        />
-                        {label}
-                        <span className="ml-auto tabular-nums">--</span>
+            <ul className="mt-3 space-y-1.5 text-xs text-stone-600">
+                {parts.map((part) => (
+                    <li key={part.label} className="flex items-center gap-2">
+                        <span className={`size-2 rounded-full ${part.bar}`} />
+                        {part.label}
+                        <span className="ml-auto tabular-nums">{part.n}</span>
                     </li>
                 ))}
             </ul>
@@ -358,12 +395,22 @@ function GhostSplit() {
     );
 }
 
-function GhostLine() {
+function Trend({ points }: { points: (number | null)[] }) {
+    const known = points.filter((p): p is number => p !== null);
+    if (known.length < 2) {
+        return <p className="text-xs text-stone-500">Not enough data for a trend yet.</p>;
+    }
+    const max = Math.max(...known, 0.1);
+    const step = 156 / (points.length - 1);
+    const path = points
+        .flatMap((p, i) => (p === null ? [] : [`${i * step + 2},${44 - (p / max) * 40}`]))
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p}`)
+        .join(' ');
     return (
         <svg viewBox="0 0 160 48" className="h-16 w-full" fill="none" aria-hidden="true">
             <path
-                d="M2 38 L24 30 L46 34 L68 20 L90 24 L112 12 L134 18 L158 8"
-                className="stroke-stone-300"
+                d={path}
+                className="stroke-maroon-700"
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -373,79 +420,194 @@ function GhostLine() {
     );
 }
 
-function GhostRows() {
+function TypeRows({ types }: { types: Stats['events_by_type']['types'] }) {
+    const max = Math.max(...types.map((t) => t.count), 1);
     return (
-        <ul className="space-y-2.5" aria-hidden="true">
-            {[85, 60, 40, 25].map((width) => (
-                <li key={width} className="flex items-center gap-2">
-                    <span className="h-2 w-14 rounded-full bg-stone-100" />
+        <ul className="space-y-2.5">
+            {types.map((type) => (
+                <li key={type.name} className="flex items-center gap-2 text-xs text-stone-600">
+                    <span className="w-20 shrink-0 truncate">{type.name}</span>
                     <span
-                        className="h-2 rounded-full bg-stone-200"
-                        style={{ width: `${width}%` }}
+                        className="h-2 rounded-full bg-maroon-700"
+                        style={{ width: `${(type.count / max) * 60}%` }}
                     />
+                    <span className="ml-auto tabular-nums">{type.count}</span>
                 </li>
             ))}
         </ul>
     );
 }
 
-function PreviewCard({
-    title,
-    period,
-    unit,
-    children,
-}: {
-    title: string;
-    period: string;
-    unit: string;
-    children: ReactNode;
-}) {
+const empty = <p className="text-xs text-stone-500">Nothing to show yet.</p>;
+
+function Statistics({ stats }: { stats: Stats }) {
+    const { attendance, duty_hours: hours, acknowledge, events_by_type: types } = stats;
+    const pct =
+        attendance.total > 0 ? Math.round((attendance.on_time / attendance.total) * 100) : null;
     return (
-        <article className="flex flex-col rounded-card bg-white p-4 ring-1 ring-stone-200 sm:p-5">
-            <h3 className="text-sm font-medium text-stone-800">{title}</h3>
-            <p className="text-xs text-stone-500">{period}</p>
-            <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-300 tabular-nums">
-                --
-                <span className="ml-1 text-sm font-medium text-stone-400">{unit}</span>
-            </p>
-            <div className="mt-auto pt-4">{children}</div>
-        </article>
+        <section aria-labelledby="stats-heading" className="mt-8">
+            <h2
+                id="stats-heading"
+                className="flex items-center gap-2 text-lg font-semibold text-stone-900"
+            >
+                <ChartIcon className="size-5 text-stone-500" />
+                Statistics
+            </h2>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+                <StatCard
+                    title="Attendance"
+                    period={`${attendance.month}, started duties`}
+                    value={pct === null ? '--' : String(pct)}
+                    unit="% on time"
+                >
+                    {attendance.total > 0 ? <Split stats={attendance} /> : empty}
+                </StatCard>
+                <StatCard
+                    title="Duty hours"
+                    period="Last 8 weeks"
+                    value={String(hours.total)}
+                    unit="hours"
+                >
+                    {hours.total > 0 ? (
+                        <Bars
+                            values={hours.weeks.map((w) => w.hours)}
+                            labels={hours.weeks.map((w) => `Week of ${w.week}`)}
+                        />
+                    ) : (
+                        empty
+                    )}
+                </StatCard>
+                <StatCard
+                    title="Time to acknowledge"
+                    period="Last 30 days"
+                    value={
+                        acknowledge.median_hours === null ? '--' : String(acknowledge.median_hours)
+                    }
+                    unit="h median"
+                >
+                    <Trend points={acknowledge.trend} />
+                </StatCard>
+                <StatCard
+                    title="Events by type"
+                    period="Last 6 months"
+                    value={String(types.total)}
+                    unit="events"
+                >
+                    {types.types.length > 0 ? <TypeRows types={types.types} /> : empty}
+                </StatCard>
+            </div>
+        </section>
     );
 }
 
-function StatisticsPreview() {
+function Attention({ data }: { data: DashboardData }) {
+    const items: { to: string; label: string; value: number; note: string; urgent: boolean }[] = [];
+    if (data.emergencies) {
+        items.push({
+            to: '/admin/reports',
+            label: 'Open emergencies',
+            value: data.emergencies.open,
+            note:
+                data.emergencies.waiting > 0
+                    ? `${data.emergencies.waiting} not acknowledged`
+                    : 'None waiting',
+            urgent: data.emergencies.waiting > 0,
+        });
+    }
+    if (data.reports) {
+        const problems = data.reports.overdue + data.reports.missed;
+        items.push({
+            to: '/admin/reports',
+            label: 'Reports needing attention',
+            value: problems,
+            note: `${data.reports.overdue} overdue, ${data.reports.missed} missed`,
+            urgent: problems > 0,
+        });
+    }
+    if (data.messages) {
+        items.push({
+            to: '/admin/messages',
+            label: 'Unread messages',
+            value: data.messages.unread,
+            note: 'In the DRRMO inbox',
+            urgent: false,
+        });
+    }
+    if (data.requests) {
+        items.push({
+            to: '/admin/requests',
+            label: 'Access requests',
+            value: data.requests.pending,
+            note: 'Waiting for review',
+            urgent: false,
+        });
+    }
+    if (data.people) {
+        items.push({
+            to: '/admin/people',
+            label: 'Active people',
+            value: data.people.active,
+            note: 'Personnel and volunteers',
+            urgent: false,
+        });
+    }
+    if (items.length === 0 && !data.memos) return null;
     return (
-        <section aria-labelledby="stats-heading" className="mt-8">
-            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
-                <div>
-                    <h2
-                        id="stats-heading"
-                        className="flex items-center gap-2 text-lg font-semibold text-stone-900"
-                    >
-                        <ChartIcon className="size-5 text-stone-500" />
-                        Statistics
-                        <span className={`${chipClass} bg-stone-100 text-stone-600 ring-stone-200`}>
-                            Coming soon
-                        </span>
-                    </h2>
-                    <p className="mt-0.5 text-sm text-pretty text-stone-600">
-                        A preview of the layout. Numbers show here once more duties are done.
-                    </p>
-                </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-                <PreviewCard title="Attendance" period="This month" unit="% on time">
-                    <GhostSplit />
-                </PreviewCard>
-                <PreviewCard title="Duty hours" period="Last 8 weeks" unit="hours">
-                    <GhostBars />
-                </PreviewCard>
-                <PreviewCard title="Time to acknowledge" period="Last 30 days" unit="h median">
-                    <GhostLine />
-                </PreviewCard>
-                <PreviewCard title="Events by type" period="This semester" unit="events">
-                    <GhostRows />
-                </PreviewCard>
+        <section aria-labelledby="attention-heading" className="mt-8">
+            <h2 id="attention-heading" className="text-lg font-semibold text-stone-900">
+                Across the system
+            </h2>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-5">
+                <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:col-span-3 lg:grid-cols-3">
+                    {items.map((item) => (
+                        <li key={item.label}>
+                            <Link
+                                to={item.to}
+                                className="block h-full rounded-card bg-white p-4 ring-1 ring-stone-200 transition-colors hover:bg-stone-50"
+                            >
+                                <p className="text-sm font-medium text-stone-800">{item.label}</p>
+                                <p
+                                    className={`mt-2 text-2xl font-semibold tabular-nums ${item.urgent ? 'text-red-700' : 'text-stone-900'}`}
+                                >
+                                    {item.value}
+                                </p>
+                                <p className="mt-1 text-xs text-stone-500">{item.note}</p>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+                {data.memos && (
+                    <div className="rounded-card bg-white p-4 ring-1 ring-stone-200 lg:col-span-2">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium text-stone-800">Latest memos</h3>
+                            <Link
+                                to="/admin/memos"
+                                className="text-sm font-semibold text-maroon-700 hover:underline"
+                            >
+                                All memos
+                            </Link>
+                        </div>
+                        {data.memos.recent.length === 0 ? (
+                            <p className="mt-3 text-sm text-stone-500">No memos posted yet.</p>
+                        ) : (
+                            <ul className="mt-3 space-y-2">
+                                {data.memos.recent.map((memo) => (
+                                    <li
+                                        key={memo.id}
+                                        className="flex items-baseline justify-between gap-3 text-sm"
+                                    >
+                                        <span className="min-w-0 truncate text-stone-800">
+                                            {memo.title}
+                                        </span>
+                                        <span className="shrink-0 text-xs text-stone-500">
+                                            {memo.category}, {when(memo.posted_at)}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                )}
             </div>
         </section>
     );
@@ -732,7 +894,8 @@ export function Dashboard() {
                         </div>
                     </div>
 
-                    <StatisticsPreview />
+                    <Attention data={data.data} />
+                    <Statistics stats={data.data.stats} />
                 </>
             )}
 
