@@ -179,3 +179,17 @@ it('shows each person only their own in app alerts and lets them mark them read'
     // In app alerts stay out of the list of sent emails.
     $this->withAuthCookies(loginCookies($reviewers[0]))->getJson('/api/me/notifications')->assertJsonCount(1, 'data');
 });
+
+it('drops the emergency alert once the emergency is acknowledged', function () {
+    [$user, $assignment, $reviewers] = emergencyScene();
+    sendEmergency($this, $user, $assignment->id)->assertCreated();
+    $report = EmergencyReport::query()->firstOrFail();
+
+    $this->withAuthCookies(loginCookies($reviewers[0]))->getJson('/api/me/alerts')->assertJsonPath('unread', 1);
+    $this->withAuthCookies(loginCookies($reviewers[1]))->postJson("/api/emergencies/{$report->id}/acknowledge")->assertOk();
+
+    // Neither the acknowledger nor the other reviewer keeps the banner.
+    foreach ($reviewers as $reviewer) {
+        $this->withAuthCookies(loginCookies($reviewer))->getJson('/api/me/alerts')->assertOk()->assertJsonPath('unread', 0)->assertJsonCount(0, 'data');
+    }
+});

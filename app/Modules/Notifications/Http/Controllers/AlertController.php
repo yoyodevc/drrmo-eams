@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications\Http\Controllers;
 
+use App\Modules\Monitoring\Enums\EmergencyStatus;
 use App\Modules\Monitoring\Enums\ReportStatus;
 use App\Modules\Notifications\Models\Notification;
 use Illuminate\Http\JsonResponse;
@@ -15,10 +16,12 @@ class AlertController
     /** Unread first, then newest, at most 30. */
     public function index(Request $request): JsonResponse
     {
-        $rows = Notification::query()->with(['subject:id,first_name,last_name', 'siteReport', 'assignment.event:id,title'])
+        $rows = Notification::query()->with(['subject:id,first_name,last_name', 'siteReport', 'emergencyReport', 'assignment.event:id,title'])
             ->where('user_id', $request->user()?->id)->where('channel', 'in_app')
             ->orderByRaw('read_at is null desc')->orderByDesc('id')->limit(30)->get()
             // A reminder is only worth showing while the report can still be filled.
+            // An emergency alert is only worth showing until someone has acknowledged it.
+            ->reject(fn (Notification $n) => $n->emergency_report_id !== null && $n->emergencyReport?->status !== EmergencyStatus::Sent)
             ->reject(fn (Notification $n) => in_array($n->type, ['report.reminder', 'report.due'], true)
                 && ($n->siteReport === null || ! in_array($n->siteReport->status, [ReportStatus::Pending, ReportStatus::Overdue], true)));
 
