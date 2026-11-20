@@ -2,8 +2,9 @@
 // Outline icons only, and every chip has a word, so nothing relies on color alone.
 import type { EmergencyType } from '../api';
 
+// Medical is an outlined cross, so it never reads as an "add" button.
 const paths: Record<EmergencyType, string> = {
-    medical: 'M12 5v14M5 12h14',
+    medical: 'M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5Z',
     fire: 'M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 .3 1.2 1 2 2 2 0-3-.5-5 1-8Z',
     security: 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z',
     other: 'M12 8v5M12 16.5v.5M4 20h16L12 4 4 20Z',
