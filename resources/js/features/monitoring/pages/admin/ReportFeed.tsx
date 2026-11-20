@@ -19,6 +19,7 @@ const stamp = new Intl.DateTimeFormat(undefined, {
 const badges: Record<string, { label: string; chip: string } | undefined> = {
     late: { label: 'Late', chip: 'bg-amber-50 text-amber-900 ring-amber-200' },
     overdue: { label: 'Overdue', chip: 'bg-red-50 text-red-800 ring-red-200' },
+    missed: { label: 'Missed', chip: 'bg-red-100 text-red-900 ring-red-300' },
 };
 
 function Lightbox({ report, onClose }: { report: FeedReport | null; onClose: () => void }) {

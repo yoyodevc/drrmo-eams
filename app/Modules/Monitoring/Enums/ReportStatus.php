@@ -10,4 +10,5 @@ enum ReportStatus: string
     case Submitted = 'submitted';
     case Overdue = 'overdue';
     case Late = 'late';
+    case Missed = 'missed';
 }

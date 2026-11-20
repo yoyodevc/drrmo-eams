@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Monitoring\Models\EmergencyReport;
 use App\Modules\Monitoring\Models\LocationPing;
+use App\Modules\Monitoring\Models\ReportReviewer;
 use App\Modules\Notifications\Models\Notification;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Models\AuditLog;
@@ -29,7 +30,9 @@ function emergencyScene(): array
     $assignment = reportAssignment($user);
     LocationPing::query()->create(['assignment_id' => $assignment->id, 'latitude' => 6.9214, 'longitude' => 122.0790, 'accuracy_m' => 12, 'captured_at' => now()->subMinute(), 'received_at' => now()]);
     $reviewers = User::factory()->role(RoleCode::Marshal)->count(2)->create();
-    config(['emergency.reviewer_ids' => $reviewers->pluck('id')->all()]);
+    foreach ($reviewers as $r) {
+        ReportReviewer::query()->create(['user_id' => $r->id]);
+    }
     $admin = User::factory()->role(RoleCode::Admin)->create();
 
     return [$user, $assignment, $reviewers, $admin];

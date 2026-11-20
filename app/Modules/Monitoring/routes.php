@@ -7,6 +7,7 @@ use App\Modules\Monitoring\Http\Controllers\EmergencyController;
 use App\Modules\Monitoring\Http\Controllers\MapController;
 use App\Modules\Monitoring\Http\Controllers\PingController;
 use App\Modules\Monitoring\Http\Controllers\ReportFeedController;
+use App\Modules\Monitoring\Http\Controllers\ReportReviewerController;
 use App\Modules\Monitoring\Http\Controllers\ReportSlotController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,3 +30,5 @@ Route::get('/emergencies/{emergency}', [EmergencyController::class, 'show']);
 Route::get('/emergencies/{emergency}/photo', [EmergencyController::class, 'photo']);
 Route::post('/emergencies/{emergency}/acknowledge', [EmergencyController::class, 'acknowledge']);
 Route::post('/emergencies/{emergency}/resolve', [EmergencyController::class, 'resolve']);
+Route::get('/report-reviewers', [ReportReviewerController::class, 'show']);
+Route::put('/report-reviewers', [ReportReviewerController::class, 'update']);

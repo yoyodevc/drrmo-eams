@@ -32,7 +32,7 @@ class EmergencyReport extends Model
 {
     protected $fillable = [
         'assignment_id', 'event_id', 'user_id', 'client_id', 'type', 'note', 'photo_path', 'photo_name',
-        'latitude', 'longitude', 'accuracy_m', 'location_captured_at', 'status', 'escalated_at',
+        'latitude', 'longitude', 'accuracy_m', 'location_captured_at', 'status', 'escalated_at', 'reminded_at',
         'acknowledged_by', 'acknowledged_at', 'resolved_by', 'resolved_at', 'resolution_note',
     ];
 
@@ -42,7 +42,7 @@ class EmergencyReport extends Model
         return [
             'type' => EmergencyType::class, 'status' => EmergencyStatus::class,
             'latitude' => 'float', 'longitude' => 'float', 'accuracy_m' => 'integer',
-            'location_captured_at' => 'datetime', 'escalated_at' => 'datetime',
+            'location_captured_at' => 'datetime', 'escalated_at' => 'datetime', 'reminded_at' => 'datetime',
             'acknowledged_at' => 'datetime', 'resolved_at' => 'datetime',
         ];
     }

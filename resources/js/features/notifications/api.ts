@@ -64,6 +64,9 @@ export interface InAppAlert {
     id: number;
     type: string;
     emergency_report_id: number | null;
+    site_report_id: number | null;
+    event: string | null;
+    due_at: string | null;
     about: string | null;
     created_at: string;
     read: boolean;

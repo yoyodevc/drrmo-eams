@@ -1,10 +1,56 @@
-// In app alert for emergencies: a red bar at the top of the screen while the person has an unread
-// emergency alert. It links to the emergency inbox and marks the alerts read when opened.
-// The server returns nothing for people who are not reviewers, so this is quiet for them.
+// In app alerts at the top of the screen while the person has unread ones: emergencies (red), report
+// reminders (amber) and missed reports (amber). Opening one marks the alerts read. The server returns
+// only the person's own alerts, so this is quiet for everyone else.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { listAlerts, markAlertsRead } from '../api';
+import { listAlerts, markAlertsRead, type InAppAlert } from '../api';
 
+const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+
+function line(a: InAppAlert, emergenciesTo: string, reportsTo: string) {
+    const who = a.about ?? 'Someone on duty';
+    const due = a.due_at ? clock.format(new Date(a.due_at)) : '';
+    switch (a.type) {
+        case 'emergency.escalated':
+        case 'emergency.reminder':
+            return {
+                red: true,
+                text: `${who}'s emergency is not acknowledged.`,
+                to: emergenciesTo,
+                open: 'Open emergencies',
+            };
+        case 'report.reminder':
+            return {
+                red: false,
+                text: `Your site report${a.event ? ` for ${a.event}` : ''} is due at ${due}.`,
+                to: `/me/reports/${a.site_report_id}`,
+                open: 'Write the report',
+            };
+        case 'report.due':
+            return {
+                red: false,
+                text: `Your site report${a.event ? ` for ${a.event}` : ''} is due now.`,
+                to: `/me/reports/${a.site_report_id}`,
+                open: 'Write the report',
+            };
+        case 'report.missed':
+            return {
+                red: false,
+                text: `${who} missed a site report${a.event ? ` for ${a.event}` : ''}.`,
+                to: reportsTo,
+                open: 'Open the reports',
+            };
+        default:
+            return {
+                red: true,
+                text: `${who} sent an emergency.`,
+                to: emergenciesTo,
+                open: 'Open emergencies',
+            };
+    }
+}
+
+// `to` is the emergency inbox of this layout. Missed reports open the report feed (admin) or the inbox.
 export function EmergencyAlertBanner({ to }: { to: string }) {
     const queryClient = useQueryClient();
     const alerts = useQuery({
@@ -17,25 +63,33 @@ export function EmergencyAlertBanner({ to }: { to: string }) {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['in-app-alerts'] }),
     });
 
-    const unread = (alerts.data?.data ?? []).filter(
-        (a) => !a.read && a.emergency_report_id !== null,
-    );
+    const unread = (alerts.data?.data ?? []).filter((a) => !a.read).slice(0, 4);
     if (unread.length === 0) return null;
-    const escalated = unread.some((a) => a.type === 'emergency.escalated');
-    const first = unread[0];
+    const reportsTo = to.startsWith('/admin') ? '/admin/reports' : to;
 
     return (
-        <div role="alert" className="mb-4 rounded-control bg-red-700 px-4 py-3 text-white">
-            <p className="font-semibold">
-                {escalated ? 'Emergency not acknowledged' : 'Emergency alert'}
-                {unread.length > 1 ? ` (${unread.length} new)` : ''}
-            </p>
-            <p className="text-sm">
-                {first?.about ?? 'Someone on duty'} sent an emergency.{' '}
-                <Link to={to} onClick={() => read.mutate()} className="font-semibold underline">
-                    Open emergencies
-                </Link>
-            </p>
+        <div className="mb-4 space-y-2">
+            {unread.map((a) => {
+                const l = line(a, to, reportsTo);
+                return (
+                    <div
+                        key={a.id}
+                        role="alert"
+                        className={`rounded-control px-4 py-3 ${l.red ? 'bg-red-700 text-white' : 'bg-amber-100 text-amber-950 ring-1 ring-amber-300'}`}
+                    >
+                        <p className="text-sm">
+                            {l.text}{' '}
+                            <Link
+                                to={l.to}
+                                onClick={() => read.mutate()}
+                                className="font-semibold underline"
+                            >
+                                {l.open}
+                            </Link>
+                        </p>
+                    </div>
+                );
+            })}
         </div>
     );
 }

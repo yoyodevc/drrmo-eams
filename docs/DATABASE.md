@@ -64,7 +64,7 @@ Each module gets a fixed timestamp prefix so parallel sessions never collide and
 | 2 | `2026_01_01_2000xx` | Personnel | departments, users (FK roles, departments), emergency_contacts, volunteer_status_logs, and `200005` adds the sign up columns to users (account_status, email code fields, reviewed_by, reviewed_at, rejection_reason), and `200006` replaces `users.name` with `first_name` and `last_name` |
 | 3 | `2026_01_01_3000xx` | Events | duty_types, campus_locations, events, event_duty_requirements, assignments |
 | 4 | `2026_01_01_3500xx` | Access | refresh_tokens (needs users), permission_grants (needs events) |
-| 5 | `2026_01_01_4000xx` | Monitoring | location_pings, site_reports, emergency_reports |
+| 5 | `2026_01_01_4000xx` | Monitoring | location_pings, site_reports, emergency_reports, report_reviewers |
 | 6 | `2026_01_01_5000xx` | Notifications | notifications (needs assignments, site_reports) |
 | 7 | `2026_01_01_6000xx` | Information | memos, messages |
 | 8 | `2026_01_01_7000xx` | Records | audit_logs, consent_records |
@@ -85,6 +85,7 @@ Foreign key rules: `restrict` on delete for people and events (we soft-close, no
 | assignments | unique(user_id, requirement_id), (user_id, status), (requirement_id, status) | my assignments, headcount |
 | location_pings | (assignment_id, captured_at), (captured_at) | latest ping per person, retention purge |
 | site_reports | unique(assignment_id, due_at), (status, due_at) | idempotent slots, overdue scan, feed |
+| report_reviewers | unique(user_id) | at most 2 global reviewer marshals |
 | emergency_reports | unique(user_id, client_id), (status, created_at), event_id | a queued report sent twice saves once, escalation scan, inbox |
 | notifications | (status, scheduled_for), (user_id, type), (assignment_id) | queue scan, dedupe |
 | memos | FULLTEXT(title, body), (category, posted_at) | search |

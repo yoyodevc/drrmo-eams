@@ -78,7 +78,11 @@ export function ReportForm() {
                 {slot.status === 'overdue' && ' (overdue)'}
             </p>
 
-            {done ? (
+            {slot.status === 'missed' ? (
+                <div className="mt-6">
+                    <Alert tone="error">This report was missed and is now closed.</Alert>
+                </div>
+            ) : done ? (
                 <div className="mt-6">
                     <Alert tone="success">
                         This report was sent{slot.status === 'late' ? ' late' : ''}. Thank you.

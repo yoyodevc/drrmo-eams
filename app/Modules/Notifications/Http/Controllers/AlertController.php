@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications\Http\Controllers;
 
+use App\Modules\Monitoring\Enums\ReportStatus;
 use App\Modules\Notifications\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,20 +15,26 @@ class AlertController
     /** Unread first, then newest, at most 30. */
     public function index(Request $request): JsonResponse
     {
-        $rows = Notification::query()->with('subject:id,first_name,last_name')
+        $rows = Notification::query()->with(['subject:id,first_name,last_name', 'siteReport', 'assignment.event:id,title'])
             ->where('user_id', $request->user()?->id)->where('channel', 'in_app')
-            ->orderByRaw('read_at is null desc')->orderByDesc('id')->limit(30)->get();
+            ->orderByRaw('read_at is null desc')->orderByDesc('id')->limit(30)->get()
+            // A reminder is only worth showing while the report can still be filled.
+            ->reject(fn (Notification $n) => in_array($n->type, ['report.reminder', 'report.due'], true)
+                && ($n->siteReport === null || ! in_array($n->siteReport->status, [ReportStatus::Pending, ReportStatus::Overdue], true)));
 
         return response()->json([
             'data' => $rows->map(fn (Notification $n) => [
                 'id' => $n->id,
                 'type' => $n->type,
                 'emergency_report_id' => $n->emergency_report_id,
+                'site_report_id' => $n->site_report_id,
                 'about' => $n->subject->name ?? null,
+                'event' => $n->assignment?->event->title,
+                'due_at' => $n->siteReport?->due_at->toIso8601String(),
                 'created_at' => $n->created_at->toIso8601String(),
                 'read' => $n->read_at !== null,
             ])->values(),
-            'unread' => Notification::query()->where('user_id', $request->user()?->id)->where('channel', 'in_app')->whereNull('read_at')->count(),
+            'unread' => $rows->filter(fn (Notification $n) => $n->read_at === null)->count(),
         ]);
     }
 

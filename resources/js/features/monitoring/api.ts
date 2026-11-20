@@ -53,7 +53,7 @@ export async function getTrail(assignmentId: number): Promise<PingPoint[]> {
 }
 
 // Site report slots and the report form (S4.5, S4.6). Only for people who hold `reports.submit` for an event.
-export type ReportStatus = 'pending' | 'submitted' | 'overdue' | 'late';
+export type ReportStatus = 'pending' | 'submitted' | 'overdue' | 'late' | 'missed';
 
 export type ReportSlot = {
     id: number;
@@ -216,3 +216,22 @@ export async function resolveEmergency(id: number, note: string): Promise<void> 
 
 export const emergencyPhotoUrl = (id: number) => `/api/emergencies/${id}/photo`;
 export const myEmergencyPhotoUrl = (id: number) => `/api/me/emergencies/${id}/photo`;
+
+// Settings: the (at most 2) marshals who review every report and emergency. Needs `access.manage`.
+export type ReportReviewerSettings = {
+    max: number;
+    user_ids: number[];
+    candidates: { id: number; name: string; email: string }[];
+};
+
+export async function getReportReviewers(): Promise<ReportReviewerSettings> {
+    const response = await api<{ data: ReportReviewerSettings }>('/api/report-reviewers');
+    return response.data;
+}
+
+export async function saveReportReviewers(userIds: number[]): Promise<void> {
+    await api('/api/report-reviewers', {
+        method: 'PUT',
+        body: JSON.stringify({ user_ids: userIds }),
+    });
+}

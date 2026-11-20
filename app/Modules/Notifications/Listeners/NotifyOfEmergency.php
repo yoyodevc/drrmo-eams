@@ -5,21 +5,26 @@ declare(strict_types=1);
 namespace App\Modules\Notifications\Listeners;
 
 use App\Modules\Monitoring\Events\EmergencyEscalated;
+use App\Modules\Monitoring\Events\EmergencyReminder;
 use App\Modules\Monitoring\Events\EmergencyReported;
+use App\Modules\Monitoring\Models\EmergencyReport;
 use App\Modules\Monitoring\Services\EmergencyReviewers;
 use App\Modules\Notifications\Enums\NotificationType;
-use App\Modules\Notifications\Jobs\SendNotificationEmail;
-use App\Modules\Notifications\Models\Notification;
+use App\Modules\Notifications\Services\AlertSender;
 use App\Modules\Notifications\Services\PermissionHolders;
 
 /**
- * Tells the people who review emergencies, in the app and by email. A new emergency goes to the global
- * reviewer marshals and the admins. An escalated one goes to the admins again. Push can be added here
- * later as one more channel in `alert()`.
+ * Tells the people who review emergencies, in the app and by email. A new emergency goes to the reviewer
+ * marshals and the admins. A reminder (still unacknowledged after a short wait) goes to the reviewer
+ * marshals. An escalated one goes to the admins again.
  */
 class NotifyOfEmergency
 {
-    public function __construct(private readonly PermissionHolders $holders, private readonly EmergencyReviewers $reviewers) {}
+    public function __construct(
+        private readonly PermissionHolders $holders,
+        private readonly EmergencyReviewers $reviewers,
+        private readonly AlertSender $alerts,
+    ) {}
 
     public function handleReported(EmergencyReported $event): void
     {
@@ -27,7 +32,16 @@ class NotifyOfEmergency
         $people = $this->reviewers->users()->merge($this->holders->of('reports.view'))->unique('id')->reject(fn ($u) => $u->id === $report->user_id);
 
         foreach ($people as $person) {
-            $this->alert($person->id, $report->id, $report->assignment_id, $report->user_id, NotificationType::EmergencyReported);
+            $this->alerts->send($person->id, NotificationType::EmergencyReported, $this->about($report));
+        }
+    }
+
+    public function handleReminder(EmergencyReminder $event): void
+    {
+        $report = $event->report;
+
+        foreach ($this->reviewers->users()->reject(fn ($u) => $u->id === $report->user_id) as $reviewer) {
+            $this->alerts->send($reviewer->id, NotificationType::EmergencyReminder, $this->about($report));
         }
     }
 
@@ -36,17 +50,13 @@ class NotifyOfEmergency
         $report = $event->report;
 
         foreach ($this->holders->of('reports.view', null, $report->user_id) as $admin) {
-            $this->alert($admin->id, $report->id, $report->assignment_id, $report->user_id, NotificationType::EmergencyEscalated);
+            $this->alerts->send($admin->id, NotificationType::EmergencyEscalated, $this->about($report));
         }
     }
 
-    /** One in app alert (shown at once) and one email (queued) for one person. */
-    private function alert(int $userId, int $reportId, int $assignmentId, int $subjectId, NotificationType $type): void
+    /** @return array{assignment_id: int, emergency_report_id: int, subject_user_id: int} */
+    private function about(EmergencyReport $report): array
     {
-        $base = ['user_id' => $userId, 'assignment_id' => $assignmentId, 'emergency_report_id' => $reportId, 'subject_user_id' => $subjectId, 'type' => $type->value];
-
-        Notification::query()->create($base + ['channel' => 'in_app', 'status' => 'sent', 'sent_at' => now()]);
-        $email = Notification::query()->create($base + ['channel' => 'email', 'status' => 'queued']);
-        SendNotificationEmail::dispatch($email);
+        return ['assignment_id' => $report->assignment_id, 'emergency_report_id' => $report->id, 'subject_user_id' => $report->user_id];
     }
 }

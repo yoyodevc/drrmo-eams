@@ -4,29 +4,31 @@ declare(strict_types=1);
 
 namespace App\Modules\Monitoring\Services;
 
+use App\Modules\Monitoring\Models\ReportReviewer;
 use App\Modules\Personnel\Models\User;
 use Illuminate\Support\Collection;
 
 /**
- * The marshals who review every emergency, whatever the event. Read from config for now; the
- * settings screen (report rework step 2) will replace only the source of the ids.
+ * The marshals who review every report and emergency, whatever the event. An admin picks them in the
+ * settings screen (table report_reviewers). They hold `reports.view` for every event through the
+ * Access permission checker, which asks this class.
  */
 class EmergencyReviewers
 {
     /** @return list<int> */
     public function ids(): array
     {
-        return array_values(array_map('intval', (array) config('emergency.reviewer_ids', [])));
+        return ReportReviewer::query()->pluck('user_id')->map(fn ($id) => (int) $id)->all();
     }
 
     public function includes(User $user): bool
     {
-        return in_array($user->id, $this->ids(), true);
+        return ReportReviewer::query()->where('user_id', $user->id)->exists();
     }
 
     /** @return Collection<int, User> Active reviewers only. */
     public function users(): Collection
     {
-        return User::query()->whereKey($this->ids())->where('account_status', 'active')->whereNull('disabled_at')->get();
+        return User::query()->whereIn('id', $this->ids())->where('account_status', 'active')->whereNull('disabled_at')->get();
     }
 }
