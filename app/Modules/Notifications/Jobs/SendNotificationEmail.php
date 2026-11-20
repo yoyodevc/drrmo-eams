@@ -59,6 +59,13 @@ class SendNotificationEmail implements ShouldQueue
             return $this->composeOverdueReport($n);
         }
 
+        if (in_array($n->type, [NotificationType::ReportReminder->value, NotificationType::ReportDue->value, NotificationType::ReportMissed->value], true)) {
+            return $this->composeReportNotice($n);
+        }
+        if (in_array($n->type, [NotificationType::EmergencyReported->value, NotificationType::EmergencyEscalated->value, NotificationType::EmergencyReminder->value], true)) {
+            return $this->composeEmergency($n);
+        }
+
         $a = $n->assignment;
         $event = $a?->event->title ?? 'an event';
         $link = url('/').'?assignment='.($a->id ?? '');
@@ -102,6 +109,50 @@ class SendNotificationEmail implements ShouldQueue
             ->line($who.' has not sent a site report that was due at '.$due.'. It is now more than 15 minutes late.')
             ->details(['Event' => $event, 'Reporter' => $who, 'Due' => $due])
             ->button('Open the reports', url('/admin/reports'));
+    }
+
+    /** Reminds the reporter that a report is coming due, or tells the readers that one was missed. */
+    private function composeReportNotice(Notification $n): EmailMessage
+    {
+        $event = $n->assignment->event->title ?? 'an event';
+        $due = $n->siteReport === null ? 'To be confirmed' : $n->siteReport->due_at->copy()->setTimezone(self::TIMEZONE)->format('D, M j, g:i A');
+        $name = $n->user->first_name ?? 'there';
+
+        if ($n->type === NotificationType::ReportMissed->value) {
+            $who = $n->subject_user_id === null ? 'The reporter' : $n->subject->name;
+
+            return EmailMessage::make('Site report missed: '.$event, 'A site report was missed')
+                ->preheader($who.' never sent the report for '.$event.'.')
+                ->greeting($name)
+                ->line($who.' did not send the site report that was due at '.$due.'. It is now closed as missed.')
+                ->details(['Event' => $event, 'Reporter' => $who, 'Due' => $due])
+                ->button('Open the reports', url('/admin/reports'));
+        }
+
+        $now = $n->type === NotificationType::ReportDue->value;
+
+        return EmailMessage::make(($now ? 'Site report due now: ' : 'Site report due soon: ').$event, $now ? 'Your site report is due now' : 'Your site report is due in 15 minutes')
+            ->preheader('Your site report for '.$event.' is due at '.$due.'.')
+            ->greeting($name)
+            ->line($now ? 'Your site report is due now. Please send it as soon as you can.' : 'Your site report is due in 15 minutes. Please get ready to send it.')
+            ->details(['Event' => $event, 'Due' => $due])
+            ->button('Write the report', url('/me/reports/'.($n->site_report_id ?? '')));
+    }
+
+    /** Tells a reviewer or admin that someone on duty sent an emergency. No location in the email: open the app. */
+    private function composeEmergency(Notification $n): EmailMessage
+    {
+        $escalated = $n->type === NotificationType::EmergencyEscalated->value;
+        $reminder = $n->type === NotificationType::EmergencyReminder->value;
+        $who = $n->subject_user_id === null ? 'Someone on duty' : $n->subject->name;
+        $event = $n->assignment->event->title ?? 'an event';
+
+        return EmailMessage::make(($escalated || $reminder ? 'Emergency not acknowledged: ' : 'Emergency: ').$event, $escalated || $reminder ? 'An emergency has not been acknowledged' : 'An emergency was reported')
+            ->preheader($who.' sent an emergency at '.$event.'.')
+            ->greeting($n->user->first_name ?? 'there')
+            ->line($escalated || $reminder ? $who.' sent an emergency and nobody has acknowledged it yet. Please act now.' : $who.' sent an emergency from a duty. Please open it and acknowledge it.')
+            ->details(['Event' => $event, 'From' => $who])
+            ->button('Open the emergency', url('/'));
     }
 
     /** Tells an admin who stopped sharing location and which upcoming duties need a new person. */

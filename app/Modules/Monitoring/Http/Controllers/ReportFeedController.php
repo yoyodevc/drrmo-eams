@@ -8,6 +8,7 @@ use App\Modules\Events\Models\CampusLocation;
 use App\Modules\Events\Models\Event;
 use App\Modules\Monitoring\Models\SiteReport;
 use App\Modules\Personnel\Models\User;
+use App\Modules\Records\Contracts\AuditLogger;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,7 @@ class ReportFeedController
 {
     private const TIMEZONE = 'Asia/Manila';
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, AuditLogger $audit): JsonResponse
     {
         Gate::authorize('viewAny', SiteReport::class);
         /** @var User $user */
@@ -52,6 +53,9 @@ class ReportFeedController
         // Slots that are not yet due carry no news, so they stay out of the feed.
         $page = $query->where('due_at', '<=', now())->orderByDesc('due_at')->orderByDesc('id')->paginate(15);
 
+        // One row for each request, not for each report on the page.
+        $audit->log('report.feed_viewed', 'site_report', null, ['filters' => array_filter($f), 'page' => $page->currentPage(), 'count' => $page->count()]);
+
         return response()->json([
             'data' => $page->getCollection()->map(fn (SiteReport $r) => $this->row($r))->values(),
             'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
@@ -60,17 +64,19 @@ class ReportFeedController
         ]);
     }
 
-    public function show(SiteReport $report): JsonResponse
+    public function show(SiteReport $report, AuditLogger $audit): JsonResponse
     {
         Gate::authorize('view', $report);
+        $audit->log('report.viewed', $report, meta: ['event_id' => $report->assignment->event_id]);
         $report->load(['assignment.user:id,first_name,last_name', 'assignment.event:id,title,campus_location_id', 'assignment.event.location:id,name']);
 
         return response()->json(['data' => $this->row($report)]);
     }
 
-    public function photo(SiteReport $report): StreamedResponse
+    public function photo(SiteReport $report, AuditLogger $audit): StreamedResponse
     {
         Gate::authorize('view', $report);
+        $audit->log('report.photo_viewed', $report, meta: ['event_id' => $report->assignment->event_id]);
         abort_if($report->photo_path === null || ! Storage::disk('local')->exists($report->photo_path), 404);
 
         return Storage::disk('local')->response($report->photo_path);

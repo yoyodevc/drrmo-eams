@@ -13,4 +13,10 @@ enum NotificationType: string
     case ReminderHour = 'reminder.hour';
     case ConsentWithdrawn = 'consent.withdrawn';
     case ReportOverdue = 'report.overdue';
+    case ReportReminder = 'report.reminder';
+    case ReportDue = 'report.due';
+    case ReportMissed = 'report.missed';
+    case EmergencyReminder = 'emergency.reminder';
+    case EmergencyReported = 'emergency.reported';
+    case EmergencyEscalated = 'emergency.escalated';
 }

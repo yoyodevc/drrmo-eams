@@ -21,6 +21,7 @@ export const adminEntries: AdminEntry[] = [
     { to: '/admin/notifications', permission: 'notifications.view' },
     { to: '/admin/messages', permission: 'messages.office_inbox' },
     { to: '/admin/access', permission: 'access.manage' },
+    { to: '/admin/access/reviewers', permission: 'access.manage' },
     { to: '/admin/records', permission: 'audit.view' },
 ];
 

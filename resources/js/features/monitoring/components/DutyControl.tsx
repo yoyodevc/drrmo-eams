@@ -8,6 +8,7 @@ import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { endDuty, startDuty } from '../api';
+import { EmergencySender } from './EmergencySender';
 import { TrackingBanner } from './TrackingBanner';
 
 const EARLY_MINUTES = 15;
@@ -52,6 +53,7 @@ export function DutyControl({ duty }: { duty: MyAssignment }) {
                 <div className="mt-2">
                     <TrackingBanner assignmentId={duty.id} />
                 </div>
+                <EmergencySender assignmentId={duty.id} />
                 {failed && (
                     <div className="mt-3">
                         <Alert tone="error">{failed.message}</Alert>

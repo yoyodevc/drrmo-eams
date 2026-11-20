@@ -432,3 +432,37 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: "Seen" comes from the read time the server already keeps, so no new table or column was needed. For the office chat, "Seen" means an admin opened the conversation
 - Evidence: tests/Feature/Information/MessageTest.php adds a test for "seen" on office messages, office answers and direct messages. Full suite 370 PHP tests and 141 JS tests pass
 - Paper: Chapter 4 (feature 5.4)
+
+## 2026-11-20 · Reports redesign (monitoring)
+- What was built: one Reports page with three tabs. Needs attention is the landing tab, then Emergencies, then the report Feed. The old Needs attention and Emergencies pages and their sidebar items are gone, and their old addresses redirect
+- What was built: Needs attention opens with four counts (not acknowledged, open and taken on, overdue, missed). Open emergencies come first, each with an Acknowledge button and a link to its details. Each event name in the summary table opens the Feed filtered to that event
+- What was built: on a wide screen the Emergencies tab shows the list and the open report side by side, with the note, place, photo and a short history. On a phone a report opens under its row
+- What was built: Report reviewers moved to Access control, next to Roles and Temporary access. It shows the two reviewer places, a searchable list of active marshals and the same save bar as the role screens
+- Decision and why: unacknowledged emergencies must never hide behind a tab. The sidebar Reports item shows their count in a white badge, the Emergencies tab carries a red count, the Feed tab shows a red strip, and the red alert banner stays
+- Decision and why: no report opens by itself in the side by side view, because opening one shows where the person was and is audited
+- Evidence: no backend change. The full JS suite passes (141 tests). The screens were checked in a browser at 1280, 900 and 390 px with sample data
+- Paper: Chapter 4 (monitoring features)
+
+### Reports page redesign (monitoring)
+- What was built: the Reports page now follows the same layout as People and Roles. Each section is one white panel with a title row. Needs attention has a single summary strip with a colored dot for each count, then panels for open emergencies, overdue and missed reports, and reports for each event
+- What was built: the Feed tab is now called All reports. Its filters match the People filters (on a phone they fold behind a Filters button), and the reports sit in one list with a count, Clear filters and paging
+- What was built: on a phone the emergency rows no longer break, and the event table fits without sideways scrolling
+- Decision and why: the extra red strip on the Feed tab was removed. The admin red banner and the sidebar and tab counts already show open emergencies on every page
+- Evidence: no backend change. Checked in a browser at 1280, 900 and 390 px with sample data
+- Paper: Chapter 4 (monitoring features)
+
+### Reports page second pass (monitoring)
+- What was built: the tabs now match the Roles tabs. Needs attention shows how many items wait, and the Emergencies count turns red while any emergency is not acknowledged. On a phone the first tab reads Attention so all three fit without scrolling. A Report reviewers button sits in the page header for admins
+- What was built: Needs attention puts the oldest waiting emergency first and shows "Sent 14 min ago" next to the clock time. Each summary number has a short line that says what it counts. Late site reports is a table on desktop with who, which event and when it was due. Site reports by event adds an on time rate bar on wide screens and four small numbers per event on a phone
+- What was built: an open emergency now shows Acknowledge in a red box at the top, so it never sits below the fold. The note, who sent it, the event and the place sit in labelled rows, and the history shows when it was escalated. Once someone acknowledges it, Mark resolved becomes the main button
+- What was built: All reports leads each row with the person and a status chip (On time, Late, Overdue or Missed), and shows "Showing 1 to 15 of 40" like People. The date filters cannot be set so that From is after To
+- What was built: Report reviewers gets a search icon, a count of active marshals and a line that says how many may be picked
+- Decision and why: Acknowledge on Needs attention still does not load the place. Only View details opens an emergency, and that open is audited, so nothing opens by itself
+- Evidence: no backend change. Types, lint and formatting pass. Checked in a browser at 1280, 900 and 390 px with sample data
+- Paper: Chapter 4 (monitoring features)
+
+### Phone Reports tab and emergency alert fix (monitoring)
+- What was built: phones get a Reports tab where a marshal can send an emergency and write due site reports. The phone nav now has five tabs, with Alerts on a bell icon, and the Reports screen uses a quieter design. The medical emergency icon is a cross
+- What was built: the red emergency alert now disappears once the emergency is acknowledged, so it no longer shows on every page after someone has taken it on
+- Evidence: a new Pest test covers the alert clearing after acknowledge. Full backend suite (394 tests), JS suite (141 tests), Pint, Larastan and the build pass
+- Paper: Chapter 4 (monitoring features)

@@ -31,7 +31,7 @@ class NotificationController
             'search' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $query = Notification::query()->with(['user:id,first_name,last_name,email', 'subject:id,first_name,last_name', 'assignment.event:id,title']);
+        $query = Notification::query()->where('channel', 'email')->with(['user:id,first_name,last_name,email', 'subject:id,first_name,last_name', 'assignment.event:id,title']);
         if (! empty($f['type'])) {
             $query->where('type', $f['type']);
         }
@@ -57,7 +57,7 @@ class NotificationController
             'data' => $page->getCollection()->map(fn (Notification $n) => $this->row($n))->values(),
             'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
             'summary' => [
-                'sent_today' => Notification::query()->where('status', 'sent')->where('sent_at', '>=', $start)->count(),
+                'sent_today' => Notification::query()->where('channel', 'email')->where('status', 'sent')->where('sent_at', '>=', $start)->count(),
                 'daily_limit' => (int) config('mail.daily_limit'),
             ],
         ]);
@@ -67,7 +67,7 @@ class NotificationController
     public function mine(Request $request): JsonResponse
     {
         $rows = Notification::query()->with('assignment.event:id,title')
-            ->where('user_id', $request->user()?->id)->where('status', 'sent')
+            ->where('user_id', $request->user()?->id)->where('channel', 'email')->where('status', 'sent')
             ->orderByDesc('sent_at')->limit(50)->get();
 
         return response()->json(['data' => $rows->map(fn (Notification $n) => [

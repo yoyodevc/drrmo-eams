@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
+import { EmergenciesSinceLast } from '../../components/EmergenciesSinceLast';
 import { listReportSlots, submitReport } from '../../api';
 import { clearDraft, isNetworkError, MAX_SUMMARY, readDraft, saveDraft } from '../../reportDraft';
 import { resizePhoto } from '../../resizePhoto';
@@ -78,7 +79,15 @@ export function ReportForm() {
                 {slot.status === 'overdue' && ' (overdue)'}
             </p>
 
-            {done ? (
+            {slot.status === 'missed' ? (
+                <div className="mt-6 rounded-card border-l-4 border-red-700 bg-red-50 p-4 ring-1 ring-red-200">
+                    <p className="font-semibold text-red-900">Missed</p>
+                    <p className="mt-1 text-sm text-pretty text-red-900">
+                        This report was not sent in time and is now closed. If something happened at
+                        your post, tell your marshal directly.
+                    </p>
+                </div>
+            ) : done ? (
                 <div className="mt-6">
                     <Alert tone="success">
                         This report was sent{slot.status === 'late' ? ' late' : ''}. Thank you.
@@ -97,6 +106,10 @@ export function ReportForm() {
                         if (!send.isPending) send.mutate();
                     }}
                 >
+                    <EmergenciesSinceLast
+                        slotId={slotId}
+                        onAdd={(line) => onText(summary ? `${summary}\n${line}` : line)}
+                    />
                     <label
                         htmlFor="report-summary"
                         className="block text-sm font-medium text-stone-800"

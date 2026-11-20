@@ -67,6 +67,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S6.2 | My data export | Not started |
 | S6.3 | Retention and pruning | Not started |
 | S6.4 | PWA install | Not started |
+| S6.4b | Web Push module | Not started |
 | S6.5 | Production deployment | Not started |
 | S6.6 | Field test | Not started |
 
@@ -280,6 +281,16 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 **S6.4 PWA install** `core` `mobile` **S**
 - Manifest, icons, app shell cache only. Installable on Android Chrome. Add to Home Screen works on iPhone.
 
+**S6.4b Web Push module** `core` `both` **L**
+- A project wide module that any other module can use to push a message to a person's phone or browser. Not built yet. Emergency alerts (site report rework step 1) go through the Notifications module so push can plug in there later.
+- Service worker that shows the push and opens the right screen on tap. Builds on PWA install (S6.4).
+- VAPID keys kept in the environment, never in the repo.
+- Package: `laravel-notification-channels/webpush`.
+- One subscription for each device a person signs in on. A person can turn a device off, and signing out removes it.
+- One send function, for example `Pusher::send(User $to, string $title, string $body, string $url)`, that any module calls. Modules never talk to the push service directly.
+- Expired or refused subscriptions are removed. A failed push never blocks the in app alert or the email.
+- Audited when a person turns push on or off.
+
 **S6.5 Production deployment** `core` `both` **L**
 - Follows DEPLOYMENT.md on the chosen server. HTTPS works. Queue worker and scheduler run. Backup and restore tested once.
 
@@ -289,4 +300,5 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 ## Later
 
 **Improve the overall site report logic** `monitoring` `both` **TBD**
-- Not started. Scope to be decided with the owner. Review how report slots, due times, late and overdue states, and the report feed work as a whole.
+- Done (site report rework, 3 steps). Emergency reports (type, note, photo, place from the latest ping, sent, acknowledged, resolved, escalated after 5 minutes, offline queue). Two global reviewer marshals set by an admin. Reminders 15 minutes before and at the due time, a reminder for unacknowledged emergencies, and a missed state 60 minutes after the due time. Emergencies on the report form, one Reports page with needs attention, and audit of report views.
+- Left for later: Web Push (S6.4b) so alerts also reach the phone.

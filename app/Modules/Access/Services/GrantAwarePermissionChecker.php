@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Access\Services;
 
 use App\Modules\Access\Contracts\PermissionChecker;
+use App\Modules\Monitoring\Services\EmergencyReviewers;
 use App\Modules\Personnel\Models\User;
 
 class GrantAwarePermissionChecker implements PermissionChecker
@@ -12,6 +13,11 @@ class GrantAwarePermissionChecker implements PermissionChecker
     public function allows(User $user, string $code, ?int $eventId = null): bool
     {
         if ($user->role?->permissions->contains('code', $code)) {
+            return true;
+        }
+
+        // The 2 reviewer marshals an admin picked read every site report, whatever the event.
+        if ($code === 'reports.view' && app(EmergencyReviewers::class)->includes($user)) {
             return true;
         }
 

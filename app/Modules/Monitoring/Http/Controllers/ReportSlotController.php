@@ -42,6 +42,7 @@ class ReportSlotController
     public function submit(SubmitReportRequest $request, SiteReport $report, AuditLogger $audit): JsonResponse
     {
         Gate::authorize('submit', $report);
+        abort_if($report->status === ReportStatus::Missed, 422, 'This report was missed and is now closed.');
 
         $saved = DB::transaction(function () use ($request, $report, $audit): SiteReport {
             // Lock the row so two taps at once cannot both save.

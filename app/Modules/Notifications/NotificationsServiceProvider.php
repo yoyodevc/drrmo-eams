@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications;
 
+use App\Modules\Monitoring\Events\EmergencyEscalated;
+use App\Modules\Monitoring\Events\EmergencyReminder;
+use App\Modules\Monitoring\Events\EmergencyReported;
+use App\Modules\Monitoring\Events\ReportMissed;
 use App\Modules\Monitoring\Events\ReportOverdue;
+use App\Modules\Notifications\Console\SendReportReminders;
 use App\Modules\Notifications\Console\SendShiftReminders;
 use App\Modules\Notifications\Contracts\AssignmentNotifier;
 use App\Modules\Notifications\Contracts\MailSender;
 use App\Modules\Notifications\Listeners\NotifyAdminsOfOverdueReport;
 use App\Modules\Notifications\Listeners\NotifyAdminsOfWithdrawal;
+use App\Modules\Notifications\Listeners\NotifyOfEmergency;
+use App\Modules\Notifications\Listeners\NotifyOfMissedReport;
 use App\Modules\Notifications\Models\Notification;
 use App\Modules\Notifications\Policies\NotificationPolicy;
 use App\Modules\Notifications\Services\LogMailSender;
@@ -40,10 +47,15 @@ class NotificationsServiceProvider extends ServiceProvider
     {
         Event::listen(LocationConsentWithdrawn::class, NotifyAdminsOfWithdrawal::class);
         Event::listen(ReportOverdue::class, NotifyAdminsOfOverdueReport::class);
+        Event::listen(EmergencyReported::class, [NotifyOfEmergency::class, 'handleReported']);
+        Event::listen(EmergencyEscalated::class, [NotifyOfEmergency::class, 'handleEscalated']);
+        Event::listen(EmergencyReminder::class, [NotifyOfEmergency::class, 'handleReminder']);
+        Event::listen(ReportMissed::class, NotifyOfMissedReport::class);
         $this->loadViewsFrom(__DIR__.'/Views', 'eams-notifications');
         Gate::policy(Notification::class, NotificationPolicy::class);
         if ($this->app->runningInConsole()) {
-            $this->commands([SendShiftReminders::class]);
+            $this->commands([SendShiftReminders::class, SendReportReminders::class]);
+            $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => $schedule->command('notifications:send-report-reminders')->everyMinute());
             $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => $schedule->command('notifications:send-reminders')->everyFiveMinutes());
         }
         Route::middleware(['api', 'auth:api'])->prefix('api')->group(__DIR__.'/routes.php');

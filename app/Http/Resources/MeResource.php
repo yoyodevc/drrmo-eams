@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Modules\Access\Support\PermissionMatrix;
+use App\Modules\Monitoring\Services\EmergencyReviewers;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\ConsentChecker;
 use App\Modules\Records\Enums\ConsentPurpose;
@@ -41,6 +42,7 @@ class MeResource extends JsonResource
             'status' => $this->status->value,
             // Role permissions plus grants that are in force and not tied to one event.
             'permissions' => $roleCodes
+                ->merge(app(EmergencyReviewers::class)->includes($this->resource) ? ['reports.view'] : [])
                 ->merge($grants->whereNull('event_id')->map(fn ($g) => $g->permission->code))
                 ->unique()->sort()->values()->all(),
             // Every grant in force now, so the app can show event scoped access and when it ends.
