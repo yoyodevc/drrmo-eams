@@ -67,9 +67,15 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S6.2 | My data export | Done |
 | S6.3 | Retention and pruning | Done |
 | S6.4 | PWA install | Done |
-| S6.4b | Web Push module | Not started |
+| S6.4b | Web Push module | Replaced by M7 |
 | S6.5 | Production deployment | Not started |
 | S6.6 | Field test | Not started |
+| S7.1 | Push subscriptions and service worker | Not started |
+| S7.2 | Pusher send function and Laravel channel | Not started |
+| S7.3 | Urgent and normal alerts wired in | Not started |
+| S7.4 | In app sound and vibration | Not started |
+| S7.5 | Opt in screen, mute and quiet hours | Not started |
+| S7.6 | Push test and field check | Not started |
 
 
 ---
@@ -296,6 +302,75 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 
 **S6.6 Field test** `core` `both` **M**
 - Two marshals run a 1-hour mock duty on real phones on campus data. Notes on GPS gaps, battery and signal go into an issue.
+
+## M7 Push notifications and sound alerts
+
+Goal: urgent things reach people who are not looking at the app. This replaces S6.4b. Builds on PWA install (S6.4) and the `AlertSender` in the Notifications module.
+
+**Platform limits (plain words)**
+- Web Push needs HTTPS and VAPID keys. It works in the background on Android Chrome.
+- On iPhone it works only for an installed PWA (Add to Home Screen, iOS 16.4 or later), and only after the person allows it from a tap.
+- A web push cannot play a custom sound. It uses the phone's default notification sound and obeys silent mode and Do Not Disturb. We cannot override that.
+- A custom alarm sound and vibration pattern can only play while the app is open, and the browser needs one prior tap on the page to allow audio.
+- So the real promise is: a push wakes the phone, and the app plays the alarm once it is opened or already open. Marshals should be told to keep the app installed and notifications allowed. This goes in the S6.6 field test notes.
+
+**Which events are urgent and which are normal**
+- Urgent (high priority push, repeating alarm in the app until acknowledged): `emergency.reported`, `emergency.reminder` (unacknowledged after 2 minutes), `emergency.escalated`, `report.missed`, urgent memos and urgent messages.
+- Important (push, short in app chime): `report.overdue`, `report.due`, `assignment.created`, `assignment.changed`, `assignment.cancelled`.
+- Normal (in app and email only, no push by default): `report.reminder`, `reminder.evening`, `reminder.hour`, `consent.withdrawn`, ordinary messages.
+- The level is a method on the `NotificationType` enum (`urgency()`), so other modules need no extra code.
+- Open question: memos and messages have no urgent flag today. S7.3 adds a simple urgent tick box when an admin sends, if the owner agrees.
+
+**S7.1 Push subscriptions and service worker** `core` `both` **M**
+- Table `push_subscriptions` (user_id, endpoint, public key, auth token, device label, last_used_at). One row for each device. Unique on endpoint. Index on user_id. Migration prefix next to Notifications.
+- Signing out removes that device's row. A person can remove any of their devices.
+- VAPID keys in `.env` (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, subject), never in the repo. A command generates them. Documented in DEPLOYMENT.md.
+- `sw.js` gets `push` and `notificationclick` handlers. A tap opens or focuses the right screen from the payload `url`. The service worker still never caches `/api`.
+- Endpoints: `POST /api/push/subscribe`, `DELETE /api/push/subscribe`. Each needs a policy or gate and a test for the forbidden case.
+
+**S7.2 Pusher send function and Laravel channel** `notifications` `both` **M**
+- Package `laravel-notification-channels/webpush`, wrapped inside the Notifications module. Other modules never call it.
+- `Pusher::send(User $to, NotificationType $type, string $title, string $body, string $url)`. `AlertSender::send` calls it as a third channel next to in app and email, based on urgency.
+- Runs on the existing `database` queue as a job, 3 tries with backoff. Urgent pushes use a `high` queue, and the supervisor worker becomes `--queue=high,default`.
+- A failed push never blocks the in app alert or the email. Gone or refused subscriptions (404, 410) are deleted.
+- Each push is logged as a `push` row in `notifications` so the log (S3.6) keeps working. Retention follows the 6 month rule.
+
+**S7.3 Urgent and normal alerts wired in** `notifications` `both` **M**
+- Add `urgency()` to `NotificationType` and map the events above.
+- The existing jobs need no change. `RemindEmergencies` (2 minutes), `EscalateEmergencies`, `SendReportReminders`, `MarkMissedReports`, `MarkOverdueReports` and the assignment notifier already call `AlertSender`.
+- Optional urgent flag on memos and messages. Push goes to the recipients only.
+- Tests: one for each urgency level, push skipped when muted, push skipped when there is no subscription.
+
+**S7.4 In app sound and vibration** `core` `mobile` **M**
+- A small client module watches for new alerts (existing polling, a shorter interval for urgent) and plays a sound, plus `navigator.vibrate` where allowed (Android only, not iPhone).
+- Urgent: repeating alarm until the person taps Acknowledge or Dismiss. Important: one short chime. Normal: silent.
+- Audio is unlocked by a one tap "Turn on alert sound" step after login. Sound files are short, small, in `public/sounds`, free or self made only.
+- Admin desktop screens play the urgent alarm for new emergencies while the page is open.
+- Design thread (UI) for the banner and the alarm screen.
+
+**S7.5 Opt in screen, mute and quiet hours** `notifications` `mobile` **M**
+- Settings screen: Turn on alerts on this device (browser permission is asked only after a tap, with a plain explanation first), devices list, test button.
+- iPhone not installed: show "Add to Home Screen first" steps instead of the button.
+- Mute sound, mute push for normal and important alerts, and quiet hours (for example 10 PM to 6 AM) stored on the user. Urgent emergencies ignore quiet hours for marshals and reviewers on duty, and the screen says so plainly.
+- Turning push on or off is audited through the Records `AuditLogger`.
+
+**S7.6 Push test and field check** `core` `both` **S**
+- HTTPS is required, so test through the Cloudflare tunnel URL (desktop Chrome also allows localhost). The VAPID subject is the tunnel or real site address.
+- Checklist: Android Chrome in background, Android app closed, iPhone installed PWA, iPhone browser tab (should show the install hint), silent mode, Do Not Disturb, quiet hours, expired subscription cleanup. Results go into DEV_LOG and the S6.6 notes.
+
+**Audit and privacy**
+- Push text is short and generic, for example "Emergency reported. Open the app." No victim names, no coordinates, no memo content. Push services (Google, Apple, Mozilla) see only the endpoint and an encrypted payload.
+- Location stays admin only. A push never carries location.
+- Subscriptions are personal data. They are included in My data export (S6.2) and deleted with the account.
+- Add a line to the privacy notice that alerts may be sent to the person's device if they allow it.
+
+**Decisions for the owner**
+- Is an urgent flag on memos and messages wanted, or only emergencies and reports?
+- Should urgent emergency alerts ignore quiet hours for marshals and reviewers? Recommended yes.
+- Which sound files? Recommended two short free tones (alarm and chime).
+- Is the Cloudflare tunnel URL stable enough for iPhone testing, or does that wait for S6.5 production?
+- Are the limits acceptable (no custom sound while the app is closed)?
+
 
 ## Later
 
