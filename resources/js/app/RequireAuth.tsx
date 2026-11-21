@@ -4,12 +4,13 @@ import { keepLinkedAssignment, loginPathFor } from '@/features/events/dutyLink';
 import { PrivacyConsent } from '@/features/records/PrivacyConsent';
 import { adminLanding, hasAdminAccess } from './adminAccess';
 import { useMe } from './auth';
+import { BootScreen } from './BootScreen';
 
 export function RequireAuth({ area }: { area: '/admin' | '/me' }) {
     const { data: me, isPending } = useMe();
     const { search, pathname } = useLocation();
 
-    if (isPending) return <p className="p-4 text-gray-600">Loading...</p>;
+    if (isPending) return <BootScreen />;
     if (!me) return <Navigate to={loginPathFor(search)} replace />;
     // A grant can open admin screens for someone whose home is the phone area, so /admin is open
     // to anyone holding an admin permission. /me stays for everyone who is not an admin.
@@ -32,7 +33,7 @@ export function HomeRedirect() {
     const { data: me, isPending } = useMe();
     const { search } = useLocation();
 
-    if (isPending) return <p className="p-4 text-gray-600">Loading...</p>;
+    if (isPending) return <BootScreen />;
 
     return (
         <Navigate to={me ? keepLinkedAssignment(me.home, search) : loginPathFor(search)} replace />

@@ -1,5 +1,5 @@
 // A-Dashboard (S3.7). Today at a glance. Four counts on top, then the people who need a nudge,
-// today's events and who is on duty, and a statistics preview. Refreshes every minute.
+// today's events and who is on duty, a strip of counts from the other areas and statistics. Refreshes every minute.
 // Phones: one column, the "needs attention" lists come first. Desktop: events on the left,
 // people lists on the right. Lists switch layout by their own width (container queries).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,13 +14,16 @@ import {
 import {
     AlertIcon,
     CalendarIcon,
-    ChartIcon,
+    ChatIcon,
     CheckIcon,
     ChevronIcon,
+    ClipboardIcon,
     ClockIcon,
+    MegaphoneIcon,
     PeopleIcon,
     PinIcon,
     RefreshIcon,
+    UserPlusIcon,
 } from '@/features/events/components/icons';
 import { chipClass } from '@/features/events/format';
 import { ApiError } from '@/shared/api/client';
@@ -317,135 +320,437 @@ function TodayEvents({ events, now }: { events: TodayEvent[]; now: number }) {
     );
 }
 
-// Statistics preview. These are layout placeholders with no numbers in them yet. They fill in
-// once enough duties have been worked to make the figures mean something.
-const BARS = [40, 65, 50, 80, 55, 70, 45, 60];
+// A strip of what needs attention in the other modules, then statistics from the finished duties.
+type Stats = DashboardData['stats'];
 
-function GhostBars() {
+// The title and short intro over the two lower sections.
+function SectionHeading({ id, title, intro }: { id: string; title: string; intro: string }) {
     return (
-        <div className="flex h-16 items-end gap-1.5" aria-hidden="true">
-            {BARS.map((height, index) => (
-                <span
-                    key={index}
-                    className="flex-1 rounded-t-sm bg-stone-200"
-                    style={{ height: `${height}%` }}
-                />
-            ))}
+        <div>
+            <h2 id={id} className="text-lg font-semibold text-stone-900">
+                {title}
+            </h2>
+            <p className="mt-0.5 text-sm text-pretty text-stone-600">{intro}</p>
         </div>
     );
 }
 
-function GhostSplit() {
+type SystemItem = {
+    to: string;
+    label: string;
+    icon: ReactNode;
+    value: number;
+    note: string;
+    urgent: boolean;
+};
+
+// One count that opens its screen. Cells share hairlines, like a table, so the strip reads as one block.
+function SystemCell({ item }: { item: SystemItem }) {
     return (
-        <div aria-hidden="true">
-            <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
-                <span className="w-3/5 bg-stone-300" />
-                <span className="w-1/4 bg-stone-200" />
-                <span className="flex-1 bg-stone-100" />
+        <li className="border-r border-b border-stone-200 last:odd:col-span-2 @xl:last:odd:col-span-1">
+            <Link
+                to={item.to}
+                className="group flex h-full flex-col p-4 transition-colors hover:bg-stone-50"
+            >
+                <span className="flex items-center justify-between">
+                    <span className={item.urgent ? 'text-ember-700' : 'text-stone-500'}>
+                        {item.icon}
+                    </span>
+                    <ChevronIcon className="size-4 -rotate-90 text-stone-300 transition-colors group-hover:text-maroon-700" />
+                </span>
+                <span
+                    className={`mt-2 text-3xl font-semibold tracking-tight tabular-nums ${item.urgent ? 'text-ember-700' : 'text-stone-900'}`}
+                >
+                    {item.value}
+                </span>
+                <span className="mt-1 text-sm leading-snug font-medium text-stone-800 group-hover:text-maroon-700">
+                    {item.label}
+                </span>
+                <span
+                    className={`mt-1 flex items-start gap-1.5 text-sm leading-snug text-pretty ${item.urgent ? 'font-medium text-ember-700' : 'text-stone-500'}`}
+                >
+                    {item.urgent && <AlertIcon className="mt-px size-4 shrink-0" />}
+                    {item.note}
+                </span>
+            </Link>
+        </li>
+    );
+}
+
+function Attention({ data }: { data: DashboardData }) {
+    const items: SystemItem[] = [];
+    if (data.emergencies) {
+        items.push({
+            to: '/admin/reports',
+            label: 'Open emergencies',
+            icon: <AlertIcon className="size-4" />,
+            value: data.emergencies.open,
+            note:
+                data.emergencies.waiting > 0
+                    ? `${data.emergencies.waiting} not acknowledged`
+                    : 'None waiting',
+            urgent: data.emergencies.waiting > 0,
+        });
+    }
+    if (data.reports) {
+        const problems = data.reports.overdue + data.reports.missed;
+        items.push({
+            to: '/admin/reports',
+            label: 'Reports needing attention',
+            icon: <ClipboardIcon className="size-4" />,
+            value: problems,
+            note: `${data.reports.overdue} overdue, ${data.reports.missed} missed`,
+            urgent: problems > 0,
+        });
+    }
+    if (data.messages) {
+        items.push({
+            to: '/admin/messages',
+            label: 'Unread messages',
+            icon: <ChatIcon className="size-4" />,
+            value: data.messages.unread,
+            note: 'In the DRRMO inbox',
+            urgent: false,
+        });
+    }
+    if (data.requests) {
+        items.push({
+            to: '/admin/requests',
+            label: 'Access requests',
+            icon: <UserPlusIcon className="size-4" />,
+            value: data.requests.pending,
+            note: 'Waiting for review',
+            urgent: false,
+        });
+    }
+    if (data.people) {
+        items.push({
+            to: '/admin/people',
+            label: 'Active people',
+            icon: <PeopleIcon className="size-4" />,
+            value: data.people.active,
+            note: 'Personnel and volunteers',
+            urgent: false,
+        });
+    }
+    if (items.length === 0 && !data.memos) return null;
+    const memos = data.memos;
+    return (
+        <section aria-labelledby="attention-heading" className="mt-10">
+            <SectionHeading
+                id="attention-heading"
+                title="Across the system"
+                intro="What is waiting in the other areas. Open a count to deal with it."
+            />
+            <div className="mt-4 space-y-6">
+                {items.length > 0 && (
+                    <div className="@container overflow-hidden rounded-card bg-white ring-1 ring-stone-200">
+                        <ul className="-mr-px -mb-px grid grid-cols-2 @xl:grid-cols-3 @4xl:grid-cols-5">
+                            {items.map((item) => (
+                                <SystemCell key={item.label} item={item} />
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                {memos && (
+                    <Panel
+                        id="memos-heading"
+                        title="Latest memos"
+                        intro={
+                            memos.this_week === 1
+                                ? '1 posted this week.'
+                                : `${memos.this_week} posted this week.`
+                        }
+                        action={
+                            <Link
+                                to="/admin/memos"
+                                className="flex min-h-10 shrink-0 items-center gap-1 rounded-control text-sm font-semibold text-maroon-700 hover:underline"
+                            >
+                                All memos
+                                <ChevronIcon className="size-4 -rotate-90" />
+                            </Link>
+                        }
+                    >
+                        {memos.recent.length === 0 ? (
+                            <AllClear
+                                icon={<MegaphoneIcon className="size-5" />}
+                                text="No memos posted yet."
+                            />
+                        ) : (
+                            <ul className="divide-y divide-stone-100 border-t border-stone-200">
+                                {memos.recent.map((memo) => (
+                                    <li key={memo.id}>
+                                        <Link
+                                            to={`/admin/memos/${memo.id}`}
+                                            className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-stone-50 sm:px-6"
+                                        >
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate font-medium text-stone-900 group-hover:text-maroon-700">
+                                                    {memo.title}
+                                                </span>
+                                                <span className="mt-0.5 block truncate text-sm text-stone-500">
+                                                    {memo.category} · {when(memo.posted_at)}
+                                                </span>
+                                            </span>
+                                            <ChevronIcon className="size-4 shrink-0 -rotate-90 text-stone-300 transition-colors group-hover:text-maroon-700" />
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Panel>
+                )}
             </div>
-            <ul className="mt-3 space-y-1.5 text-xs text-stone-500">
-                {['On time', 'Late', 'No show'].map((label, index) => (
-                    <li key={label} className="flex items-center gap-2">
-                        <span
-                            className={`size-2 rounded-full ${['bg-stone-300', 'bg-stone-200', 'bg-stone-100 ring-1 ring-stone-200'][index]}`}
-                        />
-                        {label}
-                        <span className="ml-auto tabular-nums">--</span>
+        </section>
+    );
+}
+
+function StatCard({
+    title,
+    period,
+    value,
+    unit,
+    children,
+}: {
+    title: string;
+    period: string;
+    value: string;
+    unit: string;
+    children: ReactNode;
+}) {
+    return (
+        <article className="flex flex-col rounded-card bg-white p-5 ring-1 ring-stone-200 sm:p-6">
+            <h3 className="font-semibold text-stone-900">{title}</h3>
+            <p className="mt-0.5 text-sm text-stone-500">{period}</p>
+            <p className="mt-4 flex items-baseline gap-1.5 tabular-nums">
+                <span className="text-3xl font-semibold tracking-tight text-stone-900">
+                    {value}
+                </span>
+                <span className="text-sm font-medium text-stone-500">{unit}</span>
+            </p>
+            <div className="mt-auto pt-5">{children}</div>
+        </article>
+    );
+}
+
+// The same height as a chart, so the cards stay level when one has no data.
+function NoData({ text }: { text: string }) {
+    return (
+        <p className="flex h-32 items-center justify-center rounded-control border border-dashed border-stone-200 px-4 text-center text-sm text-pretty text-stone-500">
+            {text}
+        </p>
+    );
+}
+
+function Split({ stats }: { stats: Stats['attendance'] }) {
+    const parts = [
+        { label: 'On time', n: stats.on_time, bar: 'bg-green-600' },
+        { label: 'Late', n: stats.late, bar: 'bg-amber-500' },
+        { label: 'No show', n: stats.no_show, bar: 'bg-red-600' },
+    ];
+    return (
+        <div>
+            <div
+                className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-stone-100"
+                aria-hidden="true"
+            >
+                {parts.map(
+                    (part) =>
+                        part.n > 0 && (
+                            <span
+                                key={part.label}
+                                className={part.bar}
+                                style={{ width: `${(part.n / stats.total) * 100}%` }}
+                            />
+                        ),
+                )}
+            </div>
+            <ul className="mt-4 divide-y divide-stone-100 text-sm">
+                {parts.map((part) => (
+                    <li key={part.label} className="flex items-center gap-2 py-1.5">
+                        <span className={`size-2.5 shrink-0 rounded-full ${part.bar}`} />
+                        <span className="text-stone-700">{part.label}</span>
+                        <span className="ml-auto font-medium text-stone-900 tabular-nums">
+                            {part.n}
+                        </span>
+                        <span className="w-10 text-right text-stone-500 tabular-nums">
+                            {Math.round((part.n / stats.total) * 100)}%
+                        </span>
                     </li>
                 ))}
             </ul>
+            <p className="mt-1 text-xs text-stone-500 tabular-nums">
+                {stats.total} started {stats.total === 1 ? 'duty' : 'duties'}
+            </p>
         </div>
     );
 }
 
-function GhostLine() {
+// One bar per week. The current week is solid maroon, earlier weeks are lighter.
+function WeekBars({ weeks }: { weeks: Stats['duty_hours']['weeks'] }) {
+    const max = Math.max(...weeks.map((w) => w.hours), 1);
+    const label = (iso: string) => day.format(new Date(`${iso}T00:00:00`));
+    const current = weeks.at(-1);
     return (
-        <svg viewBox="0 0 160 48" className="h-16 w-full" fill="none" aria-hidden="true">
-            <path
-                d="M2 38 L24 30 L46 34 L68 20 L90 24 L112 12 L134 18 L158 8"
-                className="stroke-stone-300"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-            <path d="M2 46 H158" className="stroke-stone-200" strokeWidth={1} />
-        </svg>
+        <figure>
+            <div
+                className="flex h-32 items-end gap-1.5 border-b border-stone-200"
+                role="img"
+                aria-label={`Hours per week: ${weeks.map((w) => `week of ${label(w.week)}, ${w.hours}`).join('; ')}.`}
+            >
+                {weeks.map((w, index) => (
+                    <span
+                        key={w.week}
+                        title={`Week of ${label(w.week)}: ${w.hours} h`}
+                        className={`flex-1 rounded-t-sm transition-colors hover:bg-maroon-800 ${index === weeks.length - 1 ? 'bg-maroon-700' : 'bg-maroon-200'}`}
+                        style={{
+                            height: `${Math.max(w.hours > 0 ? 6 : 2, (w.hours / max) * 100)}%`,
+                        }}
+                    />
+                ))}
+            </div>
+            <figcaption className="mt-1.5 flex justify-between text-xs text-stone-500 tabular-nums">
+                <span>{weeks[0] ? label(weeks[0].week) : ''}</span>
+                <span>This week{current ? `, ${current.hours} h` : ''}</span>
+            </figcaption>
+        </figure>
     );
 }
 
-function GhostRows() {
+// Weekly medians for the last five weeks. Gaps are weeks with no acknowledgements.
+function Trend({ points }: { points: (number | null)[] }) {
+    const known = points.filter((p): p is number => p !== null);
+    if (known.length < 2) {
+        return <NoData text="Not enough acknowledgements for a trend yet." />;
+    }
+    const max = Math.max(...known, 0.1);
+    const step = 152 / Math.max(points.length - 1, 1);
+    const at = (p: number, i: number) => ({ x: i * step + 4, y: 52 - (p / max) * 44 });
+    const dots = points.flatMap((p, i) =>
+        p === null ? [] : [{ ...at(p, i), last: i === points.length - 1 }],
+    );
+    const path = dots.map((d, i) => `${i === 0 ? 'M' : 'L'}${d.x},${d.y}`).join(' ');
     return (
-        <ul className="space-y-2.5" aria-hidden="true">
-            {[85, 60, 40, 25].map((width) => (
-                <li key={width} className="flex items-center gap-2">
-                    <span className="h-2 w-14 rounded-full bg-stone-100" />
+        <figure>
+            <svg
+                viewBox="0 0 160 56"
+                preserveAspectRatio="none"
+                className="h-32 w-full overflow-visible border-b border-stone-200"
+                fill="none"
+                role="img"
+                aria-label={`Median hours to acknowledge, by week: ${points.map((p) => (p === null ? 'no data' : `${p} h`)).join(', ')}.`}
+            >
+                <path
+                    d={path}
+                    className="stroke-maroon-700"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                />
+            </svg>
+            <div className="relative -mt-32 h-32" aria-hidden="true">
+                {dots.map((d) => (
                     <span
-                        className="h-2 rounded-full bg-stone-200"
-                        style={{ width: `${width}%` }}
+                        key={d.x}
+                        className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white ${d.last ? 'size-2.5 bg-maroon-700' : 'size-2 bg-maroon-300'}`}
+                        style={{ left: `${(d.x / 160) * 100}%`, top: `${(d.y / 56) * 100}%` }}
                     />
+                ))}
+            </div>
+            <figcaption className="mt-1.5 flex justify-between text-xs text-stone-500">
+                <span>5 weeks ago</span>
+                <span>This week</span>
+            </figcaption>
+        </figure>
+    );
+}
+
+function TypeRows({ types }: { types: Stats['events_by_type']['types'] }) {
+    const max = Math.max(...types.map((t) => t.count), 1);
+    return (
+        <ul className="space-y-3">
+            {types.map((type) => (
+                <li key={type.name} className="text-sm">
+                    <span className="flex items-baseline justify-between gap-3">
+                        <span className="min-w-0 truncate text-stone-700">{type.name}</span>
+                        <span className="font-medium text-stone-900 tabular-nums">
+                            {type.count}
+                        </span>
+                    </span>
+                    <span
+                        className="mt-1 block h-1.5 overflow-hidden rounded-full bg-stone-100"
+                        aria-hidden="true"
+                    >
+                        <span
+                            className="block h-full rounded-full bg-maroon-700"
+                            style={{ width: `${(type.count / max) * 100}%` }}
+                        />
+                    </span>
                 </li>
             ))}
         </ul>
     );
 }
 
-function PreviewCard({
-    title,
-    period,
-    unit,
-    children,
-}: {
-    title: string;
-    period: string;
-    unit: string;
-    children: ReactNode;
-}) {
+function Statistics({ stats }: { stats: Stats }) {
+    const { attendance, duty_hours: hours, acknowledge, events_by_type: types } = stats;
+    const pct =
+        attendance.total > 0 ? Math.round((attendance.on_time / attendance.total) * 100) : null;
     return (
-        <article className="flex flex-col rounded-card bg-white p-4 ring-1 ring-stone-200 sm:p-5">
-            <h3 className="text-sm font-medium text-stone-800">{title}</h3>
-            <p className="text-xs text-stone-500">{period}</p>
-            <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-300 tabular-nums">
-                --
-                <span className="ml-1 text-sm font-medium text-stone-400">{unit}</span>
-            </p>
-            <div className="mt-auto pt-4">{children}</div>
-        </article>
-    );
-}
-
-function StatisticsPreview() {
-    return (
-        <section aria-labelledby="stats-heading" className="mt-8">
-            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
-                <div>
-                    <h2
-                        id="stats-heading"
-                        className="flex items-center gap-2 text-lg font-semibold text-stone-900"
-                    >
-                        <ChartIcon className="size-5 text-stone-500" />
-                        Statistics
-                        <span className={`${chipClass} bg-stone-100 text-stone-600 ring-stone-200`}>
-                            Coming soon
-                        </span>
-                    </h2>
-                    <p className="mt-0.5 text-sm text-pretty text-stone-600">
-                        A preview of the layout. Numbers show here once more duties are done.
-                    </p>
-                </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-                <PreviewCard title="Attendance" period="This month" unit="% on time">
-                    <GhostSplit />
-                </PreviewCard>
-                <PreviewCard title="Duty hours" period="Last 8 weeks" unit="hours">
-                    <GhostBars />
-                </PreviewCard>
-                <PreviewCard title="Time to acknowledge" period="Last 30 days" unit="h median">
-                    <GhostLine />
-                </PreviewCard>
-                <PreviewCard title="Events by type" period="This semester" unit="events">
-                    <GhostRows />
-                </PreviewCard>
+        <section aria-labelledby="stats-heading" className="mt-10">
+            <SectionHeading
+                id="stats-heading"
+                title="Statistics"
+                intro="From finished duties and published events."
+            />
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard
+                    title="Attendance"
+                    period={`${attendance.month}, started duties`}
+                    value={pct === null ? '--' : `${pct}%`}
+                    unit="on time"
+                >
+                    {attendance.total > 0 ? (
+                        <Split stats={attendance} />
+                    ) : (
+                        <NoData text="No duties started this month yet." />
+                    )}
+                </StatCard>
+                <StatCard
+                    title="Duty hours"
+                    period="Last 8 weeks"
+                    value={String(hours.total)}
+                    unit="hours"
+                >
+                    {hours.total > 0 ? (
+                        <WeekBars weeks={hours.weeks} />
+                    ) : (
+                        <NoData text="No finished duties in the last 8 weeks." />
+                    )}
+                </StatCard>
+                <StatCard
+                    title="Time to acknowledge"
+                    period="Last 30 days"
+                    value={
+                        acknowledge.median_hours === null ? '--' : String(acknowledge.median_hours)
+                    }
+                    unit="h median"
+                >
+                    <Trend points={acknowledge.trend} />
+                </StatCard>
+                <StatCard
+                    title="Events by type"
+                    period="Last 6 months, top 5"
+                    value={String(types.total)}
+                    unit="events"
+                >
+                    {types.types.length > 0 ? (
+                        <TypeRows types={types.types} />
+                    ) : (
+                        <NoData text="No published events in the last 6 months." />
+                    )}
+                </StatCard>
             </div>
         </section>
     );
@@ -732,7 +1037,8 @@ export function Dashboard() {
                         </div>
                     </div>
 
-                    <StatisticsPreview />
+                    <Attention data={data.data} />
+                    <Statistics stats={data.data.stats} />
                 </>
             )}
 

@@ -9,6 +9,7 @@ use App\Modules\Monitoring\Events\EmergencyReminder;
 use App\Modules\Monitoring\Events\EmergencyReported;
 use App\Modules\Monitoring\Events\ReportMissed;
 use App\Modules\Monitoring\Events\ReportOverdue;
+use App\Modules\Notifications\Console\PruneNotifications;
 use App\Modules\Notifications\Console\SendReportReminders;
 use App\Modules\Notifications\Console\SendShiftReminders;
 use App\Modules\Notifications\Contracts\AssignmentNotifier;
@@ -54,8 +55,9 @@ class NotificationsServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/Views', 'eams-notifications');
         Gate::policy(Notification::class, NotificationPolicy::class);
         if ($this->app->runningInConsole()) {
-            $this->commands([SendShiftReminders::class, SendReportReminders::class]);
+            $this->commands([SendShiftReminders::class, SendReportReminders::class, PruneNotifications::class]);
             $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => $schedule->command('notifications:send-report-reminders')->everyMinute());
+            $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => $schedule->command('notifications:prune')->dailyAt('02:15'));
             $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => $schedule->command('notifications:send-reminders')->everyFiveMinutes());
         }
         Route::middleware(['api', 'auth:api'])->prefix('api')->group(__DIR__.'/routes.php');

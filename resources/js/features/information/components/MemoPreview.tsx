@@ -231,7 +231,7 @@ export function MemoPreview({ memo }: { memo: Memo }) {
             className="overflow-hidden rounded-card bg-white ring-1 ring-stone-200"
         >
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-stone-200 px-4 py-3 sm:px-5">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-control border border-stone-200 text-maroon-700">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-control border border-stone-200 text-stone-500">
                     <FileIcon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1 basis-56">

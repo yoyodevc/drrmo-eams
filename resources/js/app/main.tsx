@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from './router';
+import { BootRelease } from './BootScreen';
 import { SessionWatcher } from './SessionWatcher';
 
 const queryClient = new QueryClient({
@@ -25,7 +26,15 @@ if (container) {
             <QueryClientProvider client={queryClient}>
                 <SessionWatcher />
                 <RouterProvider router={router} />
+                <BootRelease />
             </QueryClientProvider>
         </StrictMode>,
     );
+}
+
+// App shell cache so the app installs to the home screen. Production builds only.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        void navigator.serviceWorker.register('/sw.js');
+    });
 }

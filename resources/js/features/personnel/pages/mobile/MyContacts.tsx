@@ -163,8 +163,7 @@ export function MyContacts() {
                 </svg>
                 Me
             </Link>
-            <div className="brand-stripe mt-2 h-1 w-12 rounded-full" aria-hidden="true" />
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-stone-900">
                 Emergency contacts
             </h1>
             <p className="mt-1 text-base text-pretty text-stone-600">

@@ -214,6 +214,28 @@ export interface Dashboard {
     on_duty: DashboardRow[];
     unacknowledged: DashboardRow[];
     not_on_duty: DashboardRow[];
+    stats: {
+        attendance: {
+            month: string;
+            total: number;
+            on_time: number;
+            late: number;
+            no_show: number;
+        };
+        duty_hours: { weeks: { week: string; hours: number }[]; total: number };
+        acknowledge: { median_hours: number | null; trend: (number | null)[] };
+        events_by_type: { total: number; types: { name: string; count: number }[] };
+    };
+    // The blocks below are left out when the person's permissions do not cover them.
+    emergencies?: { waiting: number; open: number };
+    reports?: { overdue: number; missed: number };
+    messages?: { unread: number };
+    memos?: {
+        recent: { id: number; title: string; category: string; posted_at: string }[];
+        this_week: number;
+    };
+    people?: { active: number };
+    requests?: { pending: number };
 }
 
 export async function getDashboard(): Promise<Dashboard> {

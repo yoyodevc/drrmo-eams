@@ -82,8 +82,7 @@ export function MyDetails() {
     return (
         <div className="mx-auto max-w-2xl">
             <BackLink to="/me/profile">Me</BackLink>
-            <div className="brand-stripe mt-2 h-1 w-12 rounded-full" aria-hidden="true" />
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-stone-900">
                 My details
             </h1>
             <p className="mt-1 text-base text-pretty text-stone-600">

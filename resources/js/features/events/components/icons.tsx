@@ -156,3 +156,20 @@ export function ChartIcon({ className }: { className?: string }) {
         </Icon>
     );
 }
+
+export function ChatIcon({ className }: { className?: string }) {
+    return (
+        <Icon className={className}>
+            <path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4.5 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+        </Icon>
+    );
+}
+
+export function UserPlusIcon({ className }: { className?: string }) {
+    return (
+        <Icon className={className}>
+            <circle cx="10" cy="8" r="3.5" />
+            <path d="M3.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6" />
+        </Icon>
+    );
+}

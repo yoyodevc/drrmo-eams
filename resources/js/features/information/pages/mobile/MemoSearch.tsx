@@ -1,5 +1,6 @@
-// M-Memos (S5.2). Mobile first at 360 px, laid out like Alerts: brand stripe and title, a big search
-// field, one row of category chips that scrolls sideways, then one card of tappable rows. Search starts
+// M-Memos (S5.2). Mobile first at 360 px, quiet like Reports: title, a big search field, one row of
+// category chips that scrolls sideways, then one white card of hairline rows with small outline icons.
+// Maroon only marks the chosen chip, so the list reads calmly. Search starts
 // at 2 letters after a short pause. Each chip shows how many memos it would find. A row opens the memo
 // with its file in the preview pane. The search lives in the URL, so Back from a memo returns here as
 // it was. Every tap target is 48 px or taller.
@@ -53,23 +54,23 @@ function MemoRow({ memo, term, search }: { memo: Memo; term: string; search: str
             <Link
                 to={`/me/memos/${memo.id}`}
                 state={{ from: search }}
-                className="flex min-h-16 items-center gap-3 p-4 transition-colors hover:bg-stone-50 active:bg-stone-100"
+                className="flex min-h-16 items-start gap-3 px-4 py-3.5 transition-colors hover:bg-stone-50 active:bg-stone-100"
             >
-                <span className="flex size-10 shrink-0 items-center justify-center self-start rounded-control border border-stone-200 bg-white text-maroon-700">
+                <span className="mt-0.5 shrink-0 text-stone-400" aria-hidden="true">
                     {kind ? <FileIcon className="size-5" /> : <ClipboardIcon className="size-5" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                    <span className="text-xs font-semibold tracking-[0.14em] text-maroon-700 uppercase">
-                        {memo.category_label}
-                    </span>
-                    <span className="mt-0.5 line-clamp-2 font-semibold text-pretty break-words text-stone-900">
+                    <span className="line-clamp-2 font-medium text-pretty break-words text-stone-900">
                         <Highlight text={memo.title} term={term} />
                     </span>
                     <span className="mt-0.5 block truncate text-sm text-stone-600 tabular-nums">
-                        {postedOn(memo.posted_at)} · {contentsLine(memo)}
+                        {memo.category_label} · {postedOn(memo.posted_at)}
+                    </span>
+                    <span className="block truncate text-sm text-stone-500 tabular-nums">
+                        {contentsLine(memo)}
                     </span>
                 </span>
-                <ChevronIcon className="size-5 shrink-0 text-stone-400" />
+                <ChevronIcon className="size-4 shrink-0 self-center text-stone-400" />
             </Link>
         </li>
     );
@@ -79,12 +80,12 @@ function SkeletonRows() {
     return (
         <>
             {[0, 1, 2, 3].map((row) => (
-                <li key={row} aria-hidden="true" className="flex gap-3 p-4">
-                    <div className="size-10 shrink-0 animate-pulse rounded-control bg-stone-200" />
+                <li key={row} aria-hidden="true" className="flex gap-3 px-4 py-3.5">
+                    <div className="mt-0.5 size-5 shrink-0 animate-pulse rounded bg-stone-200" />
                     <div className="flex-1 space-y-2.5">
-                        <div className="h-3 w-20 animate-pulse rounded bg-stone-200" />
                         <div className="h-4 w-4/5 animate-pulse rounded bg-stone-200" />
                         <div className="h-3 w-2/5 animate-pulse rounded bg-stone-200" />
+                        <div className="h-3 w-1/4 animate-pulse rounded bg-stone-200" />
                     </div>
                 </li>
             ))}
@@ -181,8 +182,7 @@ export function MemoSearch() {
 
     return (
         <div className="mx-auto max-w-2xl">
-            <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">Memos</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Memos</h1>
             <p className="mt-1 text-base text-pretty text-stone-600">
                 Policies, procedures and advisories from DRRMO.
             </p>
@@ -291,14 +291,14 @@ export function MemoSearch() {
                                           <span
                                               className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold whitespace-nowrap ring-1 transition-colors ${
                                                   on
-                                                      ? 'bg-maroon-700 text-white ring-maroon-700'
-                                                      : 'bg-white text-stone-700 ring-stone-300 group-hover:ring-stone-400 group-active:bg-stone-100'
+                                                      ? 'bg-maroon-50 text-maroon-800 ring-maroon-200'
+                                                      : 'bg-white text-stone-700 ring-stone-200 group-hover:ring-stone-300 group-active:bg-stone-100'
                                               }`}
                                           >
                                               {c.label}
                                               {c.count !== null && (
                                                   <span
-                                                      className={`tabular-nums ${on ? 'text-maroon-100' : c.count === 0 ? 'text-stone-400' : 'text-stone-500'}`}
+                                                      className={`font-medium tabular-nums ${on ? 'text-maroon-700/70' : c.count === 0 ? 'text-stone-400' : 'text-stone-500'}`}
                                                   >
                                                       {c.count}
                                                   </span>
@@ -309,34 +309,36 @@ export function MemoSearch() {
                               })}
                     </div>
 
+                    {/* The count sits above the card, like the section labels on Reports. */}
+                    <div className="mt-2 flex min-h-12 items-center justify-between gap-3">
+                        <p
+                            className="min-w-0 truncate text-sm text-stone-600 tabular-nums"
+                            aria-live="polite"
+                        >
+                            {summary}
+                        </p>
+                        {filtered && (
+                            <button
+                                type="button"
+                                onClick={clear}
+                                className={`${textLink} -mr-2 shrink-0 text-sm`}
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+
                     <section
                         aria-label="Results"
                         aria-busy={memos.isPending || refreshing || undefined}
-                        className="mt-3 overflow-hidden rounded-card bg-white ring-1 ring-stone-200"
+                        className="relative overflow-hidden rounded-card bg-white ring-1 ring-stone-200"
                     >
-                        <div className="relative flex min-h-12 items-center justify-between gap-3 border-b border-stone-200 pr-2 pl-4">
-                            <p
-                                className="min-w-0 truncate text-sm text-stone-600 tabular-nums"
-                                aria-live="polite"
-                            >
-                                {summary}
-                            </p>
-                            {filtered && (
-                                <button
-                                    type="button"
-                                    onClick={clear}
-                                    className={`${textLink} shrink-0 text-sm`}
-                                >
-                                    Clear
-                                </button>
-                            )}
-                            {/* A thin line while a new search loads over the old rows. */}
-                            <div
-                                aria-hidden="true"
-                                className={`absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-maroon-700/10 transition-opacity ${refreshing ? 'opacity-100' : 'opacity-0'}`}
-                            >
-                                <div className="h-full w-1/3 animate-pulse bg-maroon-700/60" />
-                            </div>
+                        {/* A thin line while a new search loads over the old rows. */}
+                        <div
+                            aria-hidden="true"
+                            className={`absolute inset-x-0 top-0 h-0.5 overflow-hidden bg-maroon-700/10 transition-opacity ${refreshing ? 'opacity-100' : 'opacity-0'}`}
+                        >
+                            <div className="h-full w-1/3 animate-pulse bg-maroon-700/60" />
                         </div>
 
                         {memos.isSuccess && rows.length === 0 ? (

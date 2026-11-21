@@ -7,13 +7,15 @@ namespace App\Modules\Events\Http\Controllers;
 use App\Modules\Events\Enums\AssignmentStatus;
 use App\Modules\Events\Models\Assignment;
 use App\Modules\Events\Models\Event;
+use App\Modules\Events\Services\DashboardOverview;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 /** Admin dashboard: what is happening today, who is on duty, and who needs a nudge. */
 class DashboardController
 {
-    public function __invoke(): JsonResponse
+    public function __invoke(Request $request, DashboardOverview $overview): JsonResponse
     {
         Gate::authorize('viewAny', Event::class);
 
@@ -71,6 +73,6 @@ class DashboardController
             'on_duty' => $onDuty->map($row)->values(),
             'unacknowledged' => $unacknowledged->map($row)->values(),
             'not_on_duty' => $late->map($row)->values(),
-        ]]);
+        ] + $overview->for($request->user())]);
     }
 }

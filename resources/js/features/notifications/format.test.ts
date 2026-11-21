@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayLabel, groupByDay, usageLevel } from './format';
+import { dayHeading, dayLabel, groupByDay, usageLevel } from './format';
 
 describe('usageLevel', () => {
     it('is ok below 80 percent', () => {
@@ -42,5 +42,20 @@ describe('groupByDay', () => {
         );
         expect(groups.map((g) => g.label)).toEqual(['Today', 'Yesterday', 'Earlier']);
         expect(groups[0].items.map((i) => i.id)).toEqual([1, 2]);
+    });
+});
+
+describe('dayHeading', () => {
+    const now = new Date(2026, 10, 9, 8, 0);
+    it('keeps the date beside Today', () => {
+        const h = dayHeading(new Date(2026, 10, 9, 7, 0), now);
+        expect(h.title).toBe('Today');
+        expect(h.day).toBe('9');
+        expect(h.detail).toMatch(/9/);
+    });
+    it('names older days by weekday and adds the year when it differs', () => {
+        const h = dayHeading(new Date(2025, 11, 30, 12, 0), now);
+        expect(h.title).not.toMatch(/Today|Yesterday/);
+        expect(h.detail).toMatch(/2025/);
     });
 });

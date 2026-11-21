@@ -466,3 +466,31 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - What was built: the red emergency alert now disappears once the emergency is acknowledged, so it no longer shows on every page after someone has taken it on
 - Evidence: a new Pest test covers the alert clearing after acknowledge. Full backend suite (394 tests), JS suite (141 tests), Pint, Larastan and the build pass
 - Paper: Chapter 4 (monitoring features)
+
+### Audit log viewer and a working dashboard (records, events)
+- What was built: the Records page (S6.1) lists the audit log with filters for actor, action, entity and date. A row expands to show its IP address and details. It is read only, and only people with `audit.view` can open it
+- What was built: the admin dashboard now shows real figures instead of the "Coming soon" preview: attendance this month, duty hours for 8 weeks, time to acknowledge, events by type, and an "Across the system" strip with open emergencies, reports needing attention, unread messages, access requests, active people and the latest memos. Each block only shows when the person's permissions cover it
+- Decision and why: the audit viewer does not audit itself, to keep the log free of noise from people reading it
+- Evidence: new Pest tests cover the filters and the forbidden case. Full backend suite, JS suite, Pint and Larastan pass
+- Paper: Chapter 4 (records and dashboard)
+
+### My data export and retention pruning (records)
+- What was built: the phone Me tab has a "Download my data" button (S6.2). It saves the person's own profile, emergency contacts, duty assignments and consents as one JSON file. Each download is audited as `data.exported`
+- What was built: three nightly jobs prune old rows (S6.3): notifications after 6 months, audit rows after 3 years, and report photos after 1 year. A pruned photo is deleted from disk and the report stays without it. The audit prune writes one `records.pruned` row of its own
+- Decision and why: each job lives in the module that owns the table, so no module deletes another module's rows
+- Evidence: new Pest tests cover the export (own data only, audited, forbidden when signed out) and the three prune jobs. Retention periods for non-ping data still need owner confirmation
+- Paper: Chapter 4 (records and privacy)
+
+### PWA install (core)
+- What was built: the app has a web manifest, icons (192, 512 and a maskable one) and a small service worker, so it can be installed on Android Chrome and added to the Home Screen on iPhone. It opens full screen with the maroon theme color
+- Decision and why: the service worker caches only the app shell (the page, built files and brand images). It never caches `/api`, so no personal data is stored on the phone by it. It registers in production builds only
+- Evidence: checked the manifest and service worker on a production build served through an https tunnel
+- Paper: Chapter 4 (mobile access)
+
+### Launch screen, quieter phone pages and dated alerts (core, information, notifications)
+- What was built: the installed app opens on an off-white splash with the DRRMO shield and no box around it. The page keeps the same screen (with a thin loading bar and the office name) until the app knows who is signed in, then fades into it. No white flash
+- What was built: the phone Memos list and memo page use the quieter Reports style: hairline rows, small gray icons, and a pale chip for the chosen category. The gradient line above titles is gone from all phone pages. The phone Messages list now has the same page margins, gray section labels and white cards as the other tabs, instead of running edge to edge
+- What was built: Alerts opens each day with a calendar tile, the day's name and its full date, so Today and Yesterday still show the date. Times are darker and easier to read
+- Decision and why: the boot screen is plain CSS in the page, not part of the app bundle, so it paints before the JS loads. The icons now have a transparent or off-white field that matches the splash color exactly. A maroon splash was tried first, but an installed app keeps its old splash color until Android refreshes it, which left a maroon box on a light screen
+- Evidence: type check, lint and the format tests pass
+- Paper: Chapter 4 (mobile access)

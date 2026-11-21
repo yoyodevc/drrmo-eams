@@ -120,10 +120,7 @@ export function EventNotices() {
 
     return (
         <div>
-            <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
-                Event notices
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Event notices</h1>
             <p className="mt-1 text-base text-pretty text-stone-600">
                 Upcoming DRRMO events for your department and campus wide, soonest first. For your
                 information only.

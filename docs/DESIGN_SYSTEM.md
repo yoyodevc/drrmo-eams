@@ -51,7 +51,7 @@ The design should look like it was made by an office that takes safety seriously
 
 - Brand surfaces (only the login brand panel today) may use one soft gradient from `maroon-800` to `maroon-950`, with a faint gold light in one corner. Everything else is solid.
 - The ZPPSU gear may sit behind a brand surface as a watermark at 5% opacity, grayscale, desktop only.
-- The **brand stripe** is a short bar (4 by 48 px) from gold to DRRMO orange. It joins the two offices. Use it once per screen at most, above the main heading.
+- The **brand stripe** is a short bar (4 by 48 px) from gold to DRRMO orange. It joins the two offices. Use it once per screen at most, above the main heading. It is for admin, sign in and notice screens. Phone tab screens (Duties, Reports, Messages, Memos, Me, Alerts) leave it out and open with the title, so they stay quiet.
 - Eyebrow labels on maroon use a thin gold rule and uppercase gold text, never a pill or badge.
 - Lists of points use outline icons in a hairline square, separated by hairlines. No filled tiles.
 - Hierarchy comes from size, weight and spacing, not from boxes, badges and colors.

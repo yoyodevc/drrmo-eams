@@ -496,8 +496,7 @@ export function EmergencyInbox({ embedded = false }: { embedded?: boolean }) {
         <div className={embedded ? '' : 'mx-auto max-w-3xl'}>
             {!embedded && (
                 <>
-                    <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
-                    <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
+                    <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
                         Emergencies
                     </h1>
                     <p className="mt-1 mb-5 text-base text-pretty text-stone-600">
