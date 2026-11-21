@@ -260,8 +260,7 @@ export function MyAssignments() {
 
     return (
         <div>
-            <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">My duties</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-stone-900">My duties</h1>
             <p className="mt-1 text-base text-pretty text-stone-600">
                 Where to be and when, soonest first.
             </p>

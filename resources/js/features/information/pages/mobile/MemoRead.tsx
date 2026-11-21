@@ -17,8 +17,7 @@ function LoadingView() {
                 Loading the memo...
             </p>
             <div aria-hidden="true">
-                <div className="mt-6 h-1 w-12 rounded-full bg-stone-200" />
-                <div className="mt-4 h-3 w-24 animate-pulse rounded bg-stone-200" />
+                <div className="mt-6 h-3 w-24 animate-pulse rounded bg-stone-200" />
                 <div className="mt-3 h-7 w-4/5 animate-pulse rounded bg-stone-200" />
                 <div className="mt-3 h-4 w-48 animate-pulse rounded bg-stone-200" />
                 <div className="mt-6 h-40 animate-pulse rounded-card bg-stone-200" />
@@ -86,8 +85,7 @@ export function MemoRead() {
             {back}
 
             <header className="mt-4">
-                <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
-                <p className="mt-4 text-xs font-semibold tracking-[0.14em] text-maroon-700 uppercase">
+                <p className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
                     {m.category_label}
                 </p>
                 <h1 className="mt-2 text-2xl font-semibold tracking-tight text-balance break-words text-stone-900">

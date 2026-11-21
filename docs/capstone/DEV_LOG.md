@@ -486,3 +486,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: the service worker caches only the app shell (the page, built files and brand images). It never caches `/api`, so no personal data is stored on the phone by it. It registers in production builds only
 - Evidence: checked the manifest and service worker on a production build served through an https tunnel
 - Paper: Chapter 4 (mobile access)
+
+### Launch screen, quieter phone pages and dated alerts (core, information, notifications)
+- What was built: the installed app opens on a maroon splash with the DRRMO shield, and the page keeps the same screen (with a thin loading bar and the office name) until the app knows who is signed in, then fades into it. No white flash. A browser tab gets a light version of the same screen
+- What was built: the phone Memos list and memo page use the quieter Reports style: hairline rows, small gray icons, and a pale chip for the chosen category. The gradient line above titles is gone from all phone pages
+- What was built: Alerts opens each day with a calendar tile, the day's name and its full date, so Today and Yesterday still show the date. Times are darker and easier to read
+- Decision and why: the boot screen is plain CSS in the page, not part of the app bundle, so it paints before the JS loads. The maskable icon now has a maroon field, so Android 12 and later show the shield on maroon with no white circle
+- Evidence: type check, lint and the format tests pass
+- Paper: Chapter 4 (mobile access)

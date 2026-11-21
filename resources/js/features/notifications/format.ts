@@ -83,3 +83,28 @@ export function groupByDay<T extends { sent_at: string | null }>(
     if (undated.length > 0) groups.push({ label: 'Earlier', items: undated });
     return groups;
 }
+
+const weekdayFormat = new Intl.DateTimeFormat(undefined, { weekday: 'long' });
+const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'short' });
+
+// What a day heading on Alerts shows: a calendar tile (month and day), a name, and the full date.
+// "Today" and "Yesterday" still show the date, so nobody has to work it out.
+export function dayHeading(
+    date: Date,
+    now: Date = new Date(),
+): { title: string; detail: string; month: string; day: string } {
+    const label = dayLabel(date, now);
+    const relative = label === 'Today' || label === 'Yesterday';
+    const detail = new Intl.DateTimeFormat(undefined, {
+        ...(relative ? { weekday: 'long' } : {}),
+        month: 'long',
+        day: 'numeric',
+        ...(date.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}),
+    }).format(date);
+    return {
+        title: relative ? label : weekdayFormat.format(date),
+        detail,
+        month: monthFormat.format(date),
+        day: String(date.getDate()),
+    };
+}

@@ -107,10 +107,7 @@ function ChatList() {
     return (
         <>
             <div className="shrink-0 border-b border-stone-200 px-6 pt-5 pb-4 md:px-4">
-                <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
-                <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
-                    Messages
-                </h1>
+                <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Messages</h1>
                 <p className="mt-1 text-sm text-pretty text-stone-600">
                     Ask the DRRMO office, or chat with anyone on duty with you.
                 </p>

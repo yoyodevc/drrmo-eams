@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from './router';
+import { BootRelease } from './BootScreen';
 import { SessionWatcher } from './SessionWatcher';
 
 const queryClient = new QueryClient({
@@ -25,6 +26,7 @@ if (container) {
             <QueryClientProvider client={queryClient}>
                 <SessionWatcher />
                 <RouterProvider router={router} />
+                <BootRelease />
             </QueryClientProvider>
         </StrictMode>,
     );

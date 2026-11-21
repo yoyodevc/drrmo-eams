@@ -181,8 +181,7 @@ export function MyProfile() {
 
     return (
         <div className="mx-auto max-w-2xl">
-            <div className="brand-stripe h-1 w-12 rounded-full" aria-hidden="true" />
-            <div className="mt-4">
+            <div>
                 {me ? (
                     <>
                         <h1 className="text-2xl font-semibold tracking-tight text-balance text-stone-900">
