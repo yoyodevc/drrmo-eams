@@ -14,7 +14,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>{{ config('app.name') }}</title>
     {{-- Boot screen. Plain CSS in the page so it paints before the app's CSS and JS arrive.
-         The installed app (standalone) continues Android's maroon splash; a browser tab gets a light one.
+         Same off-white as Android's splash (manifest background_color) and the maskable icon's field,
+         so the splash, this screen and the app run together with no box or flash.
          The app fades it out once it knows who is signed in (resources/js/app/BootScreen.tsx). --}}
     <style>
         html { background: #fafaf9; }
@@ -33,15 +34,6 @@
         .boot-org { margin: 4px 0 0; font-size: 12px; color: #78716c; }
         .boot-slow { margin: 0 0 16px; font-size: 13px; color: #57534e; opacity: 0; animation: boot-in .3s ease 10s forwards; }
         .boot-slow a { color: #7d1d23; font-weight: 600; }
-        @media (display-mode: standalone) {
-            html:has(#boot) { background: #661419; }
-            #boot { background: #661419; color: #fff; }
-            #boot .boot-bar { background: rgb(255 255 255 / .18); }
-            #boot .boot-bar span { background: #fff; }
-            #boot .boot-org { color: rgb(255 255 255 / .65); }
-            #boot .boot-slow { color: rgb(255 255 255 / .8); }
-            #boot .boot-slow a { color: #fff; }
-        }
         @keyframes boot-in { to { opacity: 1; } }
         @keyframes boot-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
         @media (prefers-reduced-motion: reduce) {

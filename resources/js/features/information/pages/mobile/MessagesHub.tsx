@@ -3,6 +3,8 @@
 // anyone in the system by name to start a chat. On a phone the list and the chat take turns, and
 // the screen fills the space between the top bar and the tab bar so only the messages scroll.
 // From 768 px both sit side by side in one panel. Checks for news every 60 seconds while open.
+// Below 768 px the list looks like the other tabs: page gutters, gray section labels and white
+// cards with hairline rows.
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
@@ -20,6 +22,18 @@ import {
 import { POLL_MS, findPeople, getDirectChats, getMyConversation, listTime } from '../../messages';
 
 const BASE = '/me/messages';
+
+// Phone: a white card on the page. From 768 px the rows sit flat in the white panel.
+const card =
+    'overflow-hidden rounded-card bg-white ring-1 ring-stone-200 md:rounded-none md:ring-0';
+
+function SectionLabel({ children }: { children: string }) {
+    return (
+        <h2 className="pt-6 pb-2 text-xs font-semibold tracking-wide text-stone-500 uppercase md:px-4 md:pt-5">
+            {children}
+        </h2>
+    );
+}
 
 // Search people by name after a short pause, from 2 letters. Shared with the admin chats list.
 export function usePeopleSearch() {
@@ -106,9 +120,9 @@ function ChatList() {
 
     return (
         <>
-            <div className="shrink-0 border-b border-stone-200 px-6 pt-5 pb-4 md:px-4">
+            <div className="shrink-0 px-6 pt-6 md:border-b md:border-stone-200 md:px-4 md:pt-5 md:pb-4">
                 <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Messages</h1>
-                <p className="mt-1 text-sm text-pretty text-stone-600">
+                <p className="mt-1 text-base text-pretty text-stone-600 md:text-sm">
                     Ask the DRRMO office, or chat with anyone on duty with you.
                 </p>
                 <div className="mt-4">
@@ -122,13 +136,15 @@ function ChatList() {
                 </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-6 md:px-0 md:pb-0">
                 {search.searching ? (
-                    <PeopleResults search={search} base={`${BASE}/with`} activeId={activeId} />
+                    <div className={`mt-4 md:mt-0 ${card}`}>
+                        <PeopleResults search={search} base={`${BASE}/with`} activeId={activeId} />
+                    </div>
                 ) : (
                     <>
-                        <ListLabel>DRRMO office</ListLabel>
-                        <ul>
+                        <SectionLabel>DRRMO office</SectionLabel>
+                        <ul className={card}>
                             <ChatRow
                                 to={`${BASE}/office`}
                                 avatar={<ChatAvatar office />}
@@ -144,10 +160,14 @@ function ChatList() {
                             />
                         </ul>
 
-                        <ListLabel>Direct messages</ListLabel>
-                        {chats.isPending && <ListSkeleton />}
+                        <SectionLabel>Direct messages</SectionLabel>
+                        {chats.isPending && (
+                            <div className={card}>
+                                <ListSkeleton />
+                            </div>
+                        )}
                         {chats.isError && (
-                            <div className="space-y-3 px-4 pb-4">
+                            <div className="space-y-3 md:px-4 md:pb-4">
                                 <Alert tone="error">
                                     Your chats did not load. Check your connection and try again.
                                 </Alert>
@@ -162,12 +182,12 @@ function ChatList() {
                             </div>
                         )}
                         {chats.isSuccess && rows.length === 0 && (
-                            <p className="px-4 pb-6 text-sm text-pretty text-stone-600">
+                            <p className="rounded-card bg-white p-4 text-sm text-pretty text-stone-600 ring-1 ring-stone-200 md:rounded-none md:bg-transparent md:px-4 md:pt-0 md:pb-6 md:ring-0">
                                 No chats yet. Search for a name above to message a teammate.
                             </p>
                         )}
                         {rows.length > 0 && (
-                            <ul className="divide-y divide-stone-100">
+                            <ul className={`divide-y divide-stone-100 ${card}`}>
                                 {rows.map((c) => (
                                     <ChatRow
                                         key={c.person.id}
@@ -208,7 +228,7 @@ export function MessagesHub() {
     return (
         // Fills the screen between the top bar and the tab bar. On phones it runs edge to edge.
         <div className="-mx-6 -mt-6 -mb-8 flex h-[calc(100dvh-8rem-env(safe-area-inset-bottom))] min-h-80 flex-col md:mx-0 md:mt-0 md:mb-0 md:h-[calc(100dvh-10.5rem)]">
-            <ChatFrame open={open} list={<ChatList />} listLabel="Chats">
+            <ChatFrame open={open} list={<ChatList />} listLabel="Chats" quiet>
                 <Outlet />
             </ChatFrame>
         </div>

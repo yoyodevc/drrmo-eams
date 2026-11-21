@@ -1,6 +1,6 @@
 // The first screen while the app checks who is signed in. The page itself paints the boot screen
-// (#boot in resources/views/app.blade.php), so there is no white flash before the JS arrives. In the
-// installed app it continues Android's maroon splash. This file decides when it fades away.
+// (#boot in resources/views/app.blade.php), so there is no white flash before the JS arrives. It
+// continues Android's splash on the same off-white. This file decides when it fades away.
 import { useEffect, useState } from 'react';
 
 // How many BootScreens are mounted. The page's boot screen stays while any one is.
@@ -26,7 +26,7 @@ export function BootRelease() {
 }
 
 // Shown while the signed-in check runs. On the first load it keeps the page's boot screen up. Later
-// (after signing in again, say) it draws the same light screen itself.
+// (after signing in again, say) it draws the same screen itself.
 export function BootScreen() {
     const [pageBoot] = useState(() => document.getElementById('boot') !== null);
 

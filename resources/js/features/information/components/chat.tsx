@@ -90,19 +90,25 @@ export function ChatAvatar({
 
 // The list on the left and the open chat on the right. Below 768 px only one shows: the list, or
 // the chat once one is open. From 768 px both sit in one white panel.
+// `quiet` leaves the list on the page background below 768 px, so the phone Messages tab can draw
+// white cards like the other tabs.
 export function ChatFrame({
     open,
     list,
     listLabel,
+    quiet = false,
     children,
 }: {
     open: boolean;
     list: ReactNode;
     listLabel: string;
+    quiet?: boolean;
     children: ReactNode;
 }) {
     return (
-        <div className="flex min-h-0 flex-1 overflow-hidden bg-white md:rounded-card md:ring-1 md:ring-stone-200">
+        <div
+            className={`flex min-h-0 flex-1 overflow-hidden md:rounded-card md:bg-white md:ring-1 md:ring-stone-200 ${quiet ? '' : 'bg-white'}`}
+        >
             <aside
                 aria-label={listLabel}
                 className={`min-h-0 w-full shrink-0 flex-col border-stone-200 md:flex md:w-80 md:border-r lg:w-96 ${open ? 'hidden' : 'flex'}`}
@@ -265,7 +271,7 @@ export function SearchField({
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    className={`block min-h-12 w-full rounded-control border border-stone-300 bg-stone-50 pr-12 pl-11 text-base text-stone-900 transition-colors placeholder:text-stone-500 hover:border-stone-400 focus:border-maroon-700 focus:bg-white focus:ring-3 focus:ring-maroon-700/15 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none ${dense ? 'md:min-h-10 md:pr-10 md:pl-9 md:text-sm' : ''}`}
+                    className={`block min-h-12 w-full rounded-control border border-stone-300 bg-white pr-12 pl-11 shadow-xs md:bg-stone-50 md:shadow-none text-base text-stone-900 transition-colors placeholder:text-stone-500 hover:border-stone-400 focus:border-maroon-700 focus:bg-white focus:ring-3 focus:ring-maroon-700/15 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none ${dense ? 'md:min-h-10 md:pr-10 md:pl-9 md:text-sm' : ''}`}
                 />
                 {value !== '' && (
                     <button

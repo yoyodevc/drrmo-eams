@@ -488,9 +488,9 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Paper: Chapter 4 (mobile access)
 
 ### Launch screen, quieter phone pages and dated alerts (core, information, notifications)
-- What was built: the installed app opens on a maroon splash with the DRRMO shield, and the page keeps the same screen (with a thin loading bar and the office name) until the app knows who is signed in, then fades into it. No white flash. A browser tab gets a light version of the same screen
-- What was built: the phone Memos list and memo page use the quieter Reports style: hairline rows, small gray icons, and a pale chip for the chosen category. The gradient line above titles is gone from all phone pages
+- What was built: the installed app opens on an off-white splash with the DRRMO shield and no box around it. The page keeps the same screen (with a thin loading bar and the office name) until the app knows who is signed in, then fades into it. No white flash
+- What was built: the phone Memos list and memo page use the quieter Reports style: hairline rows, small gray icons, and a pale chip for the chosen category. The gradient line above titles is gone from all phone pages. The phone Messages list now has the same page margins, gray section labels and white cards as the other tabs, instead of running edge to edge
 - What was built: Alerts opens each day with a calendar tile, the day's name and its full date, so Today and Yesterday still show the date. Times are darker and easier to read
-- Decision and why: the boot screen is plain CSS in the page, not part of the app bundle, so it paints before the JS loads. The maskable icon now has a maroon field, so Android 12 and later show the shield on maroon with no white circle
+- Decision and why: the boot screen is plain CSS in the page, not part of the app bundle, so it paints before the JS loads. The icons now have a transparent or off-white field that matches the splash color exactly. A maroon splash was tried first, but an installed app keeps its old splash color until Android refreshes it, which left a maroon box on a light screen
 - Evidence: type check, lint and the format tests pass
 - Paper: Chapter 4 (mobile access)

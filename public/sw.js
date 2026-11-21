@@ -1,6 +1,6 @@
 // App shell cache only. Never caches /api, so no personal data is stored by the service worker.
 const SHELL = 'eams-shell-v1';
-const ASSETS = 'eams-assets-v2';
+const ASSETS = 'eams-assets-v3';
 
 self.addEventListener('install', () => self.skipWaiting());
 
