@@ -312,14 +312,14 @@ Goal: urgent things reach people who are not looking at the app. This replaces S
 - On iPhone it works only for an installed PWA (Add to Home Screen, iOS 16.4 or later), and only after the person allows it from a tap.
 - A web push cannot play a custom sound. It uses the phone's default notification sound and obeys silent mode and Do Not Disturb. We cannot override that.
 - A custom alarm sound and vibration pattern can only play while the app is open, and the browser needs one prior tap on the page to allow audio.
+- Partial answer for Android: the push can use a vibration pattern and `requireInteraction` so it stays on screen until dismissed. A real custom alarm sound with the app closed needs a native wrapper (Capacitor, or a TWA with its own notification channel). That is a bigger step, not in M7, kept under Later.
 - So the real promise is: a push wakes the phone, and the app plays the alarm once it is opened or already open. Marshals should be told to keep the app installed and notifications allowed. This goes in the S6.6 field test notes.
 
 **Which events are urgent and which are normal**
-- Urgent (high priority push, repeating alarm in the app until acknowledged): `emergency.reported`, `emergency.reminder` (unacknowledged after 2 minutes), `emergency.escalated`, `report.missed`, urgent memos and urgent messages.
+- Urgent (high priority push, repeating alarm in the app until acknowledged): `emergency.reported`, `emergency.reminder` (unacknowledged after 2 minutes), `emergency.escalated`, `report.missed`. Decided: memos and messages have no urgent flag, so they stay normal.
 - Important (push, short in app chime): `report.overdue`, `report.due`, `assignment.created`, `assignment.changed`, `assignment.cancelled`.
-- Normal (in app and email only, no push by default): `report.reminder`, `reminder.evening`, `reminder.hour`, `consent.withdrawn`, ordinary messages.
+- Normal (in app and email only, no push by default): `report.reminder`, `reminder.evening`, `reminder.hour`, `consent.withdrawn`, memos and messages.
 - The level is a method on the `NotificationType` enum (`urgency()`), so other modules need no extra code.
-- Open question: memos and messages have no urgent flag today. S7.3 adds a simple urgent tick box when an admin sends, if the owner agrees.
 
 **S7.1 Push subscriptions and service worker** `core` `both` **M**
 - Table `push_subscriptions` (user_id, endpoint, public key, auth token, device label, last_used_at). One row for each device. Unique on endpoint. Index on user_id. Migration prefix next to Notifications.
@@ -338,24 +338,24 @@ Goal: urgent things reach people who are not looking at the app. This replaces S
 **S7.3 Urgent and normal alerts wired in** `notifications` `both` **M**
 - Add `urgency()` to `NotificationType` and map the events above.
 - The existing jobs need no change. `RemindEmergencies` (2 minutes), `EscalateEmergencies`, `SendReportReminders`, `MarkMissedReports`, `MarkOverdueReports` and the assignment notifier already call `AlertSender`.
-- Optional urgent flag on memos and messages. Push goes to the recipients only.
 - Tests: one for each urgency level, push skipped when muted, push skipped when there is no subscription.
 
 **S7.4 In app sound and vibration** `core` `mobile` **M**
 - A small client module watches for new alerts (existing polling, a shorter interval for urgent) and plays a sound, plus `navigator.vibrate` where allowed (Android only, not iPhone).
-- Urgent: repeating alarm until the person taps Acknowledge or Dismiss. Important: one short chime. Normal: silent.
-- Audio is unlocked by a one tap "Turn on alert sound" step after login. Sound files are short, small, in `public/sounds`, free or self made only.
+- Urgent push: Android vibration pattern and `requireInteraction` (stays until dismissed).
+- Urgent in app: repeating alarm until the person taps Acknowledge or Dismiss. Important: one short chime. Normal: silent.
+- Audio is unlocked by a one tap "Turn on alert sound" step after login. Sound files are short, small, in `public/sounds`, free or self made only. Decided: two short tones, an alarm and a chime.
 - Admin desktop screens play the urgent alarm for new emergencies while the page is open.
 - Design thread (UI) for the banner and the alarm screen.
 
 **S7.5 Opt in screen, mute and quiet hours** `notifications` `mobile` **M**
 - Settings screen: Turn on alerts on this device (browser permission is asked only after a tap, with a plain explanation first), devices list, test button.
 - iPhone not installed: show "Add to Home Screen first" steps instead of the button.
-- Mute sound, mute push for normal and important alerts, and quiet hours (for example 10 PM to 6 AM) stored on the user. Urgent emergencies ignore quiet hours for marshals and reviewers on duty, and the screen says so plainly.
+- Mute sound, mute push for normal and important alerts, and quiet hours (for example 10 PM to 6 AM) stored on the user. Decided: urgent emergencies ignore quiet hours for everyone who gets them, and the screen says so plainly.
 - Turning push on or off is audited through the Records `AuditLogger`.
 
 **S7.6 Push test and field check** `core` `both` **S**
-- HTTPS is required, so test through the Cloudflare tunnel URL (desktop Chrome also allows localhost). The VAPID subject is the tunnel or real site address.
+- HTTPS is required. Decided: set up a stable Cloudflare tunnel (a named tunnel with a fixed hostname, not a quick one that changes) first, test on it, and change to the real domain later. Changing the domain means new subscriptions, so people turn alerts on again. Desktop Chrome also allows localhost. The VAPID subject is the tunnel address for now.
 - Checklist: Android Chrome in background, Android app closed, iPhone installed PWA, iPhone browser tab (should show the install hint), silent mode, Do Not Disturb, quiet hours, expired subscription cleanup. Results go into DEV_LOG and the S6.6 notes.
 
 **Audit and privacy**
@@ -364,15 +364,17 @@ Goal: urgent things reach people who are not looking at the app. This replaces S
 - Subscriptions are personal data. They are included in My data export (S6.2) and deleted with the account.
 - Add a line to the privacy notice that alerts may be sent to the person's device if they allow it.
 
-**Decisions for the owner**
-- Is an urgent flag on memos and messages wanted, or only emergencies and reports?
-- Should urgent emergency alerts ignore quiet hours for marshals and reviewers? Recommended yes.
-- Which sound files? Recommended two short free tones (alarm and chime).
-- Is the Cloudflare tunnel URL stable enough for iPhone testing, or does that wait for S6.5 production?
-- Are the limits acceptable (no custom sound while the app is closed)?
-
+**Decisions (answered by the owner)**
+- Only emergencies and reports are urgent. No urgent flag on memos or messages.
+- Urgent emergencies ignore quiet hours.
+- Two short free tones: alarm and chime.
+- Stable tunnel for testing now, real domain later.
+- No custom sound with the app closed on the web. Vibration and stay on screen are used instead. A native wrapper is a possible later story.
 
 ## Later
+
+**Native alert wrapper** `core` `mobile` **L**
+- Capacitor or a TWA with its own Android notification channel, for a real custom alarm sound with the app closed. Only if the field test (S6.6) shows web push is not enough.
 
 **Improve the overall site report logic** `monitoring` `both` **TBD**
 - Done (site report rework, 3 steps). Emergency reports (type, note, photo, place from the latest ping, sent, acknowledged, resolved, escalated after 5 minutes, offline queue). Two global reviewer marshals set by an admin. Reminders 15 minutes before and at the due time, a reminder for unacknowledged emergencies, and a missed state 60 minutes after the due time. Emergencies on the report form, one Reports page with needs attention, and audit of report views.
