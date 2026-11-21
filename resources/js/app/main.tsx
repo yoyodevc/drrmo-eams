@@ -29,3 +29,10 @@ if (container) {
         </StrictMode>,
     );
 }
+
+// App shell cache so the app installs to the home screen. Production builds only.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        void navigator.serviceWorker.register('/sw.js');
+    });
+}

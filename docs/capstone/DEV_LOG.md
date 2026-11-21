@@ -480,3 +480,9 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: each job lives in the module that owns the table, so no module deletes another module's rows
 - Evidence: new Pest tests cover the export (own data only, audited, forbidden when signed out) and the three prune jobs. Retention periods for non-ping data still need owner confirmation
 - Paper: Chapter 4 (records and privacy)
+
+### PWA install (core)
+- What was built: the app has a web manifest, icons (192, 512 and a maskable one) and a small service worker, so it can be installed on Android Chrome and added to the Home Screen on iPhone. It opens full screen with the maroon theme color
+- Decision and why: the service worker caches only the app shell (the page, built files and brand images). It never caches `/api`, so no personal data is stored on the phone by it. It registers in production builds only
+- Evidence: checked the manifest and service worker on a production build served through an https tunnel
+- Paper: Chapter 4 (mobile access)
