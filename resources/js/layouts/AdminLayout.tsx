@@ -5,6 +5,7 @@ import { useMe } from '@/app/auth';
 import { useInboxUnread, useMyUnreadMessages } from '@/features/information/messages';
 import { useOpenEmergencies } from '@/features/monitoring/hooks/useOpenEmergencies';
 import { EmergencyAlertBanner } from '@/features/notifications/components/EmergencyAlertBanner';
+import { AlertSoundWatcher } from '@/features/notifications/components/AlertSoundWatcher';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
 import { BrandLogos } from '@/shared/ui/BrandLogos';
@@ -385,6 +386,27 @@ function Account({ rail = false }: { rail?: boolean }) {
         return (
             <div className="border-t border-white/10 px-3 py-4">
                 {me && <div className="mb-2 flex items-center gap-3 px-3">{person}</div>}
+                <NavLink
+                    to="/admin/alert-settings"
+                    className="mb-1 flex h-12 w-full items-center gap-3 rounded-control px-3 text-base font-medium text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white"
+                >
+                    <span className="text-white/55">
+                        <svg
+                            viewBox="0 0 24 24"
+                            className="size-5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={1.8}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z" />
+                            <path d="M10 20a2 2 0 0 0 4 0" />
+                        </svg>
+                    </span>
+                    Alert settings
+                </NavLink>
                 <SignOutButton className="flex h-12 w-full items-center gap-3 rounded-control px-3 text-base font-medium text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white">
                     <span className="text-white/55">{signOutIcon}</span>
                     Sign out
@@ -397,6 +419,26 @@ function Account({ rail = false }: { rail?: boolean }) {
         <div className="border-t border-white/10 p-3">
             <div className="flex items-center gap-3 px-3 py-1 max-lg:flex-col max-lg:px-0">
                 {person}
+                <NavLink
+                    to="/admin/alert-settings"
+                    className="group relative inline-flex size-9 shrink-0 items-center justify-center rounded-control text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        className="size-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z" />
+                        <path d="M10 20a2 2 0 0 0 4 0" />
+                    </svg>
+                    <span className="sr-only">Alert settings</span>
+                    <Tip always>Alert settings</Tip>
+                </NavLink>
                 <SignOutButton className="group relative inline-flex size-9 shrink-0 items-center justify-center rounded-control text-white/60 transition-colors hover:bg-white/10 hover:text-white">
                     {signOutIcon}
                     <span className="sr-only">Sign out</span>
@@ -512,6 +554,7 @@ export function AdminLayout() {
                 className="min-w-0 flex-1 px-6 py-6 outline-none lg:px-10 lg:py-8"
             >
                 <EmergencyAlertBanner to="/admin/reports/emergencies" />
+                <AlertSoundWatcher to="/admin/reports/emergencies" />
                 <Guarded />
             </main>
         </div>

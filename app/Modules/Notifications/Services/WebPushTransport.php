@@ -24,13 +24,15 @@ class WebPushTransport implements PushTransport
                 'subject' => (string) config('webpush.subject'),
                 'publicKey' => (string) config('webpush.public_key'),
                 'privateKey' => (string) config('webpush.private_key'),
-            ]], ['TTL' => $urgent ? 600 : 3600, 'urgency' => $urgent ? 'high' : 'normal'], 15);
+            ]], ['TTL' => $urgent ? 600 : 3600, 'urgency' => $urgent ? 'high' : 'normal']);
 
             $report = $client->sendOneNotification(
                 Subscription::create(['endpoint' => $subscription->endpoint, 'publicKey' => $subscription->public_key, 'authToken' => $subscription->auth_token]),
                 json_encode($payload, JSON_THROW_ON_ERROR),
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            report($e);
+
             return 'failed';
         }
 

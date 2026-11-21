@@ -52,6 +52,7 @@ Notes:
   - `memos.view`, `messages.use` and `profile.own` belong to every role, so nobody loses the basics.
 - **No escalation.** A person can give someone a role, or change the role of someone, only when they already hold every admin permission in that role. So a person with `people.manage` from a grant or a custom role can add volunteers but cannot create, edit or import an admin, or anyone in a role above their own. Only Admin holds `access.manage`, so only an admin edits roles or moves people between them.
 - **Nobody changes their own role**, so an admin cannot lock themselves out. Moving people out of Admin is refused if no active admin would remain.
+- **Alerts audit:** `push.enabled` and `push.disabled` (a device was added or removed). Push text is short and generic and never carries names, places or memo content. Push devices are personal data: they go out in My data and are deleted with the account.
 - **Audit:** `role.created`, `role.updated`, `role.deleted`, `role.permissions_changed` (with the added and removed codes) and `person.role_changed` (with before and after).
 - **Seeder:** running it again on deploy adds new permissions to the built-in roles that get them by default, and reapplies the locks. It never undoes an admin's edits or removes a custom role.
 

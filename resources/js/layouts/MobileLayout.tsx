@@ -6,6 +6,7 @@ import { useOpenEmergencies } from '@/features/monitoring/hooks/useOpenEmergenci
 import { useMyUnreadMessages } from '@/features/information/messages';
 import { useAlerts } from '@/features/notifications/unread';
 import { EmergencyAlertBanner } from '@/features/notifications/components/EmergencyAlertBanner';
+import { AlertSoundWatcher } from '@/features/notifications/components/AlertSoundWatcher';
 import { EmergencyOutboxNotice } from '@/features/monitoring/components/EmergencyOutboxNotice';
 import { SignOutButton } from '@/app/SignOutButton';
 import { BrandLink } from '@/shared/ui/BrandLink';
@@ -261,6 +262,7 @@ export function MobileLayout({ children }: { children?: ReactNode }) {
                 className="mx-auto max-w-6xl px-6 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none md:px-10 md:pt-10 md:pb-16"
             >
                 <EmergencyAlertBanner to="/me/emergencies" />
+                <AlertSoundWatcher to="/me/emergencies" />
                 <EmergencyOutboxNotice />
                 {children ?? <Outlet />}
             </main>
