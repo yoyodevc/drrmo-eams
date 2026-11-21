@@ -120,10 +120,7 @@ function Slot({
 
 function Skeleton() {
     return (
-        <div
-            aria-hidden="true"
-            className="mt-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-12"
-        >
+        <div aria-hidden="true" className="mt-8 grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
             <div className="space-y-4 rounded-card bg-white p-6 ring-1 ring-stone-200 lg:col-span-5 xl:col-span-4">
                 <div className="h-5 w-32 animate-pulse rounded bg-stone-200" />
                 <div className="h-14 animate-pulse rounded bg-stone-200" />

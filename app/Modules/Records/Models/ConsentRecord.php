@@ -8,7 +8,13 @@ use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Enums\ConsentPurpose;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property ConsentPurpose $purpose
+ * @property Carbon|null $consented_at
+ * @property Carbon|null $withdrawn_at
+ */
 class ConsentRecord extends Model
 {
     public $timestamps = false;

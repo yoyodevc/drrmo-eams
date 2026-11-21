@@ -48,3 +48,18 @@ export async function listAuditLogs(f: AuditFilters): Promise<AuditPage> {
     const qs = query.toString();
     return api<AuditPage>(`/api/audit-logs${qs ? `?${qs}` : ''}`);
 }
+
+// Asks for the signed-in person's own data and saves it as a JSON file on their phone.
+export async function downloadMyData(): Promise<void> {
+    const data = await api<unknown>('/api/me/data-export');
+    const url = URL.createObjectURL(
+        new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'my-drrmo-data.json';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}

@@ -473,3 +473,10 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: the audit viewer does not audit itself, to keep the log free of noise from people reading it
 - Evidence: new Pest tests cover the filters and the forbidden case. Full backend suite, JS suite, Pint and Larastan pass
 - Paper: Chapter 4 (records and dashboard)
+
+### My data export and retention pruning (records)
+- What was built: the phone Me tab has a "Download my data" button (S6.2). It saves the person's own profile, emergency contacts, duty assignments and consents as one JSON file. Each download is audited as `data.exported`
+- What was built: three nightly jobs prune old rows (S6.3): notifications after 6 months, audit rows after 3 years, and report photos after 1 year. A pruned photo is deleted from disk and the report stays without it. The audit prune writes one `records.pruned` row of its own
+- Decision and why: each job lives in the module that owns the table, so no module deletes another module's rows
+- Evidence: new Pest tests cover the export (own data only, audited, forbidden when signed out) and the three prune jobs. Retention periods for non-ping data still need owner confirmation
+- Paper: Chapter 4 (records and privacy)

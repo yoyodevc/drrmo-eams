@@ -64,8 +64,8 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S5.3 | Memo viewer | Done |
 | S5.4 | Messages | Done |
 | S6.1 | Audit log viewer | Done |
-| S6.2 | My data export | Not started |
-| S6.3 | Retention and pruning | Not started |
+| S6.2 | My data export | Done |
+| S6.3 | Retention and pruning | Done |
 | S6.4 | PWA install | Not started |
 | S6.4b | Web Push module | Not started |
 | S6.5 | Production deployment | Not started |

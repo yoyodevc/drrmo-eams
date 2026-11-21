@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Records\Http\Controllers\AuditLogController;
 use App\Modules\Records\Http\Controllers\LocationConsentController;
+use App\Modules\Records\Http\Controllers\MyDataExportController;
 use App\Modules\Records\Http\Controllers\PrivacyConsentController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,3 +13,5 @@ Route::post('/consent/location', [LocationConsentController::class, 'store']);
 Route::delete('/consent/location', [LocationConsentController::class, 'destroy']);
 
 Route::get('/audit-logs', [AuditLogController::class, 'index']);
+
+Route::get('/me/data-export', MyDataExportController::class);

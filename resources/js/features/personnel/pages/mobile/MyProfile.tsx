@@ -6,7 +6,7 @@ import { Link } from 'react-router';
 import { hasAdminAccess } from '@/app/adminAccess';
 import { useMe } from '@/app/auth';
 import { SignOutButton } from '@/app/SignOutButton';
-import { withdrawLocationConsent } from '@/features/records/api';
+import { downloadMyData, withdrawLocationConsent } from '@/features/records/api';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
@@ -124,6 +124,52 @@ function StopLocationConsent() {
                 onConfirm={() => void stop()}
                 onCancel={() => setAsking(false)}
             />
+        </section>
+    );
+}
+
+function DownloadMyData() {
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    async function download() {
+        setSaving(true);
+        setError(null);
+        try {
+            await downloadMyData();
+        } catch {
+            setError('Could not download your data. Check your connection and try again.');
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <section aria-labelledby="me-data" className="mt-8">
+            <h2
+                id="me-data"
+                className="text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase"
+            >
+                Your data
+            </h2>
+            <p className="mt-2 text-sm text-pretty text-stone-600">
+                Download your profile, emergency contacts, duty assignments and consents as one
+                file.
+            </p>
+            <Button
+                variant="secondary"
+                block
+                className="mt-3"
+                disabled={saving}
+                onClick={() => void download()}
+            >
+                {saving ? 'Preparing...' : 'Download my data'}
+            </Button>
+            {error && (
+                <p role="alert" className="mt-2 text-sm text-red-700">
+                    {error}
+                </p>
+            )}
         </section>
     );
 }
@@ -260,6 +306,8 @@ export function MyProfile() {
                     />
                 </ul>
             )}
+
+            <DownloadMyData />
 
             {me?.consent.location_tracking && <StopLocationConsent />}
 

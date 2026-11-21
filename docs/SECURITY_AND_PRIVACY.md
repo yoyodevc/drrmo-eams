@@ -65,13 +65,13 @@ Scoping rule: every list query is filtered to the user's own rows unless the use
 | Consent | Two records: privacy notice (needed to use the app), location tracking (needed to start duty). Stored with notice version, time and IP. | Planned (M2, M4) |
 | Legitimate purpose | Location is used only to coordinate safety and response during an assigned shift. Not for attendance discipline or performance rating. Written in the notice. | Policy text, needs DRRMO sign-off |
 | Proportionality, collect only what is needed | No birthdays, addresses, IDs or photos of people. Pings only while on duty. No tracking outside shifts. | Planned |
-| Retention | Pings: 10 working days. Site report photos: 1 year (assumption). Audit log: 3 years (assumption). Notifications log: 6 months (assumption). Inactive accounts: reviewed yearly. | Needs owner confirmation for non-ping items |
+| Retention | Pings: 10 working days. Site report photos: 1 year (assumption). Audit log: 3 years (assumption). Notifications log: 6 months (assumption). Inactive accounts: reviewed yearly. | Pruned nightly (S6.3). Non-ping periods still need owner confirmation |
 | Access control | Roles with an editable permission matrix, locked cells, a no escalation rule, policies, grants, scoped queries, admin-only location | Done (M2) |
 | Audit trail | See section 4 | Planned (M0 stub, M6 viewer) |
-| Right to access | `GET /api/me/data-export` gives a person their own data as JSON | Planned (M6) |
+| Right to access | `GET /api/me/data-export` gives a person their own data as JSON | Done (S6.2) |
 | Right to correct | People edit their own contact number and emergency contacts. Other corrections through the admin. | Planned (M2) |
 | Right to object or withdraw | A person can withdraw location consent. They then cannot start duty, and the admin is told so they can reassign. | Planned (M4) |
-| Security measures | HTTPS only, hashed passwords (bcrypt), private file storage, encrypted backups, least privilege on the server | Planned (M6) |
+| Security measures | HTTPS only, hashed passwords (bcrypt), private file storage, encrypted backups, least privilege on the server | Done (S6.2) |
 | Breach response | See section 7 | Procedure written, needs a named responsible person |
 | Data Protection Officer | None today. NPC Advisory 2017-01 says each government agency "shall designate a DPO" and allows a Compliance Officer for Privacy for a sub-unit under the DPO. | **Open decision for the owner** |
 

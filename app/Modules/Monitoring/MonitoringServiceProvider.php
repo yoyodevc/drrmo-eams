@@ -9,6 +9,7 @@ use App\Modules\Monitoring\Console\CreateReportSlots;
 use App\Modules\Monitoring\Console\EscalateEmergencies;
 use App\Modules\Monitoring\Console\MarkMissedReports;
 use App\Modules\Monitoring\Console\MarkOverdueReports;
+use App\Modules\Monitoring\Console\PrunePhotos;
 use App\Modules\Monitoring\Console\PurgePings;
 use App\Modules\Monitoring\Console\RemindEmergencies;
 use App\Modules\Monitoring\Models\EmergencyReport;
@@ -38,7 +39,7 @@ class MonitoringServiceProvider extends ServiceProvider
             ->response(fn () => response()->json(['message' => 'Too many reports sent. Try again in a minute.', 'code' => 'too_many_reports'], 429)));
 
         if ($this->app->runningInConsole()) {
-            $this->commands([AutoEndDuty::class, CreateReportSlots::class, EscalateEmergencies::class, MarkMissedReports::class, MarkOverdueReports::class, RemindEmergencies::class, PurgePings::class]);
+            $this->commands([AutoEndDuty::class, CreateReportSlots::class, EscalateEmergencies::class, MarkMissedReports::class, MarkOverdueReports::class, RemindEmergencies::class, PurgePings::class, PrunePhotos::class]);
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
                 $schedule->command('monitoring:auto-end-duty')->everyFiveMinutes();
                 // Every minute, so the reminders 15 minutes before and at the due time are on time.
@@ -48,6 +49,7 @@ class MonitoringServiceProvider extends ServiceProvider
                 $schedule->command('monitoring:remind-emergencies')->everyMinute();
                 $schedule->command('monitoring:escalate-emergencies')->everyMinute();
                 $schedule->command('monitoring:purge-pings')->dailyAt('02:00');
+                $schedule->command('monitoring:prune-photos')->dailyAt('02:45');
             });
         }
 
