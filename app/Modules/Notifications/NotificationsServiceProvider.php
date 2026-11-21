@@ -9,20 +9,25 @@ use App\Modules\Monitoring\Events\EmergencyReminder;
 use App\Modules\Monitoring\Events\EmergencyReported;
 use App\Modules\Monitoring\Events\ReportMissed;
 use App\Modules\Monitoring\Events\ReportOverdue;
+use App\Modules\Notifications\Console\GenerateVapidKeys;
 use App\Modules\Notifications\Console\PruneNotifications;
 use App\Modules\Notifications\Console\SendReportReminders;
 use App\Modules\Notifications\Console\SendShiftReminders;
 use App\Modules\Notifications\Contracts\AssignmentNotifier;
 use App\Modules\Notifications\Contracts\MailSender;
+use App\Modules\Notifications\Contracts\PushTransport;
 use App\Modules\Notifications\Listeners\NotifyAdminsOfOverdueReport;
 use App\Modules\Notifications\Listeners\NotifyAdminsOfWithdrawal;
 use App\Modules\Notifications\Listeners\NotifyOfEmergency;
 use App\Modules\Notifications\Listeners\NotifyOfMissedReport;
 use App\Modules\Notifications\Models\Notification;
+use App\Modules\Notifications\Models\PushSubscription;
 use App\Modules\Notifications\Policies\NotificationPolicy;
+use App\Modules\Notifications\Policies\PushSubscriptionPolicy;
 use App\Modules\Notifications\Services\LogMailSender;
 use App\Modules\Notifications\Services\PhpMailerSender;
 use App\Modules\Notifications\Services\QueuedAssignmentNotifier;
+use App\Modules\Notifications\Services\WebPushTransport;
 use App\Modules\Records\Events\LocationConsentWithdrawn;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
@@ -35,6 +40,7 @@ class NotificationsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AssignmentNotifier::class, QueuedAssignmentNotifier::class);
+        $this->app->bind(PushTransport::class, WebPushTransport::class);
         $this->app->bind(MailSender::class, function (): MailSender {
             $host = (string) config('mail.phpmailer.host');
             // Tests and the log or array mailers never reach a real mail server, even when MAIL_HOST is set.
@@ -54,8 +60,9 @@ class NotificationsServiceProvider extends ServiceProvider
         Event::listen(ReportMissed::class, NotifyOfMissedReport::class);
         $this->loadViewsFrom(__DIR__.'/Views', 'eams-notifications');
         Gate::policy(Notification::class, NotificationPolicy::class);
+        Gate::policy(PushSubscription::class, PushSubscriptionPolicy::class);
         if ($this->app->runningInConsole()) {
-            $this->commands([SendShiftReminders::class, SendReportReminders::class, PruneNotifications::class]);
+            $this->commands([SendShiftReminders::class, SendReportReminders::class, PruneNotifications::class, GenerateVapidKeys::class]);
             $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => $schedule->command('notifications:send-report-reminders')->everyMinute());
             $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => $schedule->command('notifications:prune')->dailyAt('02:15'));
             $this->callAfterResolving(Schedule::class, fn (Schedule $schedule) => $schedule->command('notifications:send-reminders')->everyFiveMinutes());
