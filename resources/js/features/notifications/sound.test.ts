@@ -92,7 +92,7 @@ describe('sound engine', () => {
     });
     afterEach(() => vi.unstubAllGlobals());
 
-    const audio = (name: string) => FakeAudio.all.find((a) => a.src.includes(name));
+    const player = () => FakeAudio.all[0];
 
     it('stays silent until unlocked, but still vibrates for an urgent alert', () => {
         sound.playChime();
@@ -102,38 +102,54 @@ describe('sound engine', () => {
         expect(sound.isUnlocked()).toBe(false);
     });
 
-    it('unlocks from a tap, then chimes once and loops the alarm until stopped', async () => {
+    it('unlocks with a real play, not a muted one, and uses a single element', async () => {
         expect(await sound.unlock()).toBe(true);
         expect(sound.isUnlocked()).toBe(true);
-        expect(audio('alarm.wav')?.loop).toBe(true);
-        expect(audio('chime.wav')?.loop).toBe(false);
-        expect(audio('alarm.wav')?.paused).toBe(true);
+        expect(FakeAudio.all).toHaveLength(1);
+        expect(player().muted).toBe(false);
+        expect(player().paused).toBe(true);
+    });
 
-        const before = audio('chime.wav')!.plays;
+    it('chimes once and loops the alarm until stopped', async () => {
+        await sound.unlock();
+        const before = player().plays;
         sound.playChime();
-        expect(audio('chime.wav')!.plays).toBe(before + 1);
+        expect(player().plays).toBe(before + 1);
+        expect(player().src).toContain('chime.wav');
+        expect(player().loop).toBe(false);
         expect(vibrate).toHaveBeenLastCalledWith([200]);
 
         sound.startAlarm();
-        expect(audio('alarm.wav')?.paused).toBe(false);
+        expect(player().src).toContain('alarm.wav');
+        expect(player().loop).toBe(true);
+        expect(player().paused).toBe(false);
         expect(sound.isAlarmPlaying()).toBe(true);
         sound.stopAlarm();
-        expect(audio('alarm.wav')?.paused).toBe(true);
+        expect(player().paused).toBe(true);
         expect(sound.isAlarmPlaying()).toBe(false);
         expect(vibrate).toHaveBeenLastCalledWith(0);
     });
 
-    it('stays locked when the browser refuses playback', async () => {
-        class Refusing extends FakeAudio {
+    it('stays locked when the browser refuses playback, and can retry on the next tap', async () => {
+        let allow = false;
+        class Picky extends FakeAudio {
             play() {
-                return Promise.reject(new Error('NotAllowedError'));
+                return allow ? super.play() : Promise.reject(new Error('NotAllowedError'));
             }
         }
-        vi.stubGlobal('Audio', Refusing);
+        vi.stubGlobal('Audio', Picky);
         vi.resetModules();
         const fresh = await import('./sound');
         expect(await fresh.unlock()).toBe(false);
         expect(fresh.isUnlocked()).toBe(false);
+        allow = true;
+        expect(await fresh.unlock()).toBe(true);
+    });
+
+    it('shares one attempt between a touchend and a click from the same tap', async () => {
+        const both = await Promise.all([sound.unlock(), sound.unlock()]);
+        expect(both).toEqual([true, true]);
+        expect(player().plays).toBe(1);
     });
 
     it('tells listeners when sound unlocks', async () => {

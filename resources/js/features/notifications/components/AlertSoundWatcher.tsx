@@ -56,12 +56,17 @@ export function AlertSoundWatcher({ to }: { to: string }) {
     const ringKey = ringing.map((a) => a.id).join(',');
     const chimeKey = chimes.join(',');
 
-    // Any tap on the page allows sound, so the banner is only a reminder.
+    // A real tap on the page allows sound, so the banner is only a reminder. iPhones count a finished
+    // touch or a click, not a scroll, so keep listening until one of those works.
     useEffect(() => {
         if (unlocked) return;
         const tap = () => void unlock();
-        window.addEventListener('pointerdown', tap, { once: true });
-        return () => window.removeEventListener('pointerdown', tap);
+        window.addEventListener('touchend', tap);
+        window.addEventListener('click', tap);
+        return () => {
+            window.removeEventListener('touchend', tap);
+            window.removeEventListener('click', tap);
+        };
     }, [unlocked]);
 
     // A push arrived while the app is on screen: look for the alert now, not in 30 seconds.
