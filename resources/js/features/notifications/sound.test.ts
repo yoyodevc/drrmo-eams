@@ -152,6 +152,19 @@ describe('sound engine', () => {
         expect(player().plays).toBe(1);
     });
 
+    it('plays from a local copy once the files are preloaded', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(() => Promise.resolve(new Response(new Blob(['x']), { status: 200 }))),
+        );
+        URL.createObjectURL = vi.fn(() => 'blob:local-file');
+        await sound.preloadSounds();
+        await sound.unlock();
+        expect(player().src).toBe('blob:local-file');
+        sound.startAlarm();
+        expect(sound.isAlarmPlaying()).toBe(true);
+    });
+
     it('tells listeners when sound unlocks', async () => {
         const listener = vi.fn();
         sound.subscribeSound(listener);

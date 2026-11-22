@@ -30,6 +30,23 @@ const CHIME = '/sounds/chime.wav';
 const ALARM = '/sounds/alarm.wav';
 let player: HTMLAudioElement | null = null;
 let current = '';
+// iPhones refuse to play a media file from a server that does not answer byte range requests (the
+// built in PHP server, some proxies). A local blob copy always works, so load the files up front.
+const blobs = new Map<string, string>();
+
+export async function preloadSounds(): Promise<void> {
+    await Promise.all(
+        [CHIME, ALARM].map(async (src) => {
+            if (blobs.has(src)) return;
+            try {
+                const response = await fetch(src);
+                if (response.ok) blobs.set(src, URL.createObjectURL(await response.blob()));
+            } catch {
+                // Offline or blocked: the plain address is used instead.
+            }
+        }),
+    );
+}
 let unlocked = false;
 const listeners = new Set<() => void>();
 
@@ -39,10 +56,11 @@ function emit(): void {
 
 function load(src: string, loop: boolean): HTMLAudioElement | null {
     if (typeof Audio === 'undefined') return null;
-    player ??= new Audio(src);
-    if (current !== src) {
-        player.src = src;
-        current = src;
+    const url = blobs.get(src) ?? src;
+    player ??= new Audio(url);
+    if (current !== url) {
+        player.src = url;
+        current = url;
     }
     player.loop = loop;
     player.preload = 'auto';
@@ -105,7 +123,7 @@ export function startAlarm(): void {
 }
 
 export function stopAlarm(): void {
-    if (player && current === ALARM) {
+    if (player && current === (blobs.get(ALARM) ?? ALARM)) {
         player.pause();
         player.currentTime = 0;
     }
@@ -113,7 +131,7 @@ export function stopAlarm(): void {
 }
 
 export function isAlarmPlaying(): boolean {
-    return player !== null && current === ALARM && !player.paused;
+    return player !== null && current === (blobs.get(ALARM) ?? ALARM) && !player.paused;
 }
 
 function vibrate(pattern: number | number[]): void {

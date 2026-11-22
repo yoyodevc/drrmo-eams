@@ -16,6 +16,7 @@ import {
     playChime,
     startAlarm,
     stopAlarm,
+    preloadSounds,
     subscribeSound,
     unlock,
     urgencyOf,
@@ -69,6 +70,11 @@ export function AlertSoundWatcher({ to }: { to: string }) {
             window.removeEventListener('click', tap);
         };
     }, [unlocked]);
+
+    // Fetch the two sound files now so a tap can play them at once (see sound.ts).
+    useEffect(() => {
+        void preloadSounds();
+    }, []);
 
     // After the app opens, quietly restore alerts on this device if the person had them on before.
     const restored = useRef(false);
