@@ -65,7 +65,7 @@ Each module gets a fixed timestamp prefix so parallel sessions never collide and
 | 3 | `2026_01_01_3000xx` | Events | duty_types, campus_locations, events, event_duty_requirements, assignments |
 | 4 | `2026_01_01_3500xx` | Access | refresh_tokens (needs users), permission_grants (needs events) |
 | 5 | `2026_01_01_4000xx` | Monitoring | location_pings, site_reports, emergency_reports, report_reviewers |
-| 6 | `2026_01_01_5000xx` | Notifications | notifications (needs assignments, site_reports) |
+| 6 | `2026_01_01_5000xx` | Notifications | notifications (needs assignments, site_reports), `500005` push_subscriptions (one row for each device, unique on a hash of the endpoint), `500006` alert_preferences (mute and quiet hours for each person) |
 | 7 | `2026_01_01_6000xx` | Information | memos, messages |
 | 8 | `2026_01_01_7000xx` | Records | audit_logs, consent_records |
 

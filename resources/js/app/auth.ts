@@ -1,4 +1,5 @@
 // Who is signed in. Calls /api/me, /api/login and /api/logout (Core).
+import { forgetThisDevice } from '@/features/notifications/push';
 import { useEffect } from 'react';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
@@ -161,6 +162,8 @@ export function useAuthActions() {
     // The one sign out path. Only a 401 or 419 means "already signed out". Any other failure
     // keeps the person signed in and is thrown, so the button can say so.
     async function logout(): Promise<void> {
+        // This device stops getting alerts for the person who is leaving. Needs the session, so first.
+        await forgetThisDevice();
         blockRefresh(true);
         try {
             await api('/api/logout', { method: 'POST' });

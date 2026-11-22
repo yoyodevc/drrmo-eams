@@ -70,12 +70,12 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 | S6.4b | Web Push module | Replaced by M7 |
 | S6.5 | Production deployment | Not started |
 | S6.6 | Field test | Not started |
-| S7.1 | Push subscriptions and service worker | Not started |
-| S7.2 | Pusher send function and Laravel channel | Not started |
-| S7.3 | Urgent and normal alerts wired in | Not started |
-| S7.4 | In app sound and vibration | Not started |
-| S7.5 | Opt in screen, mute and quiet hours | Not started |
-| S7.6 | Push test and field check | Not started |
+| S7.1 | Push subscriptions and service worker | Done |
+| S7.2 | Pusher send function and Laravel channel | Done |
+| S7.3 | Urgent and normal alerts wired in | Done |
+| S7.4 | In app sound and vibration | Done |
+| S7.5 | Opt in screen, mute and quiet hours | Done |
+| S7.6 | Push test and field check | Local test done, phone check with owner |
 
 
 ---
