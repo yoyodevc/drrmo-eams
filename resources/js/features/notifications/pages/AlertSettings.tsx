@@ -617,16 +617,18 @@ export function AlertSettings() {
                                 }
                             />
                             {quietOn && (
-                                <div className="grid grid-cols-1 gap-3 border-t border-stone-100 px-4 pt-3 pb-4 min-[400px]:grid-cols-2 md:px-5 lg:grid-cols-[repeat(2,minmax(0,13rem))]">
+                                <div className="grid grid-cols-1 gap-3 border-t border-stone-100 px-4 pt-3 pb-4 sm:grid-cols-2 md:px-5 lg:grid-cols-[repeat(2,minmax(0,13rem))]">
                                     {(
                                         [
                                             ['From', 'quiet_start'],
                                             ['To', 'quiet_end'],
                                         ] as const
                                     ).map(([label, field]) => (
+                                        // iOS Safari gives time fields a fixed native width and centers
+                                        // the value. min-w-0 and appearance-none let them fit.
                                         <label
                                             key={field}
-                                            className="text-sm font-medium text-stone-800"
+                                            className="block min-w-0 text-sm font-medium text-stone-800"
                                         >
                                             {label}
                                             <input
@@ -638,7 +640,7 @@ export function AlertSettings() {
                                                         [field]: e.target.value,
                                                     } as Partial<Settings>)
                                                 }
-                                                className="mt-1 block min-h-12 w-full rounded-control border border-stone-300 bg-white px-3 text-base text-stone-900 tabular-nums focus:border-maroon-600 focus:outline-2 focus:outline-offset-0 focus:outline-maroon-600/30"
+                                                className="mt-1 block h-12 w-full max-w-full min-w-0 appearance-none rounded-control border border-stone-300 bg-white px-3 text-base text-stone-900 tabular-nums focus:border-maroon-600 focus:outline-2 focus:outline-offset-0 focus:outline-maroon-600/30 [&::-webkit-date-and-time-value]:text-left [&::-webkit-date-and-time-value]:leading-[2.875rem]"
                                             />
                                         </label>
                                     ))}
