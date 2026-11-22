@@ -98,10 +98,12 @@ export async function enablePush(publicKey: string): Promise<void> {
             applicationServerKey: keyToBytes(publicKey),
         }));
     await subscribePush(sub.toJSON(), deviceLabel());
+    setOptIn(true);
 }
 
 // Turns alerts off for this device: the server forgets it and the browser drops it.
 export async function disablePush(): Promise<void> {
+    setOptIn(false);
     const sub = await currentSubscription();
     if (!sub) return;
     await unsubscribePush(sub.endpoint);
@@ -115,5 +117,64 @@ export async function forgetThisDevice(): Promise<void> {
         await disablePush();
     } catch {
         // The server row is removed on the next failed push at the latest.
+    }
+}
+
+// This device remembers that the person turned alerts on, so a lost subscription can be restored quietly.
+const OPT_IN = 'eams.push.optin';
+
+function setOptIn(on: boolean): void {
+    try {
+        if (on) localStorage.setItem(OPT_IN, '1');
+        else localStorage.removeItem(OPT_IN);
+    } catch {
+        // Private mode: nothing to remember.
+    }
+}
+
+function hasOptedIn(): boolean {
+    try {
+        return localStorage.getItem(OPT_IN) === '1';
+    } catch {
+        return false;
+    }
+}
+
+export async function endpointHash(endpoint: string): Promise<string> {
+    const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint));
+    return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Runs when the app opens. If the person turned alerts on here before and the permission is still
+// granted, make sure the browser has a subscription and the server knows it. Never asks permission.
+// Returns true when something was restored.
+export async function restorePush(
+    publicKey: string | null,
+    knownHashes: string[],
+): Promise<boolean> {
+    try {
+        if (!publicKey || pushSupport() !== 'ready' || Notification.permission !== 'granted')
+            return false;
+        // A device that already works counts as opted in (it was turned on before this was remembered).
+        const existing = await currentSubscription();
+        if (existing && knownHashes.includes(await endpointHash(existing.endpoint))) {
+            setOptIn(true);
+            return false;
+        }
+        if (!hasOptedIn()) return false;
+        const reg = await registration();
+        if (!reg) return false;
+        await navigator.serviceWorker.ready;
+        const sub =
+            (await reg.pushManager.getSubscription()) ??
+            (await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: keyToBytes(publicKey),
+            }));
+        if (knownHashes.includes(await endpointHash(sub.endpoint))) return false;
+        await subscribePush(sub.toJSON(), deviceLabel());
+        return true;
+    } catch {
+        return false;
     }
 }

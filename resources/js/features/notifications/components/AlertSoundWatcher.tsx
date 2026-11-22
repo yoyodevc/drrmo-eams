@@ -20,6 +20,7 @@ import {
     unlock,
     urgencyOf,
 } from '../sound';
+import { restorePush } from '../push';
 import { AlarmScreen } from './AlarmScreen';
 import { SoundUnlockBanner } from './SoundUnlockBanner';
 
@@ -68,6 +69,20 @@ export function AlertSoundWatcher({ to }: { to: string }) {
             window.removeEventListener('click', tap);
         };
     }, [unlocked]);
+
+    // After the app opens, quietly restore alerts on this device if the person had them on before.
+    const restored = useRef(false);
+    useEffect(() => {
+        const overview = settings.data;
+        if (!overview || restored.current) return;
+        restored.current = true;
+        void restorePush(
+            overview.public_key,
+            overview.devices.map((d) => d.endpoint_hash),
+        ).then((changed) => {
+            if (changed) void queryClient.invalidateQueries({ queryKey: ['push-overview'] });
+        });
+    }, [settings.data, queryClient]);
 
     // A push arrived while the app is on screen: look for the alert now, not in 30 seconds.
     useEffect(() => {
