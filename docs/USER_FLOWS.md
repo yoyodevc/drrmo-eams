@@ -1,6 +1,6 @@
 # User Flows
 
-These are the ten "day in the life" flows. Each one lists the device, the steps, the screens, the API calls, the permission checked, what is written, and what can go wrong. Screen names match SCREENS.md. Endpoint paths match MODULES.md.
+These are the "day in the life" flows. Each one lists the device, the steps, the screens, the API calls, the permission checked, what is written, and what can go wrong. Screen names match SCREENS.md. Endpoint paths match MODULES.md.
 
 ---
 
@@ -263,3 +263,53 @@ These are the ten "day in the life" flows. Each one lists the device, the steps,
 - Deleting a custom role that people still hold: refused until they are moved.
 - The admin tries to move themselves: refused, so nobody locks themselves out.
 - A person with `people.manage` but not `audit.view` tries to give someone the Records officer role: 403.
+
+---
+
+## Flow 12. Emergency on duty (Marshal or Volunteer, mobile, then reviewers)
+
+**Steps**
+1. A person on duty taps Report an emergency, picks medical, fire, security or other, adds a short note and an optional photo, and sends it.
+2. The place comes from the person's latest ping. If the phone is offline, the report waits on the phone and is sent when the connection returns. Sending it twice saves it once.
+3. The two reviewer marshals and the admins get an urgent alert: in app (with an alarm while the app is open), push and email. The alert text never carries names or places.
+4. A reviewer opens the emergency, sees the type, note, photo and place, and taps Acknowledge. Later they tap Resolve and add a note.
+5. If nobody acknowledges within 2 minutes the reviewers get one reminder. After 5 minutes the emergency is escalated and the admins are alerted again.
+6. The next site report form lists the emergencies since the previous report.
+
+**Screens:** M-Emergency report, M-Emergency inbox, A-Reports (Needs attention and Emergencies tabs).
+
+**API:** `POST /api/me/assignments/{assignment}/emergencies`, `GET /api/emergencies`, `GET /api/emergencies/{emergency}`, `POST /api/emergencies/{emergency}/acknowledge`, `POST /api/emergencies/{emergency}/resolve`, `GET /api/me/alerts`.
+
+**Permission:** the sender needs a live assignment on duty. Reviewers need `reports.view` (the two reviewer marshals hold it for every event, set by an admin on Report reviewers).
+
+**Written:** EMERGENCY_REPORT, NOTIFICATION (in app, email and push rows), AUDIT_LOG (`emergency.sent`, `emergency.acknowledged`, `emergency.resolved`, and a row each time a reviewer opens the place).
+
+**What can go wrong**
+- No ping yet: the report is saved without a place.
+- The phone is offline: the report is queued and a notice shows that it is still waiting.
+- Nobody is set as reviewer: the admins still get the alert.
+- Push is off on the reviewer's phone: the in app alert and the email still arrive.
+
+---
+
+## Flow 13. Turn on phone alerts (Everyone, mobile)
+
+**Steps**
+1. On an iPhone the person first adds the app to the Home Screen. Android Chrome needs nothing extra.
+2. The person opens Me, then Alerts, reads the short explanation and taps Turn on alerts on this phone. The browser asks for permission only after that tap.
+3. The same tap unlocks the alert sound inside the app.
+4. The person can send a test, mute sound or push, set quiet hours, or remove a device.
+
+**Screens:** M-Alerts settings.
+
+**API:** `GET /api/me/push`, `POST /api/push/subscribe`, `DELETE /api/push/subscribe`, `PUT /api/me/alert-settings`, `POST /api/push/test`, `DELETE /api/push/devices/{subscription}`.
+
+**Permission:** signed in. A person can only remove their own devices.
+
+**Written:** PUSH_SUBSCRIPTION, ALERT_PREFERENCE, AUDIT_LOG (`push.enabled`, `push.disabled`).
+
+**What can go wrong**
+- The browser permission is blocked: the screen explains how to allow it in the browser settings.
+- iPhone and the app is not on the Home Screen: the screen shows the Add to Home Screen steps instead of the button.
+- The push service says the device is gone: the device is removed and the person turns alerts on again.
+- Silent mode and Do Not Disturb still apply to a push. A push cannot play a custom sound.

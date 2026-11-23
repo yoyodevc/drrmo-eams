@@ -71,7 +71,7 @@ sudo mysql -e "CREATE USER 'drrmo'@'localhost' IDENTIFIED BY '<strong password>'
 sudo mysql -e "GRANT ALL ON drrmo_eams.* TO 'drrmo'@'localhost';"
 ```
 
-Shared `.env` at `/var/www/drrmo/shared/.env` (copy from `.env.example`, then change): `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://<domain>`, DB credentials, `JWT_SECURE_COOKIES=true`, `AUTH_ALLOWED_ORIGINS=https://<domain>`, a `JWT_SECRET` from `php artisan jwt:secret --show`, SMTP settings, `VITE_ARCGIS_API_KEY` if used. Run `php artisan key:generate --show` once and paste the key. `chmod 640` the file.
+Shared `.env` at `/var/www/drrmo/shared/.env` (copy from `.env.example`, then change): `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://<domain>`, DB credentials, `JWT_SECURE_COOKIES=true`, `AUTH_ALLOWED_ORIGINS=https://<domain>`, a `JWT_SECRET` from `php artisan jwt:secret --show`, SMTP settings, `VITE_ARCGIS_API_KEY` if used. Run `php artisan key:generate --show` once and paste the key. For push alerts run `php artisan push:vapid` once and paste the two `VAPID_*` lines, and set `VAPID_SUBJECT=https://<domain>`. Keep the keys: new keys make every phone turn alerts on again. The queue worker reads the `high` queue first (urgent pushes). `chmod 640` the file.
 
 Nginx, supervisor and cron: copy the files in `deploy/` to the paths written at the top of each file, then:
 
@@ -98,7 +98,7 @@ As the deploy user, with `REPO_URL` set (a read-only deploy key on the GitHub re
 REPO_URL=git@github.com:OWNER/drrmo-eams.git scripts/deploy.sh main
 ```
 
-First deploy only: `php artisan db:seed --class=ProductionSeeder --force` (roles, permissions, duty types, locations, first admin). The seeder is written in M0, story S0.3.
+First deploy only: `php artisan db:seed --force` (roles, permissions, duty types, campus locations). Starting teams come with the migrations. The first admin account has no seeder yet, so create it by hand for now (for example with `php artisan tinker`). A proper first admin step is part of story S6.5.
 
 ## 5. Rollback
 

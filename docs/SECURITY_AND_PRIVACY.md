@@ -52,6 +52,7 @@ Notes:
   - `memos.view`, `messages.use` and `profile.own` belong to every role, so nobody loses the basics.
 - **No escalation.** A person can give someone a role, or change the role of someone, only when they already hold every admin permission in that role. So a person with `people.manage` from a grant or a custom role can add volunteers but cannot create, edit or import an admin, or anyone in a role above their own. Only Admin holds `access.manage`, so only an admin edits roles or moves people between them.
 - **Nobody changes their own role**, so an admin cannot lock themselves out. Moving people out of Admin is refused if no active admin would remain.
+- **Alerts audit:** `push.enabled` and `push.disabled` (a device was added or removed). Push text is short and generic and never carries names, places or memo content. Push devices are personal data: they go out in My data and are deleted with the account.
 - **Audit:** `role.created`, `role.updated`, `role.deleted`, `role.permissions_changed` (with the added and removed codes) and `person.role_changed` (with before and after).
 - **Seeder:** running it again on deploy adds new permissions to the built-in roles that get them by default, and reapplies the locks. It never undoes an admin's edits or removes a custom role.
 
@@ -61,17 +62,17 @@ Scoping rule: every list query is filtered to the user's own rows unless the use
 
 | Principle or right | How the system handles it | Status |
 |---|---|---|
-| Transparency, privacy notice | Notice shown on first login and whenever its version changes. States purpose, data collected, who sees it, retention, contact. | Planned (M2) |
-| Consent | Two records: privacy notice (needed to use the app), location tracking (needed to start duty). Stored with notice version, time and IP. | Planned (M2, M4) |
+| Transparency, privacy notice | Notice shown on first login and whenever its version changes. States purpose, data collected, who sees it, retention, contact. | Done (S2.5) |
+| Consent | Two records: privacy notice (needed to use the app), location tracking (needed to start duty). Stored with notice version, time and IP. | Done (S2.5, S4.2) |
 | Legitimate purpose | Location is used only to coordinate safety and response during an assigned shift. Not for attendance discipline or performance rating. Written in the notice. | Policy text, needs DRRMO sign-off |
-| Proportionality, collect only what is needed | No birthdays, addresses, IDs or photos of people. Pings only while on duty. No tracking outside shifts. | Planned |
+| Proportionality, collect only what is needed | No birthdays, addresses, IDs or photos of people. Pings only while on duty. No tracking outside shifts. | Done |
 | Retention | Pings: 10 working days. Site report photos: 1 year (assumption). Audit log: 3 years (assumption). Notifications log: 6 months (assumption). Inactive accounts: reviewed yearly. | Pruned nightly (S6.3). Non-ping periods still need owner confirmation |
 | Access control | Roles with an editable permission matrix, locked cells, a no escalation rule, policies, grants, scoped queries, admin-only location | Done (M2) |
-| Audit trail | See section 4 | Planned (M0 stub, M6 viewer) |
+| Audit trail | See section 4 | Done (S6.1) |
 | Right to access | `GET /api/me/data-export` gives a person their own data as JSON | Done (S6.2) |
-| Right to correct | People edit their own contact number and emergency contacts. Other corrections through the admin. | Planned (M2) |
-| Right to object or withdraw | A person can withdraw location consent. They then cannot start duty, and the admin is told so they can reassign. | Planned (M4) |
-| Security measures | HTTPS only, hashed passwords (bcrypt), private file storage, encrypted backups, least privilege on the server | Done (S6.2) |
+| Right to correct | People edit their own contact number and emergency contacts. Other corrections through the admin. | Done (S2.3) |
+| Right to object or withdraw | A person can withdraw location consent. They then cannot start duty, and the admin is told so they can reassign. | Done (S4.2) |
+| Security measures | HTTPS only, hashed passwords (bcrypt), private file storage, encrypted backups, least privilege on the server | Passwords and private storage are done. HTTPS, backups and server setup come with S6.5 |
 | Breach response | See section 7 | Procedure written, needs a named responsible person |
 | Data Protection Officer | None today. NPC Advisory 2017-01 says each government agency "shall designate a DPO" and allows a Compliance Officer for Privacy for a sub-unit under the DPO. | **Open decision for the owner** |
 

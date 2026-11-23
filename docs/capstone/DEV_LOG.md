@@ -494,3 +494,19 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Decision and why: the boot screen is plain CSS in the page, not part of the app bundle, so it paints before the JS loads. The icons now have a transparent or off-white field that matches the splash color exactly. A maroon splash was tried first, but an installed app keeps its old splash color until Android refreshes it, which left a maroon box on a light screen
 - Evidence: type check, lint and the format tests pass
 - Paper: Chapter 4 (mobile access)
+
+### Push and sound alerts (core, notifications)
+- What was built: people can turn on phone alerts for a device from Me, then Alerts (S7.1, S7.5). A new `Pusher` sends short, generic Web Push messages through `AlertSender` (S7.2). Each alert has a level on `NotificationType`: urgent (emergencies, missed reports), important (assignments, due or overdue reports) or normal (S7.3). Urgent pushes go on a `high` queue
+- What was built: while the app is open, an urgent alert rings an alarm on a full screen card until the person opens it or dismisses it. Important alerts play one short chime. Sound unlocks with one tap (S7.4). Settings cover mute, quiet hours and a device list, and turning alerts on or off is audited (S7.5)
+- Decision and why: emergencies ignore mute and quiet hours, so nobody silences one by accident. Memos and messages are never urgent. Push text has no names, places or memo content. Mute and quiet hours live in a Notifications table so no module writes to a Personnel table. A web push cannot play a custom sound with the app closed, so urgent pushes use strong vibration and stay on screen on Android
+- Evidence: Pest tests cover levels, skip rules, forbidden removal of another person's device, and gone devices being deleted. Checked in desktop Chrome on localhost with a real push subscription: alerts turned on, a push was delivered by Google's service, and the alarm card rang and closed
+- Open: phone checks (Android background and closed, iPhone installed app, silent mode, Do Not Disturb) are with the owner (S7.6). A named Cloudflare tunnel needs the owner's Cloudflare login and domain, so testing used localhost
+- Paper: Chapter 4 (alerts and mobile access)
+
+## 2026-11-23 · Documentation refresh (core)
+- What was built: README, MODULES, DATABASE, SCREENS, USER_FLOWS, ARCHITECTURE, PLANNING_SUMMARY, PROJECT_PLAN, BACKLOG, SECURITY_AND_PRIVACY and the data dictionary and API reference appendices were checked against the code and brought up to date for M0 to M7.
+- What was built: the ERD in DATABASE.md now shows all 27 domain tables, including emergency_reports, report_reviewers, push_subscriptions, alert_preferences, refresh_tokens, teams and event_types. Two new flows (emergency on duty, turn on phone alerts) are in USER_FLOWS.md.
+- Problem met and fix: several docs still described the first plan (20 tables, Sanctum, no emergencies, no push). They were rewritten from the migrations, routes, scheduler and enums, not from the older docs.
+- Open: DEPLOYMENT.md and `.env.example` mention a ProductionSeeder and an AdminUserSeeder that do not exist, so there is no first admin step yet. It belongs to S6.5.
+- Evidence: docs only, no code changed
+- Paper: Chapter 3 (system design)
