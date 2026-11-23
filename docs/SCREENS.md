@@ -6,21 +6,34 @@ Low-fidelity descriptions only. Colors, type and components follow [DESIGN_SYSTE
 
 **AdminLayout (desktop first)**
 ```
-+-----------+---------------------------------------------+
-| DRRMO     |  Page title            [search] [user menu] |
-|           +---------------------------------------------+
-| Dashboard |                                             |
-| Events    |   Wide content: tables, map, side panels    |
-| People    |                                             |
-| Map       |                                             |
-| Reports   |                                             |
-| Memos     |                                             |
-| Messages  |                                             |
-| Access    |                                             |
-| Records   |                                             |
-+-----------+---------------------------------------------+
++---------------+-----------------------------------------+
+| DRRMO         |  Page title            [search] [user]  |
+|               +-----------------------------------------+
+| OPERATIONS    |                                         |
+|  Dashboard    |   Wide content: tables, map, side       |
+|  Events       |   panels                                |
+|  Map          |                                         |
+|  Reports      |                                         |
+| PERSONNEL     |                                         |
+|  People       |                                         |
+|  Manage lists |                                         |
+|  Access reqs  |                                         |
+| COMMUNICATION |                                         |
+|  Memos        |                                         |
+|  Notifications|                                         |
+|  Messages     |                                         |
+| ACCESS CONTROL|                                         |
+|  Roles        |                                         |
+|  Perm. matrix |                                         |
+|  Temp. access |                                         |
+|  Report review|                                         |
+| SYSTEM        |                                         |
+|  Records      |                                         |
+| ME            |                                         |
+|  My duties    |                                         |
++---------------+-----------------------------------------+
 ```
-Below 1024 px the sidebar collapses to icons. Below 768 px it becomes a top menu and tables become stacked cards (read focused).
+Each person sees only the items their permissions allow. Reports and Messages show unread or urgent badges. Below 1024 px the sidebar collapses to icons. Below 768 px it becomes a top menu and tables become stacked cards (read focused).
 
 **MobileLayout (mobile first)**
 ```
@@ -32,7 +45,7 @@ Below 1024 px the sidebar collapses to icons. Below 768 px it becomes a top menu
 |   Short list or form      |
 |                           |
 +---------------------------+
-| Duties | Memos | Msgs | Me|
+|Duties|Reports|Msgs|Memos| Me|
 +---------------------------+
 ```
 Tap targets at least 48 px. Base font 16 px, high contrast for outdoor use. On screens wider than 768 px the content sits in a centered 640 px column.
@@ -61,8 +74,12 @@ One tap starts one sign out. The label changes to "Signing out..." and the butto
 | A-Role detail | Admin | Header with name, chips and description. Edit details and Delete for custom roles. Permissions tab: switches grouped by module, each with a plain description. Locked switches show a lock and why. Turn all on per group. A sticky save bar with the change count. People tab: who holds the role, and an Add people dialog that moves people in. | Same, one column |
 | A-Permission matrix | Admin | Permissions (rows, grouped) by roles (columns) with tick boxes. Find a permission box and a legend. Changed boxes turn amber until saved. Locked boxes show a lock and the reason on hover. One sticky save bar saves every role at once. | Scrolls sideways with the permission column pinned |
 | A-Temporary access | Admin | Table of grants with Active, Upcoming, Ended and All tabs. Give access dialog: person, permission, event (optional or required), start, end, reason. End access button. | Table scrolls sideways |
-| A-Audit log | Admin | Table with filters (actor, action, entity, date). Row expands to show before and after JSON. | List only |
+| A-Records (audit log) | Admin | Table with filters (actor, action, entity, date). Row expands to show before and after JSON. | List only |
 | A-Notification log | Admin | Table: recipient, type, status, attempts, time, error. Retry button on failed rows. Daily send count against the provider limit. | List only |
+| A-Reports | Admin, report reviewers, granted users | Three tabs. Needs attention: open emergencies, overdue and missed reports, with counts for each event. Emergencies: open and past emergencies with type, person, time, place (audited) and Acknowledge and Resolve buttons. All reports: the report feed (A-Report feed). Open emergencies are never hidden. | Same tabs, one column |
+| A-Report reviewers | Admin | Under Access control. Pick up to 2 active marshals who read every site report and emergency and get the alerts. | One column |
+| A-Manage lists | Admin | One screen with four lists: teams, departments, event types and campus locations (with a map pin). Add, rename, switch off. Switched off items stay on old records. | One column |
+| A-Notifications | Admin | The notification log and, for the admin's own account, the Alerts settings page (sound, push, quiet hours, devices). | List only |
 | A-DRRMO inbox | Admin | Two panes: conversations on the left, messages on the right. | One pane at a time |
 
 ## Mobile screens (mobile first)
@@ -81,6 +98,11 @@ One tap starts one sign out. The label changes to "Signing out..." and the butto
 | M-Location consent | Marshal, Volunteer | Short text with three bullets (when, who sees it, how long kept), Agree and Not now buttons. | Centered column |
 | M-My assignments | Marshal, Volunteer | Tabs Today and Upcoming. Each card: event, time, place, duty type, status chip. Current or next shift pinned on top with its main button (Acknowledge or Start duty). | Two-column cards |
 | M-Assignment detail | Marshal, Volunteer | Event and shift info, instructions, small location map, one main button that changes with state: Acknowledge, Start duty, End duty. On duty banner at top. | Wider column |
+| M-Emergency report | Marshal, Volunteer on duty | A Report an emergency button on the duty controls while on duty. Pick medical, fire, security or other, add a short note and an optional photo. The place comes from the latest ping. A report made offline is queued and sent when the phone is back online, and never saved twice. | Wider column |
+| M-Emergency inbox | Report reviewers | Open emergencies first, with time since sent, Acknowledge and Resolve. The Reports tab shows a red dot when one is waiting. | Wider column |
+| M-Alerts settings | Everyone | Turn push alerts on for this phone, send a test, mute sound or push, set quiet hours, remove a device. Explains how to add the app to the Home Screen first on iPhone. | Settings page, centered |
+| M-My notifications | Everyone | Newest alerts first, unread marked. Tapping one opens the duty, report or emergency. | Wider column |
+| M-Availability | Volunteer | Shows active or inactive and why it changed. Read only. Only the office changes it, with a reason. | Wider column |
 | M-Report slots and form | Designated reporter | List of slots for today with due time and status. Form: summary text area (with character count), Add photo button (opens camera), Submit. Draft saved automatically. | Wider column |
 | M-Event notices | Coordinator | List of upcoming events for their department or campus wide. Read only. | Two-column cards |
 | M-Memo search | Everyone | Search box at top, category chips, results list with title, category, date, file size. | Results in two columns |

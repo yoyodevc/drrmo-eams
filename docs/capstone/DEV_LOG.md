@@ -502,3 +502,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Evidence: Pest tests cover levels, skip rules, forbidden removal of another person's device, and gone devices being deleted. Checked in desktop Chrome on localhost with a real push subscription: alerts turned on, a push was delivered by Google's service, and the alarm card rang and closed
 - Open: phone checks (Android background and closed, iPhone installed app, silent mode, Do Not Disturb) are with the owner (S7.6). A named Cloudflare tunnel needs the owner's Cloudflare login and domain, so testing used localhost
 - Paper: Chapter 4 (alerts and mobile access)
+
+## 2026-11-23 · Documentation refresh (core)
+- What was built: README, MODULES, DATABASE, SCREENS, USER_FLOWS, ARCHITECTURE, PLANNING_SUMMARY, PROJECT_PLAN, BACKLOG, SECURITY_AND_PRIVACY and the data dictionary and API reference appendices were checked against the code and brought up to date for M0 to M7.
+- What was built: the ERD in DATABASE.md now shows all 27 domain tables, including emergency_reports, report_reviewers, push_subscriptions, alert_preferences, refresh_tokens, teams and event_types. Two new flows (emergency on duty, turn on phone alerts) are in USER_FLOWS.md.
+- Problem met and fix: several docs still described the first plan (20 tables, Sanctum, no emergencies, no push). They were rewritten from the migrations, routes, scheduler and enums, not from the older docs.
+- Open: DEPLOYMENT.md and `.env.example` mention a ProductionSeeder and an AdminUserSeeder that do not exist, so there is no first admin step yet. It belongs to S6.5.
+- Evidence: docs only, no code changed
+- Paper: Chapter 3 (system design)

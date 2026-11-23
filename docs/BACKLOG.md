@@ -103,7 +103,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 ## M1 Walking skeleton
 
 **S1.1 Log in and log out** `core` `both` **M**
-- A seeded user logs in with email and password via Sanctum cookie auth.
+- A seeded user logs in with email and password. Tokens travel in HttpOnly cookies (JWT access token and a rotating refresh token).
 - Wrong password 5 times in a minute returns 429.
 - `/api/me` returns the user, role and permission codes.
 - Admin lands on `/admin`, others on `/me`.
@@ -239,7 +239,7 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 **S4.5 Report slots** `monitoring` `both` **M**
 - Scheduler creates slots every 2 hours for designated reporters with an assignment in the event.
 - Slots are unique per assignment and due time.
-- Done: `monitoring:create-report-slots` every 5 minutes. A reporter is a person with an active event scoped `reports.submit` grant and a live assignment in that event. Slots appear 15 minutes before they are due.
+- Done: `monitoring:create-report-slots` every minute. A reporter is a person with an active event scoped `reports.submit` grant and a live assignment in that event. Slots appear 15 minutes before they are due.
 
 **S4.6 Report form** `monitoring` `mobile` **M**
 - Summary required (max 1,000 characters), photo optional (resized on the phone).
@@ -288,10 +288,10 @@ Checked against the code. Done, Partial or Not started. Update this table when a
 - Manifest, icons, app shell cache only. Installable on Android Chrome. Add to Home Screen works on iPhone.
 
 **S6.4b Web Push module** `core` `both` **L**
-- A project wide module that any other module can use to push a message to a person's phone or browser. Not built yet. Emergency alerts (site report rework step 1) go through the Notifications module so push can plug in there later.
+- A project wide module that any other module can use to push a message to a person's phone or browser. Replaced by M7 below, which is built. Emergency alerts go through the Notifications module and reach the phone as Web Push.
 - Service worker that shows the push and opens the right screen on tap. Builds on PWA install (S6.4).
 - VAPID keys kept in the environment, never in the repo.
-- Package: `laravel-notification-channels/webpush`.
+- Package: `minishlink/web-push`, wrapped inside the Notifications module.
 - One subscription for each device a person signs in on. A person can turn a device off, and signing out removes it.
 - One send function, for example `Pusher::send(User $to, string $title, string $body, string $url)`, that any module calls. Modules never talk to the push service directly.
 - Expired or refused subscriptions are removed. A failed push never blocks the in app alert or the email.
@@ -329,7 +329,7 @@ Goal: urgent things reach people who are not looking at the app. This replaces S
 - Endpoints: `POST /api/push/subscribe`, `DELETE /api/push/subscribe`. Each needs a policy or gate and a test for the forbidden case.
 
 **S7.2 Pusher send function and Laravel channel** `notifications` `both` **M**
-- Package `laravel-notification-channels/webpush`, wrapped inside the Notifications module. Other modules never call it.
+- Package `minishlink/web-push`, wrapped inside the Notifications module (`WebPushTransport`). Other modules never call it.
 - `Pusher::send(User $to, NotificationType $type, string $title, string $body, string $url)`. `AlertSender::send` calls it as a third channel next to in app and email, based on urgency.
 - Runs on the existing `database` queue as a job, 3 tries with backoff. Urgent pushes use a `high` queue, and the supervisor worker becomes `--queue=high,default`.
 - A failed push never blocks the in app alert or the email. Gone or refused subscriptions (404, 410) are deleted.
@@ -378,4 +378,4 @@ Goal: urgent things reach people who are not looking at the app. This replaces S
 
 **Improve the overall site report logic** `monitoring` `both` **TBD**
 - Done (site report rework, 3 steps). Emergency reports (type, note, photo, place from the latest ping, sent, acknowledged, resolved, escalated after 5 minutes, offline queue). Two global reviewer marshals set by an admin. Reminders 15 minutes before and at the due time, a reminder for unacknowledged emergencies, and a missed state 60 minutes after the due time. Emergencies on the report form, one Reports page with needs attention, and audit of report views.
-- Left for later: Web Push (S6.4b) so alerts also reach the phone.
+- Web Push is built in M7, so alerts also reach the phone.

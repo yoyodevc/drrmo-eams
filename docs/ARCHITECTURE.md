@@ -21,6 +21,7 @@ flowchart LR
     end
 
     SMTP[Free SMTP<br/>Brevo]
+    PUSH[Push services<br/>Google, Apple, Mozilla]
     TILES[Map tiles<br/>Esri imagery, OSM]
 
     M -- HTTPS JSON + cookie --> N
@@ -31,6 +32,8 @@ flowchart LR
     P -- push jobs --> DB
     Q -- read jobs --> DB
     Q -- send mail --> SMTP
+    Q -- send Web Push --> PUSH
+    PUSH -. wakes phone .-> M
     C -- runs commands --> P
     M -. tiles .-> TILES
     D -. tiles .-> TILES
@@ -88,17 +91,27 @@ Cron runs `php artisan schedule:run` every minute. The scheduler pushes work ont
 
 | Job or command | When | What it does | Module |
 |---|---|---|---|
-| `SendNotificationJob` | On demand | Sends one queued email, updates the NOTIFICATION row to sent or failed | Notifications |
+| `SendNotificationEmail` | On demand | Sends one queued email, updates the NOTIFICATION row to sent or failed | Notifications |
+| `SendPush` | On demand (`high` queue for urgent alerts) | Sends one Web Push to a device. A gone or refused device (404, 410) is deleted. A failed push never blocks the in app alert or the email | Notifications |
 | `ConvertMemoFile` | On demand, after a Word memo is posted or its file replaced | Makes a PDF copy of the Word file with LibreOffice for the memo preview pane. 2 tries, then the page uses the quick browser preview | Information |
 | `memos:convert-previews` | By hand, after installing LibreOffice | Queues PDF copies for Word memos that have none. `--retry-failed` tries failed ones again | Information |
-| `notifications:shift-reminders` | Every 5 minutes | Queues the evening-before (6:00 PM) and 1-hour-before reminders that are due and not yet sent | Notifications |
-| `monitoring:create-report-slots` | Every 5 minutes | For each active shift with a designated reporter, creates the next SITE_REPORT slot and queues its reminder 15 minutes before due time | Monitoring |
-| `monitoring:mark-overdue-reports` | Every 5 minutes | Marks slots overdue 15 minutes after due time and queues an admin alert | Monitoring |
-| `events:mark-no-shows` | Every 15 minutes | Assignments still `assigned` or `acknowledged` 30 minutes after shift start are flagged on the dashboard. At shift end they become `no_show`. | Events |
+| `notifications:send-reminders` | Every 5 minutes | Queues the evening-before (6:00 PM) and 1-hour-before reminders that are due and not yet sent | Notifications |
+| `notifications:send-report-reminders` | Every minute | Reminds a reporter 15 minutes before a report is due and again at the due time | Notifications |
+| `monitoring:create-report-slots` | Every minute | For each active shift with a designated reporter, creates the next SITE_REPORT slot 15 minutes before it is due | Monitoring |
+| `monitoring:mark-overdue-reports` | Every 5 minutes | Marks slots overdue 15 minutes after due time and alerts the reviewers and admins | Monitoring |
+| `monitoring:mark-missed-reports` | Every 5 minutes | Closes a slot nobody filled as `missed` 60 minutes after it was due and alerts the reviewers and admins | Monitoring |
+| `monitoring:remind-emergencies` | Every minute | Reminds the reviewers, once, about an emergency nobody acknowledged after 2 minutes | Monitoring |
+| `monitoring:escalate-emergencies` | Every minute | Escalates an emergency nobody acknowledged after 5 minutes, once | Monitoring |
+| `assignments:mark-no-shows` | Every 5 minutes | Assignments still `assigned` or `acknowledged` after shift start are flagged on the dashboard. At shift end they become `no_show`. | Events |
+| `events:complete-ended` | Every 5 minutes | Completes events whose time has ended | Events |
 | `monitoring:auto-end-duty` | Every 5 minutes | Ends duty for anyone still `on_duty` 30 minutes after shift end, so pings stop | Monitoring |
 | `monitoring:purge-pings` | Daily 02:00 | Deletes pings older than 10 working days in chunks of 5,000 | Monitoring |
-| `records:prune` | Daily 02:30 | Deletes stale sessions, old failed jobs, and anything else past its retention date | Records |
+| `notifications:prune` | Daily 02:15 | Deletes notification log rows older than 6 months | Notifications |
+| `records:prune-audit-logs` | Daily 02:30 | Deletes audit rows older than 3 years. The only place audit rows are removed | Records |
+| `monitoring:prune-photos` | Daily 02:45 | Deletes report and emergency photos older than 1 year | Monitoring |
 | `backup:database` | Daily 03:00 | `mysqldump` to a dated gzip file, keeps 14 days (see DEPLOYMENT.md) | Ops script, not Laravel |
+
+The worker reads the `high` queue first, so urgent pushes go out before routine mail. To see the live list on a server run `php artisan schedule:list`.
 
 Every scheduled command is idempotent. Running it twice does not send two emails or create two slots, because each uses a unique key (for example `unique(assignment_id, due_at)` on SITE_REPORT and a `type + assignment_id + scheduled_for` check on NOTIFICATION).
 
@@ -151,22 +164,26 @@ flowchart TD
     G[Admin grants reports.submit to a person for one event] --> S{Shift active and person has an assignment in the event?}
     S -- no --> W[Nothing to do]
     S -- yes --> C[Scheduler creates SITE_REPORT slot due at shift start + 2h, +4h, ...]
-    C --> R[Reminder email 15 minutes before due]
+    C --> R[Reminder 15 minutes before due and again at due time: in app, push and email]
     R --> F{Submitted by due + 15 min?}
-    F -- yes --> OK[status submitted, appears in director feed]
-    F -- no --> O[status overdue, admin alert email, red on dashboard]
-    O --> L[Late submission still allowed, marked late]
+    F -- yes --> OK[status submitted, appears in the report feed]
+    F -- no --> O[status overdue, alert to reviewers and admins, shown on Needs attention]
+    O --> L{Submitted by due + 60 min?}
+    L -- yes --> LT[Late submission, marked late]
+    L -- no --> M[status missed, urgent alert to reviewers and admins]
 ```
+
+Emergencies run beside this flow. A person on duty sends an emergency (type, note, optional photo). The place is copied from their latest ping. The two reviewer marshals and the admins get an urgent alert. If nobody acknowledges within 2 minutes the reviewers get one reminder, and after 5 minutes the emergency is escalated and the admins are alerted again. A report made offline is queued on the phone and saved once, even if it is sent twice.
 
 ## 7. One API, two layouts
 
 - One React app in `resources/js`, built by Vite and served by Laravel.
-- Two layout components: `AdminLayout` (sidebar, wide content, tables) and `MobileLayout` (top bar, bottom navigation with 4 items, one main action per screen).
+- Two layout components: `AdminLayout` (sidebar, wide content, tables) and `MobileLayout` (top bar, bottom navigation with 5 items: Duties, Reports, Messages, Memos, Me, one main action per screen).
 - After login the role picks the default home: admins go to `/admin`, everyone else to `/me`.
 - Layout follows screen width too. A marshal on a laptop sees their own pages in a centered, wider column. An admin on a phone gets a simplified read view of the dashboard, map and report feed.
 - Both layouts use the same API endpoints. The API never changes shape based on device. It only filters based on permissions.
 - Feature folders (see MODULES.md) hold the pages, hooks and API calls for one module, so the same hook can feed an admin table and a mobile card list.
-- PWA: a web app manifest and a small service worker that caches the app shell only. API data is never cached by the service worker, so stale duty information cannot appear.
+- PWA: a web app manifest and a small service worker (`public/sw.js`) that caches the app shell only and also shows Web Push alerts. API data is never cached by the service worker, so stale duty information cannot appear.
 
 ## 8. Map tiles and licence notes
 

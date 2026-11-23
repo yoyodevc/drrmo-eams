@@ -4,7 +4,7 @@ MySQL 8, InnoDB, utf8mb4. Times are stored in UTC and shown in Asia/Manila. All 
 
 ## 1. Gaps found in the brief's data model
 
-The 20 tables cover the flows, but several flows have nowhere to store their data. These are proposals, not silent changes. Nothing below adds a 21st domain table.
+The 20 tables in the original brief covered the flows, but several flows had nowhere to store their data. The owner approved the fixes below and all of them are built. The table is kept as the reason behind each column. The system has grown since then: section 2 lists all 27 domain tables, including the ones added after the brief (teams, event_types, emergency_reports, report_reviewers, push_subscriptions, alert_preferences and refresh_tokens).
 
 | # | Table | Gap | Proposed fix |
 |---|---|---|---|
@@ -13,8 +13,8 @@ The 20 tables cover the flows, but several flows have nowhere to store their dat
 | G3 | USER and ROLE | The brief asks for an enum-cast role but also a ROLE table with `role_id` | Keep `role_id` and the ROLE table (needed for ROLE_PERMISSION). Add a unique `code` column to ROLE (`admin`, `marshal`, `volunteer`, `coordinator`) and a PHP `Role` enum. `User::role()` returns the enum. |
 | G4 | EVENT | Coordinators must see "event notices relevant to their department", but EVENT has no department link | Add nullable `department_id` (null means campus wide), plus `description` and `created_by` |
 | G5 | EVENT_DUTY_REQUIREMENT | A requirement can need a specific team (for example Fire Suppression) | Add nullable `team_needed` |
-| G6 | SITE_REPORT | No status, so "overdue" cannot be stored. Designation is stored in PERMISSION_GRANT (event scoped), which works | Add `status` (pending, submitted, overdue, late), `unique(assignment_id, due_at)` |
-| G7 | NOTIFICATION | Only `assignment_id`, but report reminders, overdue alerts and welcome emails also exist. No recipient, no error or retry info | Add `user_id` (recipient), nullable `site_report_id`, `channel` (email), `scheduled_for`, `attempts`, `last_error`, `created_at`. Keep `assignment_id` nullable |
+| G6 | SITE_REPORT | No status, so "overdue" cannot be stored. Designation is stored in PERMISSION_GRANT (event scoped), which works | Add `status` (pending, submitted, overdue, late, and later `missed`), `unique(assignment_id, due_at)` |
+| G7 | NOTIFICATION | Only `assignment_id`, but report reminders, overdue alerts and welcome emails also exist. No recipient, no error or retry info | Add `user_id` (recipient), nullable `site_report_id`, `channel` (email, and later `in_app` and `push`), `scheduled_for`, `attempts`, `last_error`, `created_at`. Keep `assignment_id` nullable |
 | G8 | LOCATION_PING | No accuracy or server time | Add `accuracy_m` (smallint), `received_at` |
 | G9 | AUDIT_LOG | Cannot tell which record or what changed | Add `entity_id`, `meta` (JSON, before and after for changes), `ip_address` |
 | G10 | CONSENT_RECORD | Location consent is separate from the privacy notice, and consent can be withdrawn | Add `purpose` (privacy_notice, location_tracking), `withdrawn_at`, `ip_address` |
@@ -25,12 +25,16 @@ The 20 tables cover the flows, but several flows have nowhere to store their dat
 
 ## 2. Diagram
 
+27 domain tables. Laravel's own tables (cache, jobs, failed_jobs, sessions, password_reset_tokens) are left out. A dotted line is a link by code or by a plain id column, with no database foreign key: `users.team` points at `teams.code`, `events.event_type` at `event_types.code`, and `notifications.emergency_report_id` is a plain column because Notifications does not own emergency reports.
+
 ```mermaid
 erDiagram
-    DEPARTMENT ||--o{ USER : has
+    DEPARTMENT |o--o{ USER : has
     ROLE ||--o{ USER : has
+    TEAM |o..o{ USER : "by code"
     USER ||--o{ EMERGENCY_CONTACT : lists
     USER ||--o{ VOLUNTEER_STATUS_LOG : has
+    USER ||--o{ REFRESH_TOKEN : signs_in_with
     ROLE ||--o{ ROLE_PERMISSION : grants
     PERMISSION ||--o{ ROLE_PERMISSION : in
     USER ||--o{ PERMISSION_GRANT : receives
@@ -38,18 +42,30 @@ erDiagram
     EVENT |o--o{ PERMISSION_GRANT : scopes
     CAMPUS_LOCATION ||--o{ EVENT : hosts
     DEPARTMENT |o--o{ EVENT : concerns
+    EVENT_TYPE |o..o{ EVENT : "by code"
     EVENT ||--o{ EVENT_DUTY_REQUIREMENT : needs
     DUTY_TYPE ||--o{ EVENT_DUTY_REQUIREMENT : typed
-    EVENT_DUTY_REQUIREMENT ||--o{ ASSIGNMENT : filled_by
+    EVENT ||--o{ ASSIGNMENT : has
+    DUTY_TYPE ||--o{ ASSIGNMENT : typed
+    EVENT_DUTY_REQUIREMENT |o--o{ ASSIGNMENT : filled_by
     USER ||--o{ ASSIGNMENT : works
-    ASSIGNMENT ||--o{ NOTIFICATION : triggers
-    USER ||--o{ NOTIFICATION : receives
     ASSIGNMENT ||--o{ LOCATION_PING : records
     ASSIGNMENT ||--o{ SITE_REPORT : has
+    ASSIGNMENT ||--o{ EMERGENCY_REPORT : raises
+    EVENT ||--o{ EMERGENCY_REPORT : during
+    USER ||--o{ EMERGENCY_REPORT : sends
+    USER |o--o| REPORT_REVIEWER : is
+    ASSIGNMENT |o--o{ NOTIFICATION : triggers
     SITE_REPORT |o--o{ NOTIFICATION : triggers
-    USER ||--o{ MEMO : posts
+    EMERGENCY_REPORT |o..o{ NOTIFICATION : "by id"
+    USER ||--o{ NOTIFICATION : receives
+    USER |o--o{ NOTIFICATION : "is about"
+    USER ||--o{ PUSH_SUBSCRIPTION : registers
+    USER ||--o| ALERT_PREFERENCE : sets
+    USER |o--o{ MEMO : posts
     USER ||--o{ MESSAGE : sends
-    USER ||--o{ AUDIT_LOG : acts
+    USER |o--o{ MESSAGE : receives
+    USER |o--o{ AUDIT_LOG : acts
     USER ||--o{ CONSENT_RECORD : gives
 ```
 
@@ -61,12 +77,12 @@ Each module gets a fixed timestamp prefix so parallel sessions never collide and
 |---|---|---|---|
 | 0 | `0001_01_01_*` | Core | Laravel defaults: cache, jobs, failed_jobs, sessions, password_reset_tokens |
 | 1 | `2026_01_01_1000xx` | Access | roles, permissions, role_permission, and `100004` adds `description` and `is_system` to roles (custom roles have `is_system` false) |
-| 2 | `2026_01_01_2000xx` | Personnel | departments, users (FK roles, departments), emergency_contacts, volunteer_status_logs, and `200005` adds the sign up columns to users (account_status, email code fields, reviewed_by, reviewed_at, rejection_reason), and `200006` replaces `users.name` with `first_name` and `last_name` |
-| 3 | `2026_01_01_3000xx` | Events | duty_types, campus_locations, events, event_duty_requirements, assignments |
-| 4 | `2026_01_01_3500xx` | Access | refresh_tokens (needs users), permission_grants (needs events) |
-| 5 | `2026_01_01_4000xx` | Monitoring | location_pings, site_reports, emergency_reports, report_reviewers |
-| 6 | `2026_01_01_5000xx` | Notifications | notifications (needs assignments, site_reports), `500005` push_subscriptions (one row for each device, unique on a hash of the endpoint), `500006` alert_preferences (mute and quiet hours for each person) |
-| 7 | `2026_01_01_6000xx` | Information | memos, messages |
+| 2 | `2026_01_01_2000xx` | Personnel | departments, users (FK roles, departments), emergency_contacts, volunteer_status_logs, `200005` adds the sign up columns to users (account_status, email code fields, reviewed_by, reviewed_at, rejection_reason), `200006` replaces `users.name` with `first_name` and `last_name`, and `200007` adds teams (with the three starting teams) and an `active` flag on departments |
+| 3 | `2026_01_01_3000xx` | Events | duty_types, campus_locations, events, event_types, event_duty_requirements, assignments. Later files add `event_type` to events, `active` to campus_locations, and the status, cancel and duty time columns to assignments |
+| 4 | `2026_01_01_3500xx` | Access | refresh_tokens (needs users), permission_grants (needs events). Both are owned by Access, though refresh_tokens is used by the login code in Core |
+| 5 | `2026_01_01_4000xx` | Monitoring | location_pings, site_reports, emergency_reports, report_reviewers. `400004` adds `missed_at` to site_reports and `reminded_at` to emergency_reports |
+| 6 | `2026_01_01_5000xx` | Notifications | notifications (needs assignments), `500002` subject_user_id, `500003` site_report_id, `500004` emergency_report_id and read_at (in app alerts), `500005` push_subscriptions (one row for each device, unique on a hash of the endpoint), `500006` alert_preferences (mute and quiet hours for each person) |
+| 7 | `2026_01_01_6000xx` | Information | memos (`600002` adds the PDF preview columns), messages (`600004` adds `is_direct`) |
 | 8 | `2026_01_01_7000xx` | Records | audit_logs, consent_records |
 
 Laravel's default `users` migration is replaced by the Personnel version. The default `sessions` table keeps its `user_id` column without a foreign key.
@@ -81,21 +97,22 @@ Foreign key rules: `restrict` on delete for people and events (we soft-close, no
 | permission_grants | (user_id, permission_id, ends_at), (event_id) | permission check runs on most requests |
 | role_permission | unique(role_id, permission_id) | no duplicates |
 | events | (starts_at), (status), (department_id) | dashboard, coordinator notices |
-| event_duty_requirements | (event_id), (shift_start, shift_end) | overlap checks, scheduler |
-| assignments | unique(user_id, requirement_id), (user_id, status), (requirement_id, status) | my assignments, headcount |
+| event_duty_requirements | (event_id), (shift_starts_at, shift_ends_at) | overlap checks, scheduler |
+| assignments | unique(event_id, user_id), (user_id, status), (requirement_id, status) | one duty for each person in an event, my assignments, headcount |
 | location_pings | (assignment_id, captured_at), (captured_at) | latest ping per person, retention purge |
 | site_reports | unique(assignment_id, due_at), (status, due_at) | idempotent slots, overdue scan, feed |
 | report_reviewers | unique(user_id) | at most 2 global reviewer marshals |
 | emergency_reports | unique(user_id, client_id), (status, created_at), event_id | a queued report sent twice saves once, escalation scan, inbox |
-| notifications | (status, scheduled_for), (user_id, type), (assignment_id) | queue scan, dedupe |
+| notifications | (status, scheduled_for), (user_id, type), (assignment_id), (user_id, channel, read_at) | queue scan, dedupe, unread in app alerts |
 | memos | FULLTEXT(title, body), (category, posted_at) | search |
-
-MEMO also has `preview_path` and `preview_status` (pending, ready, failed) for the PDF copy of a Word file (migration `2026_01_01_600002`).
-| messages | (recipient_id, read_at), (sender_id, sent_at) | inbox, threads |
-
-MESSAGE also has `is_direct` (boolean, migration `2026_01_01_600004`). False means a message to or from the DRRMO office. True means a private person to person message, which the office inbox never lists.
+| messages | (recipient_id, read_at), (sender_id, sent_at), (recipient_id, sender_id, is_direct) | inbox, threads, direct chats |
 | audit_logs | (actor_id, created_at), (entity, entity_id), (action, created_at) | audit filters |
 | consent_records | (user_id, purpose, consented_at) | consent check |
+| refresh_tokens | unique(token_hash), (family_id), (user_id, revoked_at) | rotation, revoke a whole sign in, sign out everywhere |
+| push_subscriptions | unique(endpoint_hash), (user_id) | one row for each device, find a person's devices |
+| volunteer_status_logs | (user_id, created_at) | status history |
+
+Two notes on columns. MEMO has `preview_path` and `preview_status` (pending, ready, failed) for the PDF copy of a Word file (migration `2026_01_01_600002`). MESSAGE has `is_direct` (boolean, migration `2026_01_01_600004`): false means a message to or from the DRRMO office, true means a private person to person message, which the office inbox never lists.
 
 Overlap check for one person: two shifts overlap when `a.shift_start < b.shift_end AND b.shift_start < a.shift_end`, excluding cancelled assignments.
 
@@ -122,14 +139,17 @@ JOIN (
 
 ## 6. Seeders
 
+`php artisan db:seed` runs `DatabaseSeeder`, which calls PermissionSeeder (roles and permissions, built from `PermissionMatrix`), DutyTypeSeeder and CampusLocationSeeder.
+
 | Seeder | Content | Runs in production |
 |---|---|---|
-| RoleSeeder | admin, marshal, volunteer, coordinator | yes |
+| RoleSeeder | admin, marshal, volunteer, coordinator | yes, through PermissionSeeder |
 | PermissionSeeder | every permission code in SECURITY_AND_PRIVACY.md and the role matrix | yes |
 | DutyTypeSeeder | Emergency responder, Auxiliary to campus security, CCTV monitoring and surveillance, Enforcement of campus policies, Crowd control, Office work, Fire suppression | yes |
 | CampusLocationSeeder | ZPPSU main campus center (6.91212, 122.05909) plus placeholder rows for the gym, main gate, field and admin building. Coordinates to be confirmed on the map by DRRMO. | yes |
-| DepartmentSeeder | Placeholder list, to be replaced with the real department list | yes, after review |
-| AdminUserSeeder | One admin from `.env` values (`SEED_ADMIN_EMAIL`), random password, set-password email | yes, once |
-| DemoSeeder | Fake people (Faker, `example.test` emails), one sample event with requirements and assignments | local and staging only |
+| OrgUnitSeeder | Starting teams (ERT, Security team, Fire suppression, Crowd control, First aid and medical, CCTV monitoring) and placeholder departments. Only adds what is missing. Replace the department list with the real one after review. | after review |
+| DemoSeeder | Four fake people (admin, marshal, volunteer, coordinator, `@example.test` emails, password `password`) plus OrgUnitSeeder. It refuses to run in production. | local and staging only |
+
+There is no seeder for the first production admin yet. `.env.example` has `SEED_ADMIN_EMAIL` and DEPLOYMENT.md mentions a `ProductionSeeder`, but neither exists in the code. This belongs to story S6.5 (production deployment).
 
 No real personal data goes into seeders, fixtures or tests.

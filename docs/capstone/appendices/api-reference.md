@@ -65,3 +65,98 @@ A person writes to the DRRMO office. Any admin can read and answer. Text only, u
 | `GET /api/me/chats/{user}` | signed in | none | 200 with the conversation between the two people. Only they can read it |
 | `POST /api/me/chats/{user}` | signed in | `body` (same rules) | 201 with `data`. 404 or 422 for a closed or waiting account |
 | `POST /api/me/chats/{user}/read` | signed in | none | 200 with `unread`. Marks what the other person wrote as read |
+
+## Route index for the other modules
+
+These tables list every other route so the reference is complete. They give the purpose only. Who may call each route is set by a policy or gate (see SECURITY_AND_PRIVACY.md), and each route has a test for the forbidden case. Request and response shapes are in the module README and in the feature tests. The detailed tables above are the model to follow when a route is written up in full.
+
+### Personnel
+
+| Route | Purpose |
+|---|---|
+| `GET /api/people`, `POST /api/people` | List people (filters: role, team, status, department, search). Create a person |
+| `GET /api/people/{user}`, `PATCH /api/people/{user}` | Read and edit one person |
+| `POST /api/people/{user}/invite` | Send the set password email |
+| `GET /api/people/import/template`, `POST /api/people/import` | CSV template and CSV import |
+| `GET /api/admin/volunteers` | Volunteers with their on-call status |
+| `PUT /api/admin/volunteers/{user}/status`, `GET /api/admin/volunteers/{user}/status-history` | Set active or inactive with a reason. Read the history |
+| `GET /api/me/availability` | The signed in person's own status |
+| `GET /api/me/profile`, `PATCH /api/me/profile` | Own profile. Only the contact number can change |
+| `GET\|POST /api/me/emergency-contacts`, `PUT\|DELETE /api/me/emergency-contacts/{contact}` | Own emergency contacts |
+| `GET /api/admin/people/{user}/emergency-contacts` | Another person's contacts, for admins |
+| `GET\|POST /api/departments`, `PATCH\|DELETE /api/departments/{department}` | Department list |
+| `GET\|POST /api/teams`, `PATCH\|DELETE /api/teams/{team}` | Team list |
+
+### Access (grants)
+
+| Route | Purpose |
+|---|---|
+| `GET /api/grantable-permissions` | Permissions that can be lent for a while |
+| `GET /api/grants`, `POST /api/grants` | List grants (filters: user, event, active). Give temporary access |
+| `POST /api/grants/{grant}/revoke` | End a grant early |
+| `GET /api/me/grants` | The signed in person's own grants |
+
+### Events
+
+| Route | Purpose |
+|---|---|
+| `GET /api/events`, `POST /api/events`, `GET /api/events/calendar` | List, create, calendar view |
+| `GET /api/events/{event}`, `PUT /api/events/{event}` | Read and edit one event |
+| `POST /api/events/{event}/publish`, `POST /api/events/{event}/cancel` | Publish or cancel |
+| `POST /api/events/{event}/requirements`, `DELETE /api/requirements/{requirement}` | Add or remove a duty requirement |
+| `GET /api/requirements/{requirement}/candidates` | Assignable people with conflict flags |
+| `POST /api/requirements/{requirement}/assignments` | Assign one or more people, with an optional override reason |
+| `PATCH /api/assignments/{assignment}`, `DELETE /api/assignments/{assignment}` | Change or remove an assignment |
+| `POST /api/assignments/{assignment}/cancel`, `POST /api/assignments/{assignment}/no-show` | Cancel with a reason. Mark a no show |
+| `GET /api/me/assignments`, `POST /api/me/assignments/{assignment}/acknowledge` | Own duties. Acknowledge one |
+| `GET /api/me/event-notices` | Event notices for a coordinator |
+| `GET /api/dashboard` | Admin dashboard numbers |
+| `GET /api/event-lookups` | Event types, duty types and locations for the event form |
+| `GET\|POST /api/event-types`, `PATCH\|DELETE /api/event-types/{event_type}` | Event type list |
+| `GET\|POST /api/campus-locations`, `PATCH\|DELETE /api/campus-locations/{campus_location}` | Campus location list |
+
+### Monitoring
+
+| Route | Purpose |
+|---|---|
+| `POST /api/me/assignments/{assignment}/start-duty`, `.../end-duty` | Start and end duty |
+| `POST /api/me/assignments/{assignment}/pings` | Send a batch of location pings (throttled) |
+| `GET /api/map/latest`, `GET /api/map/trail/{assignment}` | Live map and trail. Every call is audited |
+| `GET /api/me/report-slots`, `POST /api/me/report-slots/{report}`, `GET /api/me/report-slots/{report}/photo` | Own report slots. Submit a report. Read its photo |
+| `GET /api/me/report-slots/{report}/emergencies` | Emergencies since the previous report, for the report form |
+| `GET /api/reports`, `GET /api/reports/{report}`, `GET /api/reports/{report}/photo` | Report feed, one report, its photo |
+| `POST /api/me/assignments/{assignment}/emergencies` | Send an emergency report (throttled) |
+| `GET /api/me/emergencies`, `GET /api/me/emergencies/{emergency}/photo` | Own emergencies and photos |
+| `GET /api/emergencies`, `GET /api/emergencies/{emergency}`, `GET /api/emergencies/{emergency}/photo` | Emergency inbox for reviewers. Reading one shows the place and is audited |
+| `POST /api/emergencies/{emergency}/acknowledge`, `POST /api/emergencies/{emergency}/resolve` | Acknowledge and resolve |
+| `GET /api/report-reviewers`, `PUT /api/report-reviewers` | Read and set the reviewer marshals |
+| `GET /api/attention` | Needs attention counts and lists. Audited |
+
+### Notifications
+
+| Route | Purpose |
+|---|---|
+| `GET /api/me/notifications` | Own notifications |
+| `GET /api/me/alerts`, `POST /api/me/alerts/read` | In app alerts and marking them read |
+| `GET /api/notifications`, `POST /api/notifications/{notification}/retry` | Admin send log. Retry a failed email |
+| `GET /api/me/push`, `PUT /api/me/alert-settings` | Devices and settings. Mute and quiet hours |
+| `POST /api/push/subscribe`, `DELETE /api/push/subscribe` | Turn alerts on or off for this device |
+| `DELETE /api/push/devices/{subscription}` | Remove one of the person's devices |
+| `POST /api/push/test` | Send a test push (6 a minute) |
+
+### Information (memos)
+
+| Route | Purpose |
+|---|---|
+| `GET /api/memos`, `GET /api/memos/{memo}` | Search and read memos |
+| `GET /api/memos/{memo}/file`, `GET /api/memos/{memo}/preview` | The file, and the PDF copy of a Word file |
+| `POST /api/memos`, `PATCH /api/memos/{memo}`, `DELETE /api/memos/{memo}` | Admin: create, edit, delete (soft) |
+
+### Records
+
+| Route | Purpose |
+|---|---|
+| `POST /api/consent/privacy-notice` | Agree to the current privacy notice |
+| `POST /api/consent/location`, `DELETE /api/consent/location` | Agree to location tracking, or withdraw |
+| `GET /api/audit-logs` | Audit log with filters (actor, action, entity, date) |
+| `GET /api/me/data-export` | The person's own data as JSON |

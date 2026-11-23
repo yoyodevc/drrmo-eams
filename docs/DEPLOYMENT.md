@@ -98,7 +98,7 @@ As the deploy user, with `REPO_URL` set (a read-only deploy key on the GitHub re
 REPO_URL=git@github.com:OWNER/drrmo-eams.git scripts/deploy.sh main
 ```
 
-First deploy only: `php artisan db:seed --class=ProductionSeeder --force` (roles, permissions, duty types, locations, first admin). The seeder is written in M0, story S0.3.
+First deploy only: `php artisan db:seed --force` (roles, permissions, duty types, campus locations). Starting teams come with the migrations. The first admin account has no seeder yet, so create it by hand for now (for example with `php artisan tinker`). A proper first admin step is part of story S6.5.
 
 ## 5. Rollback
 

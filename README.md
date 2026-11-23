@@ -4,7 +4,7 @@ Personnel Event Assignment and Monitoring System for the ZPPSU Disaster Risk Red
 
 The DRRMO plans events, assigns Marshals and Volunteers, emails them, collects 2-hourly site reports, and sees approximate positions of on-duty people on a campus map. Built with Laravel 13, React 19, MySQL 8.
 
-> Status: in development. 20 of 45 stories are done, including events and assignments, assignment emails, shift reminders, the notification log, conflict checks, the admin dashboard and start and end duty. The story table in [docs/BACKLOG.md](docs/BACKLOG.md) is kept up to date. Start with [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
+> Status: M0 to M7 are built. 49 of the 53 stories in [docs/BACKLOG.md](docs/BACKLOG.md) are done. That covers people and access control, events and assignments, emails and reminders, start and end duty, the live map, site reports, emergency reports, memos, messages, the audit log, data export and pruning, the PWA install, and push and sound alerts. Still open: the phone check for push alerts (S7.6), production deployment (S6.5) and the field test (S6.6). The story table in the backlog is kept up to date. Start with [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
 
 ## Documents
 
@@ -15,7 +15,8 @@ The DRRMO plans events, assigns Marshals and Volunteers, emails them, collects 2
 | [USER_FLOWS.md](docs/USER_FLOWS.md) | The ten day-in-the-life flows |
 | [SCREENS.md](docs/SCREENS.md) | Every screen, desktop and mobile |
 | [MODULES.md](docs/MODULES.md) | Module boundaries, endpoints, ownership |
-| [DATABASE.md](docs/DATABASE.md) | Tables, gaps, migrations, indexes, seeders |
+| [DATABASE.md](docs/DATABASE.md) | The 27 tables and their ERD, migrations, indexes, seeders |
+| [DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Colors, type, components and layouts. Read before any UI work |
 | [SECURITY_AND_PRIVACY.md](docs/SECURITY_AND_PRIVACY.md) | Permission matrix, Data Privacy Act checklist |
 | [BACKLOG.md](docs/BACKLOG.md) | Epics and stories by milestone |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Server setup, deploy, backup, rollback |
@@ -24,6 +25,7 @@ The DRRMO plans events, assigns Marshals and Volunteers, emails them, collects 2
 | [WORKING_WITH_CLAUDE_CODE.md](docs/WORKING_WITH_CLAUDE_CODE.md) | One session per module |
 | [PLANNING_SUMMARY.md](docs/PLANNING_SUMMARY.md) | One-page summary and current status |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, commits, Definition of Done |
+| [capstone/](docs/capstone/README.md) | The capstone paper: chapters, dev log, appendices (API reference, data dictionary), figures |
 
 ## Local setup on Windows (default: Laravel Sail)
 
@@ -39,7 +41,7 @@ Get the project and run it:
 
 ```
 cd ~
-git clone https://github.com/OWNER/drrmo-eams.git
+git clone https://github.com/yoyodevc/drrmo-eams.git
 cd drrmo-eams
 bash scripts/setup.sh
 ```
@@ -48,7 +50,7 @@ Keep the project inside the Ubuntu home folder (`~/`), not under `/mnt/c/`. It i
 
 Open http://localhost for the app and http://localhost:8025 for Mailpit, which catches every email the app sends locally.
 
-Sail does not start a queue worker or the scheduler for you. Without them, assignment emails and shift reminders never go out. Run each in its own terminal:
+Sail does not start a queue worker or the scheduler for you. Without them, emails, push alerts, shift and report reminders, overdue and emergency checks never run. Run each in its own terminal:
 
 ```
 ./vendor/bin/sail artisan queue:work
@@ -67,7 +69,7 @@ Everyday commands:
 
 Tip: add `alias sail='./vendor/bin/sail'` to `~/.bashrc`.
 
-Testing on your phone needs HTTPS for GPS. Use the staging server, or a tunnel such as `./vendor/bin/sail share`.
+Testing on your phone needs HTTPS for GPS and for push alerts. Use the staging server, or a tunnel such as `./vendor/bin/sail share`.
 
 ## Run without Docker (Herd plus XAMPP MariaDB)
 
@@ -107,8 +109,8 @@ Every day:
 1. Start MySQL in the XAMPP Control Panel.
 2. In one terminal run `php artisan serve`.
 3. In a second terminal run `npm run dev`. Skip this if you are not changing React code.
-4. In a third terminal run `php artisan queue:work`. Assignment and reminder emails wait in the queue until it runs.
-5. In a fourth terminal run `php artisan schedule:work`. It sends the shift reminders and closes finished duties.
+4. In a third terminal run `php artisan queue:work`. Emails and push alerts wait in the queue until it runs.
+5. In a fourth terminal run `php artisan schedule:work`. It sends the reminders, makes the report slots, flags overdue and missed reports and unanswered emergencies, and closes finished duties.
 6. Open http://127.0.0.1:8000. With `MAIL_MAILER=log`, emails are written to `storage/logs/laravel.log`.
 
 To stop, press Ctrl+C in all terminals and stop MySQL in XAMPP.
@@ -119,10 +121,10 @@ Run checks with `composer check` and `npm run check`. Note: XAMPP ships MariaDB 
 
 The app sends these emails:
 
-- **Queued** (needs `php artisan queue:work`): a new, moved or cancelled assignment, a cancelled event, and the shift reminders (6:00 PM the evening before and 1 hour before). Each email has a button that opens the app on the right duty, with the link `/?assignment=<id>`. A person who is signed out signs in first and then lands on that duty.
+- **Queued** (needs `php artisan queue:work`): a new, moved or cancelled assignment, a cancelled event, the shift reminders (6:00 PM the evening before and 1 hour before), report reminders and overdue or missed report alerts, and emergency alerts. Each assignment email has a button that opens the app on the right duty, with the link `/?assignment=<id>`. A person who is signed out signs in first and then lands on that duty.
 - **Sent at once:** the sign up confirmation code, access approved or rejected, and the password reset link.
 
-A failed queued email is retried 3 times and then shows as `failed` in the notification log. Reminders need `php artisan schedule:work` locally. On the server, cron runs the scheduler.
+A failed queued email is retried 3 times and then shows as `failed` in the notification log. Reminders need `php artisan schedule:work` locally. On the server, cron runs the scheduler. Notification log rows are deleted after 6 months.
 
 Where mail goes is set by `MAIL_MAILER` in `.env`:
 
@@ -154,13 +156,30 @@ MAIL_FROM_NAME="ZPPSU DRRMO"
 
 If Brevo answers `525 Unauthorized IP address`, the IP is not on the Authorized IPs list.
 
+## Push alerts and sound
+
+Urgent things (an emergency report, an unanswered emergency, a missed site report) reach a phone that is not open through Web Push. Setup:
+
+1. Run `php artisan push:vapid --write` once. It adds `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to `.env`. Set `VAPID_SUBJECT` to your site address. Keep the keys: new keys make every phone turn alerts on again.
+2. Open the app over HTTPS. Push does not work on plain `http` except on `localhost`.
+3. Each person turns alerts on from the Alerts settings page, after a tap. On an iPhone the app must first be added to the Home Screen (iOS 16.4 or newer). There is also a test button, mute for sound and push, and quiet hours. Urgent emergencies ignore quiet hours.
+4. Run the queue worker. Urgent pushes go on the `high` queue, so start it with `php artisan queue:work --queue=high,default`.
+
+A push cannot play a custom sound. The alarm and chime play inside the app while it is open, after the person has tapped once to allow audio.
+
+## Memo previews
+
+Word memos get a PDF copy for the preview pane. It needs LibreOffice on the machine. Set `LIBREOFFICE_BINARY` in `.env` to its path. Without it, the memo page falls back to a quick browser preview. After installing LibreOffice, run `php artisan memos:convert-previews` to make copies for the memos that have none.
+
 ## Stack
 
 | Part | Choice |
 |---|---|
-| Backend | Laravel 13 (PHP 8.3+), JWT auth in HttpOnly cookies (firebase/php-jwt), Gates and Policies, database queue and scheduler |
+| Backend | Laravel 13 (PHP 8.3+), JWT auth in HttpOnly cookies (firebase/php-jwt), Gates and Policies, database queue and scheduler, Web Push (minishlink/web-push) |
 | Frontend | React 19, React Router 7, TanStack Query 5, Tailwind CSS 4, Vite 8, TypeScript |
 | Map | Leaflet 1.9 with Esri World Imagery and OpenStreetMap |
-| Database | MySQL 8 |
-| Mail | Queued SMTP (Brevo free tier in production, Mailpit locally) |
+| Database | MySQL 8 (8.4 in Sail) |
+| Mail | Queued SMTP through PHPMailer (Brevo free tier in production, Mailpit locally) |
+| Memos | LibreOffice for PDF copies of Word files, pdf.js and docx-preview in the viewer |
+| App | Installable PWA with a service worker for the app shell and push |
 | Quality | Pint, Larastan, Pest 4, ESLint, Prettier, Vitest, GitHub Actions |

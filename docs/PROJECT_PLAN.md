@@ -15,7 +15,7 @@ Success looks like this:
 
 ## 2. Scope
 
-In scope, mapped to the seven stages:
+In scope, mapped to the stages:
 
 | Stage | What we build |
 |---|---|
@@ -25,7 +25,8 @@ In scope, mapped to the seven stages:
 | 4. Notify | Queued emails for assignment changes, shift reminders, report reminders and overdue alerts, with a send log |
 | 5. Monitor on duty | Start and end duty, location pings every 30 seconds while the page is open, admin map, 2-hourly site reports, report feed |
 | 6. Share information | Memo and policy library with search, simple direct messages with DRRMO |
-| 7. Keep records | Audit log, consent records, retention jobs |
+| 7. Keep records | Audit log, consent records, retention jobs, a data export for each person |
+| 8. Alert fast | Emergency reports from people on duty, two reviewer marshals, in app and push alerts with sound, mute and quiet hours |
 
 ## 3. Out of scope
 
@@ -54,10 +55,10 @@ Assumptions (please correct any that are wrong):
 - A1. Admin and Director share one role called Admin. If the director needs a separate read-mostly role, it is a small change to the role seeder.
 - A2. Assignment statuses are: assigned, acknowledged, on_duty, completed, cancelled, no_show.
 - A3. Reminders go out at 6:00 PM the evening before a shift and 1 hour before it starts.
-- A4. Site report slots are due every 2 hours from shift start. A shift shorter than 2 hours gets one slot due at shift end. A slot becomes overdue 15 minutes after its due time.
+- A4. Site report slots are due every 2 hours from shift start. A shift shorter than 2 hours gets one slot due at shift end. A slot becomes overdue 15 minutes after its due time and is closed as missed after 60 minutes.
 - A5. The designated site reporter must also hold an assignment in that event.
 - A6. One person has exactly one role. Teams are Security (Crowd Control), ERT and Fire Suppression. Admins and Coordinators have no team.
-- A7. Accounts are created by the admin. There is no self sign-up. People get an email to set their password.
+- A7. Admins create accounts and people get an email to set their password. Volunteers can also ask for an account on the public Request access page. They confirm their email with a 6 digit code and an admin approves before the account works.
 - A8. Time zone is Asia/Manila for everything.
 - A9. A free domain name is available (school subdomain preferred, DuckDNS as a fallback). HTTPS needs one.
 
@@ -94,6 +95,7 @@ Effort is in developer days for one developer. With two or three people working 
 | M4 Monitoring | Start and end duty, Wake Lock, pings with offline queue, admin map, report slots, report form with photo, overdue alerts, report feed | 10 days |
 | M5 Information | Memo library and search, memo manager, messages | 5 days |
 | M6 Records and launch | Audit viewer, retention jobs, data export for data subjects, PWA, deployment, backups, user testing with real marshals | 8 days |
-| Total | | about 45 days, or 9 weeks full time |
+| M7 Push alerts | Emergency reports, push notifications, in app sound and vibration, mute and quiet hours (added after the first plan) | built |
+| Total | | about 45 days for M0 to M6, or 9 weeks full time |
 
 Milestone exit rule: every story in the milestone meets the Definition of Done in CONTRIBUTING.md and the milestone demo works on a real phone over HTTPS.
