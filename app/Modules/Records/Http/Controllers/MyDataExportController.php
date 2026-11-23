@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Records\Http\Controllers;
 
 use App\Modules\Events\Models\Assignment;
+use App\Modules\Notifications\Models\PushSubscription;
 use App\Modules\Personnel\Models\EmergencyContact;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
@@ -53,6 +54,8 @@ class MyDataExportController
                     'duty_ended_at' => $a->duty_ended_at?->toIso8601String(),
                     'cancelled_at' => $a->cancelled_at?->toIso8601String(),
                 ])->all(),
+            'alert_devices' => PushSubscription::query()->where('user_id', $user->id)->orderBy('id')->get()
+                ->map(fn (PushSubscription $s) => ['device' => $s->device_label, 'added_at' => $s->created_at?->toIso8601String(), 'last_alert_at' => $s->last_used_at?->toIso8601String()])->all(),
             'consents' => ConsentRecord::query()->where('user_id', $user->id)->orderBy('id')->get()
                 ->map(fn (ConsentRecord $c) => [
                     'purpose' => $c->purpose->value,

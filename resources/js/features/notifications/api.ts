@@ -79,3 +79,57 @@ export async function listAlerts(): Promise<{ data: InAppAlert[]; unread: number
 export async function markAlertsRead(): Promise<void> {
     await api('/api/me/alerts/read', { method: 'POST' });
 }
+
+// Push alerts and alert settings. Always the signed in person's own.
+export interface AlertSettings {
+    sound_muted: boolean;
+    push_muted: boolean;
+    quiet_start: string | null;
+    quiet_end: string | null;
+}
+
+export interface PushDevice {
+    id: number;
+    label: string | null;
+    last_used_at: string | null;
+    endpoint_hash: string;
+}
+
+export interface PushOverview {
+    public_key: string | null;
+    devices: PushDevice[];
+    settings: AlertSettings;
+}
+
+export async function getPushOverview(): Promise<PushOverview> {
+    const body = await api<{ data: PushOverview }>('/api/me/push');
+    return body.data;
+}
+
+export async function saveAlertSettings(patch: Partial<AlertSettings>): Promise<AlertSettings> {
+    const body = await api<{ data: AlertSettings }>('/api/me/alert-settings', {
+        method: 'PUT',
+        body: JSON.stringify(patch),
+    });
+    return body.data;
+}
+
+export async function subscribePush(sub: PushSubscriptionJSON, label: string): Promise<void> {
+    await api('/api/push/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ endpoint: sub.endpoint, keys: sub.keys, label }),
+    });
+}
+
+export async function unsubscribePush(endpoint: string): Promise<void> {
+    await api('/api/push/subscribe', { method: 'DELETE', body: JSON.stringify({ endpoint }) });
+}
+
+export async function removePushDevice(id: number): Promise<void> {
+    await api(`/api/push/devices/${id}`, { method: 'DELETE' });
+}
+
+export async function sendPushTest(): Promise<number> {
+    const body = await api<{ data: { sent: number } }>('/api/push/test', { method: 'POST' });
+    return body.data.sent;
+}

@@ -29,7 +29,7 @@ function Icon({ children }: { children: ReactNode }) {
 const summary: { title: string; text: string; icon: ReactNode }[] = [
     {
         title: 'What we keep',
-        text: 'Your name, email, contact number, emergency contacts and your duty records.',
+        text: 'Your name, email, contact number, emergency contacts and your duty records. If you turn on alerts, we also keep a code for your device so we can send them.',
         icon: <path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21a8 8 0 0 1 16 0" />,
     },
     {
