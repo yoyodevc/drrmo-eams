@@ -36,6 +36,27 @@ foreach ($f in 'project\artisan', 'database.sql', 'env.packed') {
     if (-not (Test-Path (Join-Path $here $f))) { Fail "Missing $f in $here. Run this from the extracted transfer folder." }
 }
 
+function Test-Tree($root, $label) {
+    $mf = Join-Path $here 'manifest.txt'
+    if (-not (Test-Path $mf)) { Write-Warning 'manifest.txt missing (older pack). Skipping the integrity check.'; return }
+    $bad = @()
+    foreach ($ln in (Get-Content $mf)) {
+        if ($ln -notmatch '^([0-9A-Fa-f]{40})  (.+)$') { continue }
+        $f = Join-Path $root $Matches[2]
+        if (-not (Test-Path -LiteralPath $f)) { $bad += "missing   $($Matches[2])"; continue }
+        if ((Get-FileHash -LiteralPath $f -Algorithm SHA1).Hash -ne $Matches[1].ToUpper()) {
+            $b = [IO.File]::ReadAllBytes($f)
+            $head = ($b | Select-Object -First 8 | ForEach-Object { $_.ToString('X2') }) -join ' '
+            $bad += "changed   $($Matches[2])  size=$($b.Length)  first bytes: $head"
+        }
+    }
+    if ($bad) {
+        $bad | Select-Object -First 15 | ForEach-Object { Write-Host $_ -ForegroundColor Yellow }
+        Fail "$($bad.Count) file(s) differ from the PC ($label). Re-pack on the PC and copy the zip again, extracting with 7-Zip or Explorer. If it repeats, send me the lines above."
+    }
+    Write-Host "ok  all files match the PC ($label)"
+}
+
 # --- Prerequisites
 Step 'Installing prerequisites (skips what exists)'
 Install-If git Git.Git
@@ -94,12 +115,16 @@ $null = & $mysql -u $DbUser @pwArg -e 'SELECT 1' 2>&1
 if ($LASTEXITCODE -ne 0) { Fail "Cannot log in to MySQL as '$DbUser'. Make sure MySQL is running. If root has a password, rerun with -DbPass 'yourpassword'." }
 Write-Host 'ok  MySQL login'
 
+Step 'Verifying the extracted files'
+Test-Tree (Join-Path $here 'project') 'extracted zip'
+
 # --- Copy project
 Step "Copying project to $Dir"
 New-Item -ItemType Directory -Force $Dir | Out-Null
 robocopy (Join-Path $here 'project') $Dir /E /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { Fail "robocopy failed ($LASTEXITCODE)." }
 $global:LASTEXITCODE = 0
+Test-Tree $Dir 'copied project'
 # Rewrite .git/config clean (no BOM, no NULs, UTF-8) so git never sees a mangled copy.
 if (Test-Path (Join-Path $Dir '.git')) {
     $cfg = $null

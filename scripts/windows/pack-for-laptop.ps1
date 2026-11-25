@@ -37,6 +37,13 @@ foreach ($d in 'storage\logs', 'storage\framework\cache', 'storage\framework\ses
 Remove-Item (Join-Path $proj '.env') -ErrorAction SilentlyContinue
 Get-ChildItem (Join-Path $proj 'bootstrap\cache') -Filter *.php -ErrorAction SilentlyContinue | Remove-Item -Force
 
+# Hash every file (except .git) so the laptop can prove nothing was damaged in transfer or copy.
+Write-Host '    hashing files...'
+$prefix = $proj.TrimEnd('\') + '\'
+Get-ChildItem $proj -Recurse -File -Force | Where-Object { $_.FullName -notlike "$prefix.git\*" } | ForEach-Object {
+    '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA1).Hash, $_.FullName.Substring($prefix.Length)
+} | Set-Content (Join-Path $stage 'manifest.txt') -Encoding utf8
+
 Copy-Item "$PSScriptRoot\unpack-on-laptop.ps1" $stage
 Copy-Item "$PSScriptRoot\unpack-on-laptop.bat" $stage
 
