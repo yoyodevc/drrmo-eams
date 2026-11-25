@@ -148,7 +148,8 @@ $global:LASTEXITCODE = 0
 
 # --- .env
 Step 'Writing .env from the PC copy (only DB settings changed)'
-$envLines = Get-Content (Join-Path $here 'env.packed')
+$envLines = @(Get-Content (Join-Path $here 'env.packed'))
+if ($envLines.Count -gt 0) { $envLines[0] = $envLines[0].TrimStart([char]0xFEFF) }
 $db = ($envLines | Where-Object { $_ -match '^DB_DATABASE=' } | Select-Object -First 1) -replace '^DB_DATABASE=', ''
 if (-not $db) { $db = 'drrmo_eams' }
 $set = @{ DB_HOST = '127.0.0.1'; DB_PORT = '3306'; DB_USERNAME = $DbUser; DB_PASSWORD = $DbPass; APP_URL = 'http://127.0.0.1:8000'; SESSION_SECURE_COOKIE = 'false'; TRUSTED_PROXIES = '' }
@@ -157,7 +158,7 @@ foreach ($l in $envLines) {
     if ($l -match '^([A-Z_]+)=' -and $set.ContainsKey($Matches[1])) { $out += "$($Matches[1])=$($set[$Matches[1]])"; $seen[$Matches[1]] = 1 } else { $out += $l }
 }
 foreach ($k in $set.Keys) { if (-not $seen[$k]) { $out += "$k=$($set[$k])" } }
-Set-Content .env $out -Encoding utf8
+[IO.File]::WriteAllLines((Join-Path (Get-Location) '.env'), [string[]]$out, (New-Object Text.UTF8Encoding $false))
 if (-not ($out -match '^APP_KEY=base64:')) { Run 'key:generate' { php artisan key:generate --force } }
 
 # --- Dependencies

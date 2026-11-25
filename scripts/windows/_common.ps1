@@ -15,10 +15,11 @@ function Get-EnvValue($key) {
 function Set-EnvValue($key, $value) {
     $f = Join-Path $script:Root '.env'
     $lines = @(Get-Content $f)
+    if ($lines.Count -gt 0) { $lines[0] = $lines[0].TrimStart([char]0xFEFF) }
     $found = $false
     $lines = $lines | ForEach-Object { if ($_ -match "^$key=") { $found = $true; "$key=$value" } else { $_ } }
     if (-not $found) { $lines += "$key=$value" }
-    Set-Content -Path $f -Value $lines -Encoding utf8
+    [IO.File]::WriteAllLines($f, [string[]]$lines, (New-Object Text.UTF8Encoding $false))
 }
 
 function Find-MysqlTool($exe) {

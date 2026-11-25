@@ -45,7 +45,7 @@ $envText = (Get-Content .env) `
     -replace '^DB_PASSWORD=.*', "DB_PASSWORD=$DbPass" `
     -replace '^DB_DATABASE=.*', "DB_DATABASE=$DbName" `
     -replace '^APP_URL=.*', 'APP_URL=http://127.0.0.1:8000'
-Set-Content .env $envText -Encoding utf8
+[IO.File]::WriteAllLines((Join-Path (Get-Location) '.env'), [string[]]$envText, (New-Object Text.UTF8Encoding $false))
 php artisan key:generate
 
 # 4. Database

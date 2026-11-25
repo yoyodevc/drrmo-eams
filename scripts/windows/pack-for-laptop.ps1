@@ -20,7 +20,9 @@ if (-not $dump -or $dump.Length -lt 1kb) { throw 'Database dump is missing or em
 Copy-Item $dump.FullName (Join-Path $stage 'database.sql')
 
 Write-Host '2/4 Copying .env...'
-Copy-Item .env (Join-Path $stage 'env.packed')
+$envPack = @(Get-Content .env)
+if ($envPack.Count -gt 0) { $envPack[0] = $envPack[0].TrimStart([char]0xFEFF) }
+[IO.File]::WriteAllLines((Join-Path $stage 'env.packed'), [string[]]$envPack, (New-Object Text.UTF8Encoding $false))
 if (Test-Path .git\config) { Copy-Item .git\config (Join-Path $stage 'git-config.packed') }
 
 Write-Host '3/4 Copying project files...'
