@@ -30,10 +30,52 @@ for ($i = 0; $i -lt 30 -and -not $up; $i++) {
 }
 if (-not $up) { throw "The web server did not answer on port $Port. Look at the 'DRRMO web' window for the error." }
 
+# Front door: Caddy serves the built files itself (gzip, many at once) and passes only app requests to PHP.
+# PHP's built-in server handles one request at a time, so a slow phone download would otherwise block everything.
+$front = $Port
+$caddy = $null
+if (-not (Test-Cmd caddy) -and (Test-Cmd winget)) {
+    winget install --id CaddyServer.Caddy -e --silent --accept-source-agreements --accept-package-agreements
+    $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+}
+if (Test-Cmd caddy) {
+    $front = $Port + 80
+    $pub = (Join-Path $script:Root 'public') -replace '\', '/'
+    $cfgFile = Join-Path $script:Root 'storage\Caddyfile.tunnel'
+    $cfg = @"
+{
+    admin off
+    auto_https off
+    servers {
+        trusted_proxies static private_ranges
+    }
+}
+:$front {
+    bind 127.0.0.1
+    root * $pub
+    encode zstd gzip
+    @static {
+        file
+        not path *.php
+    }
+    handle @static {
+        file_server
+    }
+    handle {
+        reverse_proxy 127.0.0.1:$Port
+    }
+}
+"@
+    [IO.File]::WriteAllText($cfgFile, $cfg, (New-Object Text.UTF8Encoding $false))
+    $caddy = Start-Process caddy -ArgumentList 'run', '--config', $cfgFile, '--adapter', 'caddyfile' -PassThru -WindowStyle Minimized
+    Start-Sleep -Seconds 2
+    try { $null = Invoke-WebRequest "http://127.0.0.1:$front/up" -UseBasicParsing -TimeoutSec 5 } catch { Write-Warning 'Caddy did not answer. Falling back to PHP only.'; Stop-Process -Id $caddy.Id -Force -ErrorAction SilentlyContinue; $caddy = $null; $front = $Port }
+} else { Write-Warning 'Caddy not available. Using PHP only: it can stall on slow phones.' }
+
 # Start the tunnel to learn the URL. http2 avoids the QUIC (UDP) blocking that makes tunnels hang on some networks.
 $log = Join-Path $env:TEMP 'drrmo-cloudflared.log'
 Remove-Item $log -ErrorAction SilentlyContinue
-$cf = Start-Process cloudflared -ArgumentList 'tunnel', '--url', "http://127.0.0.1:$Port", '--protocol', 'http2', '--no-autoupdate', '--logfile', $log -PassThru -WindowStyle Minimized
+$cf = Start-Process cloudflared -ArgumentList 'tunnel', '--url', "http://127.0.0.1:$front", '--protocol', 'http2', '--no-autoupdate', '--logfile', $log -PassThru -WindowStyle Minimized
 $url = $null
 for ($i = 0; $i -lt 60 -and -not $url; $i++) {
     Start-Sleep -Seconds 1
@@ -64,3 +106,4 @@ Write-Host "Public URL: $url" -ForegroundColor Green
 Write-Host 'Press Enter here to stop the tunnel (close the web and queue windows too).'
 Read-Host | Out-Null
 Stop-Process -Id $cf.Id -Force -ErrorAction SilentlyContinue
+if ($caddy) { Stop-Process -Id $caddy.Id -Force -ErrorAction SilentlyContinue }
