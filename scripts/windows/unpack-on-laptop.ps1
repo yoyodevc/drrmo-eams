@@ -60,7 +60,17 @@ foreach ($e in 'pdo_mysql', 'mysqli', 'mbstring', 'openssl', 'fileinfo', 'curl',
 }
 $phpDir = Split-Path (Get-Command php).Source
 if ($text -match '(?m)^\s*;\s*extension_dir\s*=\s*"ext"') { $text = $text -replace '(?m)^\s*;\s*(extension_dir\s*=\s*"ext")', '$1' }
-Set-Content $ini $text -Encoding ascii
+# Drop duplicate active lines (PHP warns "Module already loaded").
+$seenExt = @{}
+$lines = foreach ($ln in ($text -split "`r?`n")) {
+    if ($ln -match '^\s*extension\s*=\s*"?([\w\.]+)"?\s*$') {
+        $k = $Matches[1].ToLower() -replace '^php_|\.dll$', ''
+        if ($seenExt[$k]) { continue }
+        $seenExt[$k] = 1
+    }
+    $ln
+}
+[IO.File]::WriteAllText($ini, ($lines -join "`r`n"), (New-Object Text.UTF8Encoding $false))
 $missing = @()
 $loaded = (php -m) -join ' '
 foreach ($e in 'pdo_mysql', 'mbstring', 'openssl', 'fileinfo', 'curl', 'zip', 'intl', 'gd') { if ($loaded -notmatch "(?i)\b$e\b") { $missing += $e } }
@@ -90,8 +100,26 @@ New-Item -ItemType Directory -Force $Dir | Out-Null
 robocopy (Join-Path $here 'project') $Dir /E /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { Fail "robocopy failed ($LASTEXITCODE)." }
 $global:LASTEXITCODE = 0
+# Rewrite .git/config clean (no BOM, no NULs, UTF-8) so git never sees a mangled copy.
+if (Test-Path (Join-Path $Dir '.git')) {
+    $cfg = $null
+    $src = Join-Path $here 'git-config.packed'
+    if (Test-Path $src) {
+        $b = [IO.File]::ReadAllBytes($src)
+        if ($b.Length -ge 2 -and $b[0] -eq 0xFF -and $b[1] -eq 0xFE) { $cfg = [Text.Encoding]::Unicode.GetString($b, 2, $b.Length - 2) }
+        elseif ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF) { $cfg = [Text.Encoding]::UTF8.GetString($b, 3, $b.Length - 3) }
+        else { $cfg = [Text.Encoding]::UTF8.GetString($b) }
+        $cfg = ($cfg -replace "`0", '') -replace "`r`n", "`n"
+        if ($cfg -notmatch '^\s*\[') { $cfg = $null }
+    }
+    if (-not $cfg) { $cfg = "[core]`n`trepositoryformatversion = 0`n`tfilemode = false`n`tbare = false`n`tlogallrefupdates = true`n" }
+    [IO.File]::WriteAllText((Join-Path $Dir '.git\config'), $cfg, (New-Object Text.UTF8Encoding $false))
+}
 Set-Location $Dir
-if (Test-Path .git) { git config --global --add safe.directory ($Dir -replace '\\', '/') 2>$null }
+# Convenience only, never fatal.
+try { $ErrorActionPreference = 'Continue'; git config --global --add safe.directory ($Dir -replace '\\', '/') 2>&1 | Out-Null } catch { }
+$ErrorActionPreference = 'Stop'
+$global:LASTEXITCODE = 0
 
 # --- .env
 Step 'Writing .env from the PC copy (only DB settings changed)'

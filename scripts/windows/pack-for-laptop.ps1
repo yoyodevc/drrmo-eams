@@ -21,6 +21,7 @@ Copy-Item $dump.FullName (Join-Path $stage 'database.sql')
 
 Write-Host '2/4 Copying .env...'
 Copy-Item .env (Join-Path $stage 'env.packed')
+if (Test-Path .git\config) { Copy-Item .git\config (Join-Path $stage 'git-config.packed') }
 
 Write-Host '3/4 Copying project files...'
 $proj = Join-Path $stage 'project'
