@@ -40,7 +40,7 @@ if (-not (Test-Cmd caddy) -and (Test-Cmd winget)) {
 }
 if (Test-Cmd caddy) {
     $front = $Port + 80
-    $pub = (Join-Path $script:Root 'public') -replace '\', '/'
+    $pub = (Join-Path $script:Root 'public') .Replace('\', '/')
     $cfgFile = Join-Path $script:Root 'storage\Caddyfile.tunnel'
     $cfg = @"
 {
