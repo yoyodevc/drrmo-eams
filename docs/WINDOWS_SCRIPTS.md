@@ -15,17 +15,32 @@ It writes that URL to `APP_URL` and sets `SESSION_SECURE_COOKIE=true` and `TRUST
 The URL changes every run. Auth is JWT, so there are no Sanctum domains to set.
 Run `run-local.bat` afterwards to switch the settings back.
 
-## Set up a fresh laptop
+## Move the project to a laptop (recommended)
 
-1. On the PC, push every local commit first (`git push`). The clone only gets what is on GitHub.
-2. Optional, to copy your data: run `export-db.bat` on the PC. It writes `backups\drrmo-<time>.sql`. Copy it to the laptop. It holds real data, so never commit it.
-3. On the laptop, copy `setup-laptop.ps1` over (or download it from GitHub) and run:
+No push is needed. The zip carries your working tree, `.git`, database dump and `.env`.
+
+1. On the PC, double click `pack-for-laptop.bat`. It writes `transfer\drrmo-transfer.zip`.
+2. Copy the zip to the laptop (USB or a private drive). It holds real data and secrets, so delete it afterwards.
+3. On the laptop, extract it and double click `unpack-on-laptop.bat`.
+
+The laptop script installs the missing tools with winget, turns on the PHP extensions, copies the project, writes `.env` (only the DB settings change), installs dependencies, imports the dump, migrates, builds and starts the app.
+It is safe to rerun. It skips the import if the database already has tables (`-ForceImport` reloads it).
+If MySQL root has a password, run it from PowerShell with `-DbPass 'secret'`.
+
+What can still fail:
+- winget is missing. Install App Installer from the Microsoft Store.
+- A fresh install is not on PATH yet. Open a new window (or reboot) and rerun.
+- MySQL is not running, or root has a password you did not pass. The script stops with a message.
+- The Oracle MySQL install from winget may need its configuration wizard first. XAMPP also works.
+- Antivirus or a blocked network can break winget, composer or npm. Rerun when fixed.
+
+## Set up a fresh laptop from GitHub (alternative)
+
+Use this only after `git push`. The clone only has what is on GitHub.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File setup-laptop.ps1 -Dir C:\drrmo-eams
 ```
 
-To import the dump, add `-DumpFile C:\path\drrmo.sql`. Without it the script migrates and seeds.
-It installs Git, Node, PHP, Composer, cloudflared and MySQL with winget when they are missing.
-Check that the PHP extensions in `php.ini` are on (pdo_mysql, mbstring, openssl, fileinfo, curl, zip, intl, gd).
+Add `-DumpFile C:\path\drrmo.sql` to import a dump from `export-db.bat`. Without it the script migrates and seeds.
 Use `-DbUser` and `-DbPass` if MySQL root has a password.
