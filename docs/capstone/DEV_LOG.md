@@ -529,3 +529,18 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - What was built: run-local and run-tunnel now also open a scheduler window, so duty reminders, report slots, emergency escalation and the cleanup jobs run during local and phone testing
 - Evidence: both scripts parse without errors
 - Paper: Chapter 4 (testing)
+
+## 2026-11-28 · Alert sound reminder, duty types, Station and Add duty layout (notifications, events)
+- What was built: the "Turn on alert sound" banner no longer shows in every new tab. The app remembers the choice on the device
+- What was built: Manage lists now has a Duty types list. Admins can add, rename and switch off a duty type. Switched off types stay on old records
+- What was built: the duty's team field is called Station in the screens and messages, to match how the office speaks. The database column name did not change
+- What was built: the Add duty form adapts to its own width, so it fits the side panel and the full page
+- Evidence: new Pest tests for the duty type endpoints, including the forbidden case. Checked in the browser at phone and desktop width
+- Paper: Chapter 4 (admin screens)
+
+## 2026-11-28 · Reports pages redesign (monitoring)
+- What was built: Needs attention has larger summary numbers with a status bar on wide screens, one late reports list at every width, and a stacked bar per event for on time, late, overdue and missed
+- What was built: All reports splits rows by day, puts the time in its own column from 768 px, shows slots with no report as a quieter row, and uses smaller photos
+- Evidence: type check and lint pass. Checked at phone and desktop width
+- Paper: Chapter 4 (monitoring screens)
+
