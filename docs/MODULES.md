@@ -66,6 +66,7 @@ Count: 5 + 5 + 6 + 3 + 4 + 2 + 2 = 27 tables. Each appears once. Each module als
 - **Owns:** app shell, Blade entry view, `bootstrap/app.php`, `routes/api.php` (which only includes module route files), auth endpoints, `/api/me`, the `EnsureConsented` middleware, the service worker (`public/sw.js`) and web manifest, layouts, UI kit, API client, PWA files, error handling.
 - **Endpoints:** `POST /api/login`, `POST /api/refresh`, `POST /api/logout`, `POST /api/forgot-password`, `POST /api/reset-password`, `GET /api/me`. Auth is the JWT guard (`auth:api`, app/Auth).
 - **Frontend:** `resources/js/app`, `resources/js/layouts`, `resources/js/shared`.
+- **Shared record codes:** `app/Support` holds `HasPublicCode`, `PublicCode` and `PublicCodeColumn`. In the endpoint lists below, a name in braces such as `{event}` or `{id}` is the record's public code, never its number (see DATABASE.md).
 - **Must not touch:** any module's business rules.
 - Note: `EnsureConsented` reads consent through the Records contract `ConsentChecker`.
 

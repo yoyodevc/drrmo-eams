@@ -2,6 +2,8 @@
 
 Filled in per milestone. See ../../DOCUMENTATION_GUIDE.md. All endpoints are under `/api` and send and return JSON.
 
+Record ids in this document (`{id}`, `{event}`, `id`, `user_id`, `event_id` and so on) are public codes: random 16 character strings, not numbers. Teams and event types use their readable `code`. A number in a URL answers 404.
+
 Auth uses two HttpOnly cookies set by the server: `drrmo_access` (a JWT, 15 minutes) and `drrmo_refresh` (7 days, rotates on every use). Page scripts never read them. Every `/api` answer carries `Cache-Control: no-store, private`, so browsers and proxies never keep it. Every POST, PUT, PATCH and DELETE must send `X-Requested-With: XMLHttpRequest` and come from an allowed origin, or it gets 403 `bad_origin`. A signed-in endpoint answers 401 when the access token is missing, expired or revoked. The app then calls `POST /api/refresh` once and retries.
 
 ## Auth (Core)

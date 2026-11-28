@@ -2,6 +2,10 @@
 
 Filled in per milestone. See ../../DOCUMENTATION_GUIDE.md. Types are shown as Laravel column types.
 
+## Public codes
+
+These tables also have `public_code` (string 16, unique, not null), the random code used in URLs and in the API: roles, permission_grants, users, departments, emergency_contacts, duty_types, campus_locations, events, event_duty_requirements, assignments, site_reports, emergency_reports, notifications, push_subscriptions and memos.
+
 ## M0 tables
 
 ### roles (Access)

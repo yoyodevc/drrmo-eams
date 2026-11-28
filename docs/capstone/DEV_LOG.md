@@ -510,3 +510,11 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Open: DEPLOYMENT.md and `.env.example` mention a ProductionSeeder and an AdminUserSeeder that do not exist, so there is no first admin step yet. It belongs to S6.5.
 - Evidence: docs only, no code changed
 - Paper: Chapter 3 (system design)
+
+## 2026-11-28 · Random record codes in links (core, all modules)
+- What was built: every record people open now has a random public code. Addresses such as /admin/events/..., the duty link in emails, push links, query filters and API answers use the code. Record numbers stay inside the database. Old rows got their codes during the migration
+- Decision and why: random codes stop people from guessing the next record or counting records. Primary keys stayed integers, so no foreign key changed. Policies were not relaxed. A code is not a permission
+- Problem met and fix: a number sent to the map filter would have shown every event, so an unknown code now matches nothing. A copied row would have kept the same code, so copies get a new one
+- Open: links in emails sent before this change no longer highlight the duty or open the report. Reports, emergencies and location points still waiting offline on a phone at the moment of the update are not sent by the new version, so deploy when no duty is running
+- Evidence: tests/Feature/Core/PublicCodeTest.php checks that a number is refused for each record type. 466 PHP tests and 155 JavaScript tests pass. Click-through on the local server as an admin and as a marshal at phone width
+- Paper: Chapter 3 (security design), Chapter 4
