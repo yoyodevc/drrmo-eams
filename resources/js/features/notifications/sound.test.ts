@@ -155,7 +155,10 @@ describe('sound engine', () => {
     it('plays from a local copy once the files are preloaded', async () => {
         vi.stubGlobal(
             'fetch',
-            vi.fn(() => Promise.resolve(new Response(new Blob(['x']), { status: 200 }))),
+            // A plain object: Node's Response cannot read jsdom's Blob on every runner.
+            vi.fn(() =>
+                Promise.resolve({ ok: true, blob: () => Promise.resolve(new Blob(['x'])) }),
+            ),
         );
         URL.createObjectURL = vi.fn(() => 'blob:local-file');
         await sound.preloadSounds();
