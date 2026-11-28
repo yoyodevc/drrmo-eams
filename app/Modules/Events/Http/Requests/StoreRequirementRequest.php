@@ -8,6 +8,7 @@ use App\Modules\Events\Models\Event;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /** Adds a duty requirement. The shift must sit inside the event time. */
@@ -22,7 +23,7 @@ class StoreRequirementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'duty_type_id' => ['required', 'integer', 'exists:duty_types,id'],
+            'duty_type_id' => ['required', 'integer', Rule::exists('duty_types', 'id')->where('active', true)],
             'role' => ['required', 'in:marshal,volunteer'],
             'team_needed' => ['nullable', 'string', 'max:100'],
             'headcount' => ['required', 'integer', 'min:1', 'max:500'],

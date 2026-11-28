@@ -79,7 +79,7 @@ Count: 5 + 5 + 6 + 3 + 4 + 2 + 2 = 27 tables. Each appears once. Each module als
   - `GET /api/me/availability` (the person's own on-call status)
   - `GET /api/me/profile`, `PATCH /api/me/profile` (contact number only)
   - `GET|POST|PUT|DELETE /api/me/emergency-contacts[/{contact}]`, `GET /api/admin/people/{user}/emergency-contacts`
-  - `GET|POST|PATCH|DELETE /api/departments[/{department}]` and `/api/teams[/{team}]` (the Manage lists screen, which also edits event types and campus locations through the Events endpoints)
+  - `GET|POST|PATCH|DELETE /api/departments[/{department}]` and `/api/teams[/{team}]` (the Manage lists screen, which also edits event types, duty types and campus locations through the Events endpoints)
   - `POST /api/register`, `POST /api/register/verify`, `POST /api/register/resend` (public Request access for volunteers)
   - `GET /api/admin/registrations`, `POST /api/admin/registrations/{user}/approve`, `POST /api/admin/registrations/{user}/reject`
 - **Policies:** `UserPolicy`. Departments, teams and emergency contacts use its gate abilities (`viewPeople`, `managePeople`, `manageOwnProfile`).

@@ -1,5 +1,5 @@
 // A-Manage lists. Admin adds, renames, deactivates and removes the values used on the person form,
-// the people filters and the event form: teams, departments, event types and campus locations.
+// the people filters and the event form: teams, departments, event types, duty types and campus locations.
 // A value that is still in use can be set inactive, not deleted.
 // Desktop: a list switcher on the left and the chosen list on the right. Phones: a switcher row on top.
 // Locations also show on a campus map, and the add and edit dialog has a pin picker.
@@ -8,10 +8,13 @@ import { useCallback, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMe } from '@/app/auth';
 import {
+    deleteDutyType,
     deleteEventType,
     deleteLocation,
+    listDutyTypes,
     listEventTypes,
     listLocations,
+    saveDutyType,
     saveEventType,
     saveLocation,
 } from '@/features/events/api';
@@ -38,7 +41,7 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { SegmentedControl } from '@/shared/ui/SegmentedControl';
 import { TextField } from '@/shared/ui/TextField';
 
-type ListKind = 'teams' | 'departments' | 'event-types' | 'locations';
+type ListKind = 'teams' | 'departments' | 'event-types' | 'duty-types' | 'locations';
 type Status = 'all' | 'active' | 'inactive';
 
 interface Unit {
@@ -93,6 +96,16 @@ const copy: Record<
         usedBy: 'Events',
         group: 'Events',
     },
+    'duty-types': {
+        title: 'Duty types',
+        one: 'duty type',
+        about: 'What a person does at an event. Shown when you add a duty to an event.',
+        example: 'For example, First aid.',
+        filter: null,
+        noun: ['duty', 'duties'],
+        usedBy: 'Events',
+        group: 'Events',
+    },
     locations: {
         title: 'Locations',
         one: 'location',
@@ -141,6 +154,12 @@ function useList(kind: ListKind, enabled = true) {
                     key: t.code,
                     count: t.events_count,
                 }));
+            if (kind === 'duty-types')
+                return (await listDutyTypes()).map((t) => ({
+                    ...t,
+                    key: t.id,
+                    count: t.duties_count,
+                }));
             return (await listLocations()).map((l) => ({
                 ...l,
                 key: l.id,
@@ -169,6 +188,12 @@ function ListIcon({ kind, className = 'size-5' }: { kind: ListKind; className?: 
             <>
                 <path d="M4 7.5V4.5h7l9 9-6.5 6.5-9-9z" />
                 <circle cx="8" cy="8" r="1.2" />
+            </>
+        ),
+        'duty-types': (
+            <>
+                <rect x="5" y="4.5" width="14" height="16" rx="2" />
+                <path d="M9 4.5V3h6v1.5M8.5 13l2.5 2.5 4.5-5" />
             </>
         ),
         locations: (
@@ -254,6 +279,8 @@ function ListPanel({ kind, list }: { kind: ListKind; list: UseQueryResult<Unit[]
             const body = { name: input.name, active: input.active };
             if (kind === 'event-types')
                 return saveEventType(input.key === null ? null : String(input.key), body);
+            if (kind === 'duty-types')
+                return saveDutyType(input.key === null ? null : Number(input.key), body);
             if (kind === 'locations')
                 return saveLocation(input.key === null ? null : Number(input.key), {
                     ...body,
@@ -271,6 +298,7 @@ function ListPanel({ kind, list }: { kind: ListKind; list: UseQueryResult<Unit[]
     const remove = useMutation({
         mutationFn: (unit: Unit) => {
             if (kind === 'event-types') return deleteEventType(String(unit.key));
+            if (kind === 'duty-types') return deleteDutyType(Number(unit.key));
             if (kind === 'locations') return deleteLocation(Number(unit.key));
             return deleteOrgUnit(kind, unit.key);
         },
@@ -708,10 +736,11 @@ export function ManageLists() {
         teams: useList('teams'),
         departments: useList('departments'),
         'event-types': useList('event-types', canEvents),
+        'duty-types': useList('duty-types', canEvents),
         locations: useList('locations', canEvents),
     };
     const kinds: ListKind[] = canEvents
-        ? ['teams', 'departments', 'event-types', 'locations']
+        ? ['teams', 'departments', 'event-types', 'duty-types', 'locations']
         : ['teams', 'departments'];
     const asked = params.get('list') as ListKind | null;
     const kind: ListKind = asked && kinds.includes(asked) ? asked : 'teams';
@@ -737,7 +766,7 @@ export function ManageLists() {
                 <p className="mt-1 max-w-2xl text-pretty text-stone-600">
                     The choices people pick from across the system.{' '}
                     {canEvents
-                        ? 'Teams and departments fill the person form. Event types and locations fill the event form.'
+                        ? 'Teams and departments fill the person form. Event types, duty types and locations fill the event forms.'
                         : 'Teams and departments fill the person form and the People filters.'}
                 </p>
             </header>

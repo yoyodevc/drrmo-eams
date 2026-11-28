@@ -303,6 +303,32 @@ export async function deleteEventType(code: string): Promise<void> {
     await api(`/api/event-types/${code}`, { method: 'DELETE' });
 }
 
+export interface DutyTypeRow {
+    id: number;
+    name: string;
+    active: boolean;
+    duties_count: number;
+}
+
+export async function listDutyTypes(): Promise<DutyTypeRow[]> {
+    const body = await api<{ data: DutyTypeRow[] }>('/api/duty-types');
+    return body.data;
+}
+
+export async function saveDutyType(
+    id: number | null,
+    input: { name: string; active: boolean },
+): Promise<void> {
+    await api(id === null ? '/api/duty-types' : `/api/duty-types/${id}`, {
+        method: id === null ? 'POST' : 'PATCH',
+        body: JSON.stringify(input),
+    });
+}
+
+export async function deleteDutyType(id: number): Promise<void> {
+    await api(`/api/duty-types/${id}`, { method: 'DELETE' });
+}
+
 export interface LocationRow {
     id: number;
     name: string;
