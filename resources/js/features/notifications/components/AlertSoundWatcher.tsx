@@ -4,7 +4,8 @@
 //    are never silenced.
 //  - Important (assignments, due or overdue reports): one short chime, unless sound is muted.
 //  - Normal: silent.
-// Sound needs one tap on the page first. A banner asks for it, and any tap on the page also does it.
+// Sound needs one tap or key press on each page load. Any of them does it silently. A banner asks only
+// until sound has been turned on once on this device.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
@@ -17,6 +18,7 @@ import {
     startAlarm,
     stopAlarm,
     preloadSounds,
+    soundRemembered,
     subscribeSound,
     unlock,
     urgencyOf,
@@ -58,16 +60,18 @@ export function AlertSoundWatcher({ to }: { to: string }) {
     const ringKey = ringing.map((a) => a.id).join(',');
     const chimeKey = chimes.join(',');
 
-    // A real tap on the page allows sound, so the banner is only a reminder. iPhones count a finished
+    // A real tap or key press allows sound, so the banner is only a reminder. iPhones count a finished
     // touch or a click, not a scroll, so keep listening until one of those works.
     useEffect(() => {
         if (unlocked) return;
         const tap = () => void unlock();
         window.addEventListener('touchend', tap);
         window.addEventListener('click', tap);
+        window.addEventListener('keydown', tap);
         return () => {
             window.removeEventListener('touchend', tap);
             window.removeEventListener('click', tap);
+            window.removeEventListener('keydown', tap);
         };
     }, [unlocked]);
 
@@ -132,7 +136,9 @@ export function AlertSoundWatcher({ to }: { to: string }) {
 
     return (
         <>
-            {!unlocked && !muted && <SoundUnlockBanner onTurnOn={() => void unlock()} />}
+            {!unlocked && !muted && !soundRemembered() && (
+                <SoundUnlockBanner onTurnOn={() => void unlock()} />
+            )}
             {first && (
                 <AlarmScreen
                     alerts={ringing.map((a) => ({ id: a.id, text: alertLine(a, to, to).text }))}

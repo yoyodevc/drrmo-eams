@@ -165,6 +165,16 @@ describe('sound engine', () => {
         expect(sound.isAlarmPlaying()).toBe(true);
     });
 
+    it('remembers on this device that sound was turned on, for the next page load', async () => {
+        localStorage.clear();
+        expect(sound.soundRemembered()).toBe(false);
+        await sound.unlock();
+        vi.resetModules();
+        const nextTab = await import('./sound');
+        expect(nextTab.soundRemembered()).toBe(true);
+        expect(nextTab.isUnlocked()).toBe(false);
+    });
+
     it('tells listeners when sound unlocks', async () => {
         const listener = vi.fn();
         sound.subscribeSound(listener);

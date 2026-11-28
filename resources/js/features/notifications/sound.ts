@@ -76,7 +76,27 @@ export function isUnlocked(): boolean {
     return unlocked;
 }
 
-// Call from a real tap (click or touchend). Plays the chime for a moment, then stops it. The browser
+// Remembers on this device that sound was turned on once, so a new tab does not ask again. The browser
+// still blocks sound in that tab until the first click or key press.
+const REMEMBER = 'eams-sound-on';
+
+export function soundRemembered(): boolean {
+    try {
+        return localStorage.getItem(REMEMBER) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function remember(): void {
+    try {
+        localStorage.setItem(REMEMBER, '1');
+    } catch {
+        // Storage is blocked: the banner just shows again next time.
+    }
+}
+
+// Call from a real tap or key press (click, touchend or keydown). Plays the chime for a moment, then stops it. The browser
 // refuses when the call did not come from a tap, so success means sound really is allowed. A muted
 // play is not used: iPhones accept it without a tap, which would look unlocked when it is not.
 export function unlock(): Promise<boolean> {
@@ -98,6 +118,7 @@ async function tryUnlock(): Promise<boolean> {
         el.pause();
         el.currentTime = 0;
         unlocked = true;
+        remember();
     } catch {
         unlocked = false;
     }
