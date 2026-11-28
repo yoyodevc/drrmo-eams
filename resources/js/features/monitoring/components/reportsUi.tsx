@@ -10,12 +10,28 @@ export const stamp = new Intl.DateTimeFormat(undefined, {
     minute: '2-digit',
 });
 
-const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+export const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 
 // "9:41 AM" for today, "Nov 19, 9:41 AM" for any other day.
 export function when(iso: string, now: number): string {
     const d = new Date(iso);
     return d.toDateString() === new Date(now).toDateString() ? clock.format(d) : stamp.format(d);
+}
+
+// "Today", "Yesterday", or "Wed, Nov 26", for day headings in a list.
+const dayStamp = new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+});
+
+export function dayLabel(iso: string, now: number): string {
+    const d = new Date(iso);
+    const today = new Date(now);
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    today.setDate(today.getDate() - 1);
+    if (d.toDateString() === today.toDateString()) return 'Yesterday';
+    return dayStamp.format(d);
 }
 
 // "Just now", "12 min ago", "3 hr ago", "2 days ago".
