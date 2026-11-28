@@ -518,3 +518,9 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Open: links in emails sent before this change no longer highlight the duty or open the report. Reports, emergencies and location points still waiting offline on a phone at the moment of the update are not sent by the new version, so deploy when no duty is running
 - Evidence: tests/Feature/Core/PublicCodeTest.php checks that a number is refused for each record type. 466 PHP tests and 155 JavaScript tests pass. Click-through on the local server as an admin and as a marshal at phone width
 - Paper: Chapter 3 (security design), Chapter 4
+
+## 2026-11-28 · Local start fixes: uploads and urgent push (core)
+- Problem met and fix: on Windows, `php artisan serve` hid the temporary folder from PHP, so every memo file and report or emergency photo failed. The app now passes TEMP and TMP through to the web server
+- Problem met and fix: run-local and run-tunnel started a worker that skipped the `high` queue, so emergency pushes were never sent. Both now process `high` first. The production worker was already correct
+- Evidence: found during a click-through, then an upload sent to a normally started server no longer shows the PHP warning
+- Paper: Chapter 4 (testing)

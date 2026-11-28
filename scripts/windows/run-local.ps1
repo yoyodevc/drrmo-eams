@@ -10,7 +10,7 @@ Set-EnvValue 'SESSION_SECURE_COOKIE' 'false'
 php artisan config:clear | Out-Null
 
 Start-Window 'DRRMO web' "php artisan serve --host=127.0.0.1 --port=$Port"
-Start-Window 'DRRMO queue' 'php artisan queue:work --tries=3 --sleep=3'
+Start-Window 'DRRMO queue' 'php artisan queue:work --queue=high,default --tries=3 --sleep=3'
 if ($Build) {
     Remove-Item public\hot -ErrorAction SilentlyContinue
     npm run build

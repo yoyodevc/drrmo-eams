@@ -22,7 +22,7 @@ npm run build
 Set-EnvValue 'TRUSTED_PROXIES' '127.0.0.1'
 php artisan config:clear | Out-Null
 Start-Window 'DRRMO web' "php artisan serve --host=127.0.0.1 --port=$Port"
-Start-Window 'DRRMO queue' 'php artisan queue:work --tries=3 --sleep=3'
+Start-Window 'DRRMO queue' 'php artisan queue:work --queue=high,default --tries=3 --sleep=3'
 $up = $false
 for ($i = 0; $i -lt 30 -and -not $up; $i++) {
     Start-Sleep -Seconds 1

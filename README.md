@@ -109,7 +109,7 @@ Every day:
 1. Start MySQL in the XAMPP Control Panel.
 2. In one terminal run `php artisan serve`.
 3. In a second terminal run `npm run dev`. Skip this if you are not changing React code.
-4. In a third terminal run `php artisan queue:work`. Emails and push alerts wait in the queue until it runs.
+4. In a third terminal run `php artisan queue:work --queue=high,default`. Without `high`, emergency pushes are never sent. Emails and push alerts wait in the queue until it runs.
 5. In a fourth terminal run `php artisan schedule:work`. It sends the reminders, makes the report slots, flags overdue and missed reports and unanswered emergencies, and closes finished duties.
 6. Open http://127.0.0.1:8000. With `MAIL_MAILER=log`, emails are written to `storage/logs/laravel.log`.
 
