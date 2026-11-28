@@ -69,7 +69,7 @@ it('queues a PDF copy when a Word memo is posted and a converter is set up', fun
         'file' => UploadedFile::fake()->create('entry.docx', 30, DOCX),
     ], ['Accept' => 'application/json'])->assertCreated()->assertJsonPath('data.file.preview', 'converting')->json('data.id');
 
-    Queue::assertPushed(ConvertMemoFile::class, fn (ConvertMemoFile $job) => $job->memo->id === $id);
+    Queue::assertPushed(ConvertMemoFile::class, fn (ConvertMemoFile $job) => $job->memo->public_code === $id);
 });
 
 it('skips the copy without a converter, and never for PDF files', function () {
@@ -96,7 +96,7 @@ it('converts the file, then every role can open the PDF copy', function () {
     $memo = wordMemo();
     $cookies = loginCookies(User::factory()->role(RoleCode::Volunteer)->create());
 
-    withAuthCookies($cookies)->get("/api/memos/{$memo->id}/preview")->assertNotFound();
+    withAuthCookies($cookies)->get("/api/memos/{$memo->public_code}/preview")->assertNotFound();
 
     ConvertMemoFile::dispatchSync($memo, 'memos/form.docx');
     // A second run finds the ready copy and does nothing.
@@ -105,8 +105,8 @@ it('converts the file, then every role can open the PDF copy', function () {
     expect($converter->calls)->toBe(1);
     $memo->refresh();
     expect($memo->preview_status)->toBe('ready')->and($memo->preview_path)->toBe('memos/previews/form.pdf');
-    withAuthCookies($cookies)->getJson("/api/memos/{$memo->id}")->assertJsonPath('data.file.preview', 'ready');
-    withAuthCookies($cookies)->get("/api/memos/{$memo->id}/preview")
+    withAuthCookies($cookies)->getJson("/api/memos/{$memo->public_code}")->assertJsonPath('data.file.preview', 'ready');
+    withAuthCookies($cookies)->get("/api/memos/{$memo->public_code}/preview")
         ->assertOk()->assertHeader('Content-Type', 'application/pdf')->assertHeader('X-Content-Type-Options', 'nosniff');
 });
 
@@ -114,7 +114,7 @@ it('keeps the PDF copy away from signed out visitors', function () {
     $memo = wordMemo(['preview_status' => 'ready', 'preview_path' => 'memos/previews/form.pdf']);
     Storage::disk('local')->put('memos/previews/form.pdf', '%PDF-1.7');
 
-    $this->getJson("/api/memos/{$memo->id}/preview")->assertUnauthorized();
+    $this->getJson("/api/memos/{$memo->public_code}/preview")->assertUnauthorized();
 });
 
 it('drops a copy made for a file that was replaced while it ran', function () {
@@ -139,7 +139,7 @@ it('marks the copy as failed, so the page falls back to the quick preview', func
 
     expect($memo->fresh()->preview_status)->toBe('failed');
     $cookies = loginCookies(User::factory()->role(RoleCode::Admin)->create());
-    withAuthCookies($cookies)->getJson("/api/memos/{$memo->id}")->assertJsonPath('data.file.preview', 'unavailable');
+    withAuthCookies($cookies)->getJson("/api/memos/{$memo->public_code}")->assertJsonPath('data.file.preview', 'unavailable');
 });
 
 it('removes the PDF copy with its file', function () {
@@ -147,7 +147,7 @@ it('removes the PDF copy with its file', function () {
     Storage::disk('local')->put('memos/previews/form.pdf', '%PDF-1.7');
     $cookies = loginCookies(User::factory()->role(RoleCode::Admin)->create());
 
-    withAuthCookies($cookies)->post("/api/memos/{$memo->id}", [
+    withAuthCookies($cookies)->post("/api/memos/{$memo->public_code}", [
         '_method' => 'PATCH', 'title' => $memo->title, 'category' => 'other', 'body' => 'Text stays.', 'remove_file' => '1',
     ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('data.file', null);
 

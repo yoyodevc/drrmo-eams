@@ -19,13 +19,13 @@ export function DirectChat({
     back?: string;
     dense?: boolean;
 }) {
-    const personId = Number(useParams().id) || 0;
+    const personId = useParams().id ?? '';
     const client = useQueryClient();
     const chat = useQuery({
         queryKey: ['direct-chat', personId],
         queryFn: () => getDirectChat(personId),
         refetchInterval: POLL_MS,
-        enabled: personId > 0,
+        enabled: personId !== '',
     });
     const lastId = chat.data?.data.at(-1)?.id;
     const hasTheirs = chat.data?.data.some((m) => !m.mine) ?? false;

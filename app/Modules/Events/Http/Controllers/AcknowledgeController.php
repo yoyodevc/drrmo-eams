@@ -27,7 +27,7 @@ class AcknowledgeController
         }
 
         return response()->json(['data' => [
-            'id' => $assignment->id,
+            'id' => $assignment->public_code,
             'status' => $assignment->status->value,
             'acknowledged_at' => $assignment->acknowledged_at?->toIso8601String(),
         ]]);

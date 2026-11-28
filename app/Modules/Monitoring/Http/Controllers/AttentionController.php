@@ -46,7 +46,7 @@ class AttentionController
 
         return response()->json(['data' => [
             'emergencies' => $emergencies->map(fn (EmergencyReport $e) => [
-                'id' => $e->id,
+                'id' => $e->public_code,
                 'type' => $e->type->value,
                 'status' => $e->status->value,
                 'escalated' => $e->escalated_at !== null,
@@ -56,7 +56,7 @@ class AttentionController
                 'acknowledged_by' => $e->acknowledger->name ?? null,
             ])->values(),
             'reports' => $problems->map(fn (SiteReport $r) => [
-                'id' => $r->id,
+                'id' => $r->public_code,
                 'status' => $r->status->value,
                 'due_at' => $r->due_at->toIso8601String(),
                 'event' => $r->assignment->event->title ?? null,
@@ -80,14 +80,14 @@ class AttentionController
             ->select('assignments.event_id', 'site_reports.status', DB::raw('count(*) as total'))
             ->get();
 
-        $titles = Event::query()->whereIn('id', $rows->pluck('event_id')->unique())->pluck('title', 'id');
+        $events = Event::query()->whereIn('id', $rows->pluck('event_id')->unique())->get(['id', 'public_code', 'title'])->keyBy('id');
 
-        return $rows->groupBy('event_id')->map(function ($group, $eventId) use ($titles): array {
+        return $rows->groupBy('event_id')->map(function ($group, $eventId) use ($events): array {
             $count = fn (string $status): int => (int) ($group->firstWhere('status', $status)->total ?? 0);
 
             return [
-                'event_id' => (int) $eventId,
-                'event' => $titles[$eventId] ?? null,
+                'event_id' => $events[$eventId]->public_code ?? null,
+                'event' => $events[$eventId]->title ?? null,
                 'on_time' => $count('submitted'),
                 'late' => $count('late'),
                 'overdue' => $count('overdue'),

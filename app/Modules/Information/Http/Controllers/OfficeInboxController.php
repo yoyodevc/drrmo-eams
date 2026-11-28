@@ -31,7 +31,7 @@ class OfficeInboxController
             ->groupBy(DB::raw('coalesce(recipient_id, sender_id)'))
             ->orderByDesc('last_id')->limit(self::LIMIT)->get();
 
-        $people = User::query()->whereIn('id', $rows->pluck('person_id'))->get(['id', 'first_name', 'last_name'])->keyBy('id');
+        $people = User::query()->whereIn('id', $rows->pluck('person_id'))->get(['id', 'public_code', 'first_name', 'last_name'])->keyBy('id');
         $last = Message::query()->whereIn('id', $rows->pluck('last_id'))->get()->keyBy('id');
 
         return response()->json([
@@ -39,7 +39,7 @@ class OfficeInboxController
                 $m = $last[$r->last_id];
 
                 return [
-                    'person' => ['id' => (int) $r->person_id, 'name' => $people[$r->person_id]->name ?? 'Unknown'],
+                    'person' => ['id' => $people[$r->person_id]->public_code ?? null, 'name' => $people[$r->person_id]->name ?? 'Unknown'],
                     'last' => ['body' => $m->body, 'sent_at' => $m->sent_at->toIso8601String(), 'from_office' => $m->recipient_id !== null],
                     'unread' => (int) $r->unread,
                 ];
@@ -53,7 +53,7 @@ class OfficeInboxController
         Gate::authorize('office', Message::class);
 
         return response()->json([
-            'person' => ['id' => $user->id, 'name' => $user->name],
+            'person' => ['id' => $user->public_code, 'name' => $user->name],
             'data' => $this->thread($user)->map(fn (Message $m) => $this->row($m))->values(),
         ]);
     }

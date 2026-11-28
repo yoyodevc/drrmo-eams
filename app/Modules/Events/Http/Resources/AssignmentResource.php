@@ -15,10 +15,10 @@ class AssignmentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'person' => ['id' => $this->user->id, 'name' => $this->user->name, 'email' => $this->user->email],
+            'id' => $this->public_code,
+            'person' => ['id' => $this->user->public_code, 'name' => $this->user->name, 'email' => $this->user->email],
             'role' => $this->user->role?->code,
-            'task_type' => ['id' => $this->dutyType->id, 'name' => $this->dutyType->name],
+            'task_type' => ['id' => $this->dutyType->public_code, 'name' => $this->dutyType->name],
             'status' => $this->status->value,
             'acknowledged_at' => $this->acknowledged_at?->toIso8601String(),
             'override_reason' => $this->override_reason,

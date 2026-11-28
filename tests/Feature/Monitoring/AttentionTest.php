@@ -66,11 +66,11 @@ it('shows the reporter the emergencies of the event since the previous report, w
     $make('before-12', '2026-11-16 11:30:00');
     $make('after-12', '2026-11-16 12:30:00');
 
-    $response = $this->withAuthCookies(loginCookies($marshal))->getJson("/api/me/report-slots/{$slot->id}/emergencies")->assertOk();
+    $response = $this->withAuthCookies(loginCookies($marshal))->getJson("/api/me/report-slots/{$slot->public_code}/emergencies")->assertOk();
     $response->assertJsonCount(1, 'data')->assertJsonPath('data.0.reporter', 'Vic Cruz')->assertJsonPath('data.0.note', 'Fight at gate 2');
     expect(json_encode($response->json()))->not->toContain('122.07');
 
-    $this->withAuthCookies(loginCookies($other))->getJson("/api/me/report-slots/{$slot->id}/emergencies")->assertForbidden();
+    $this->withAuthCookies(loginCookies($other))->getJson("/api/me/report-slots/{$slot->public_code}/emergencies")->assertForbidden();
 });
 
 it('audits the report feed, one report and its photo when a reader looks at them', function () {
@@ -82,14 +82,14 @@ it('audits the report feed, one report and its photo when a reader looks at them
     $admin = User::factory()->role(RoleCode::Admin)->create();
 
     $this->withAuthCookies(loginCookies($admin))->getJson('/api/reports')->assertOk();
-    $this->withAuthCookies(loginCookies($admin))->getJson("/api/reports/{$slot->id}")->assertOk();
-    $this->withAuthCookies(loginCookies($admin))->get("/api/reports/{$slot->id}/photo")->assertOk();
+    $this->withAuthCookies(loginCookies($admin))->getJson("/api/reports/{$slot->public_code}")->assertOk();
+    $this->withAuthCookies(loginCookies($admin))->get("/api/reports/{$slot->public_code}/photo")->assertOk();
 
     foreach (['report.feed_viewed', 'report.viewed', 'report.photo_viewed'] as $action) {
         expect(AuditLog::query()->where('action', $action)->where('actor_id', $admin->id)->count())->toBe(1);
     }
 
     // A refused request leaves no row.
-    $this->withAuthCookies(loginCookies($marshal))->getJson("/api/reports/{$slot->id}")->assertForbidden();
+    $this->withAuthCookies(loginCookies($marshal))->getJson("/api/reports/{$slot->public_code}")->assertForbidden();
     expect(AuditLog::query()->where('action', 'report.viewed')->count())->toBe(1);
 });

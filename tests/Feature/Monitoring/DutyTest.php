@@ -41,10 +41,10 @@ it('starts and ends duty, setting times and auditing both', function () {
     $assignment = dutyFor($user);
     $cookies = loginCookies($user);
 
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/start-duty")->assertOk()->assertJsonPath('data.status', 'on_duty');
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/start-duty")->assertOk()->assertJsonPath('data.status', 'on_duty');
     expect($assignment->fresh()->duty_started_at)->not->toBeNull();
 
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/end-duty")->assertOk()->assertJsonPath('data.status', 'completed');
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/end-duty")->assertOk()->assertJsonPath('data.status', 'completed');
     expect($assignment->fresh()->duty_ended_at)->not->toBeNull()
         ->and(AuditLog::query()->whereIn('action', ['assignment.duty_started', 'assignment.duty_ended'])->count())->toBe(2);
 });
@@ -54,24 +54,24 @@ it('refuses start more than 15 minutes early, after the shift, or twice', functi
     $early = dutyFor($user, '+16 minutes');
     $cookies = loginCookies($user);
 
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$early->id}/start-duty")->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$early->public_code}/start-duty")->assertUnprocessable();
 
     $this->travelTo(now()->addMinutes(2));
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$early->id}/start-duty")->assertOk();
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$early->id}/start-duty")->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$early->public_code}/start-duty")->assertOk();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$early->public_code}/start-duty")->assertUnprocessable();
 
     $over = dutyFor($user, '-5 hours', '-1 hour');
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$over->id}/start-duty")->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$over->public_code}/start-duty")->assertUnprocessable();
 });
 
 it('needs location consent and active status', function () {
     $noConsent = User::factory()->role(RoleCode::Marshal)->create();
     $a = dutyFor($noConsent);
-    withAuthCookies(loginCookies($noConsent))->postJson("/api/me/assignments/{$a->id}/start-duty")->assertUnprocessable();
+    withAuthCookies(loginCookies($noConsent))->postJson("/api/me/assignments/{$a->public_code}/start-duty")->assertUnprocessable();
 
     $inactive = consented(User::factory()->role(RoleCode::Marshal)->create(['status' => 'inactive']));
     $b = dutyFor($inactive);
-    withAuthCookies(loginCookies($inactive))->postJson("/api/me/assignments/{$b->id}/start-duty")->assertUnprocessable();
+    withAuthCookies(loginCookies($inactive))->postJson("/api/me/assignments/{$b->public_code}/start-duty")->assertUnprocessable();
 });
 
 it('keeps start and end away from other people and ending when not on duty', function () {
@@ -79,9 +79,9 @@ it('keeps start and end away from other people and ending when not on duty', fun
     $other = consented(User::factory()->role(RoleCode::Marshal)->create());
     $assignment = dutyFor($mine);
 
-    withAuthCookies(loginCookies($other))->postJson("/api/me/assignments/{$assignment->id}/start-duty")->assertForbidden();
-    withAuthCookies(loginCookies($other))->postJson("/api/me/assignments/{$assignment->id}/end-duty")->assertForbidden();
-    withAuthCookies(loginCookies($mine))->postJson("/api/me/assignments/{$assignment->id}/end-duty")->assertUnprocessable();
+    withAuthCookies(loginCookies($other))->postJson("/api/me/assignments/{$assignment->public_code}/start-duty")->assertForbidden();
+    withAuthCookies(loginCookies($other))->postJson("/api/me/assignments/{$assignment->public_code}/end-duty")->assertForbidden();
+    withAuthCookies(loginCookies($mine))->postJson("/api/me/assignments/{$assignment->public_code}/end-duty")->assertUnprocessable();
 });
 
 it('auto ends open duties 30 minutes after the shift end', function () {
@@ -103,11 +103,11 @@ it('lets a person agree again after withdrawing and start duty right away', func
 
     withAuthCookies($cookies)->postJson('/api/consent/location')->assertNoContent();
     withAuthCookies($cookies)->deleteJson('/api/consent/location')->assertNoContent();
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/start-duty")->assertUnprocessable()
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/start-duty")->assertUnprocessable()
         ->assertJsonPath('message', 'Location consent is needed to start duty.');
 
     withAuthCookies($cookies)->postJson('/api/consent/location')->assertNoContent();
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/start-duty")->assertOk()->assertJsonPath('data.status', 'on_duty');
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/start-duty")->assertOk()->assertJsonPath('data.status', 'on_duty');
 });
 
 it('is not fooled by a withdrawn consent row dated in the future', function () {
@@ -122,5 +122,5 @@ it('is not fooled by a withdrawn consent row dated in the future', function () {
     withAuthCookies($cookies)->postJson('/api/consent/location')->assertNoContent();
 
     expect(ConsentRecord::query()->where('user_id', $user->id)->where('purpose', ConsentPurpose::LocationTracking->value)->count())->toBe(2);
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/start-duty")->assertOk();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/start-duty")->assertOk();
 });

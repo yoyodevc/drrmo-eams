@@ -28,7 +28,7 @@ function LoadingView() {
 }
 
 export function MemoRead() {
-    const id = Number(useParams().id);
+    const id = useParams().id ?? '';
     // The list passes its search along, so Back lands on the same results.
     const from = (useLocation().state as { from?: string } | null)?.from;
     const memo = useQuery({

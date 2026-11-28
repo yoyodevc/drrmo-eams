@@ -6,6 +6,7 @@ namespace App\Modules\Monitoring\Models;
 
 use App\Modules\Events\Models\Assignment;
 use App\Modules\Monitoring\Enums\ReportStatus;
+use App\Support\HasPublicCode;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -19,9 +20,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|Carbon|null $submitted_at
  * @property CarbonImmutable|Carbon|null $overdue_at
  * @property CarbonImmutable|Carbon|null $missed_at
+ * @property string $public_code
  */
 class SiteReport extends Model
 {
+    use HasPublicCode;
+
     /** A slot becomes overdue this long after it was due. */
     public const OVERDUE_AFTER_MINUTES = 15;
 

@@ -20,8 +20,8 @@ class LookupController
 
         return response()->json(['data' => [
             'event_types' => EventType::query()->where('active', true)->orderBy('name')->get(['code', 'name'])->map(fn (EventType $t) => ['value' => $t->code, 'label' => $t->name])->values(),
-            'task_types' => DutyType::query()->where('active', true)->orderBy('name')->get(['id', 'name']),
-            'locations' => CampusLocation::query()->where('active', true)->orderBy('name')->get(['id', 'name']),
+            'task_types' => DutyType::query()->where('active', true)->orderBy('name')->get(['public_code', 'name'])->map(fn (DutyType $t) => ['id' => $t->public_code, 'name' => $t->name])->values(),
+            'locations' => CampusLocation::query()->where('active', true)->orderBy('name')->get(['public_code', 'name'])->map(fn (CampusLocation $l) => ['id' => $l->public_code, 'name' => $l->name])->values(),
         ]]);
     }
 }

@@ -13,7 +13,7 @@ import {
 
 function event(patch: Partial<CalendarEvent> = {}): CalendarEvent {
     return {
-        id: 1,
+        id: 'e1',
         title: 'Campus fun run',
         status: 'published',
         event_type: { value: 'sports', label: 'Sports' },

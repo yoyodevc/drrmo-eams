@@ -24,7 +24,7 @@ type WakeLockNavigator = {
     wakeLock?: { request: (type: 'screen') => Promise<WakeLockSentinelLike> };
 };
 
-export function useDutyTracker(assignmentId: number, active: boolean): DutyTracker {
+export function useDutyTracker(assignmentId: string, active: boolean): DutyTracker {
     const [state, setState] = useState<TrackerState>('stopped');
     const [pending, setPending] = useState(() => readQueue(assignmentId).length);
     const [wakeLock, setWakeLock] = useState<WakeLockState>('released');

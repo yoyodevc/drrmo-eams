@@ -6,7 +6,9 @@ namespace App\Modules\Personnel\Http\Requests;
 
 use App\Modules\Access\Contracts\RoleGuard;
 use App\Modules\Access\Models\Role;
+use App\Modules\Personnel\Models\Department;
 use App\Modules\Personnel\Models\User;
+use App\Support\PublicCode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -44,6 +46,10 @@ class PersonRequest extends FormRequest
         }
         if ($this->input('department_id') === '') {
             $this->merge(['department_id' => null]);
+        }
+        // Clients send the department's public code.
+        if ($this->input('department_id') !== null) {
+            $this->merge(['department_id' => PublicCode::toId(Department::class, $this->input('department_id'))]);
         }
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Access\Http\Requests;
 
 use App\Modules\Access\Models\Role;
+use App\Support\PublicCode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -19,6 +20,9 @@ class RoleRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->filled('copy_from')) {
+            $this->merge(['copy_from' => PublicCode::toId(Role::class, $this->input('copy_from'))]);
+        }
         if (is_string($this->input('name'))) {
             $this->merge(['name' => preg_replace('/\s+/', ' ', trim($this->input('name')))]);
         }

@@ -4,9 +4,9 @@
 export const MAX_SUMMARY = 1000;
 export const MAX_PHOTO_EDGE = 1600;
 
-const draftKey = (slotId: number) => `drrmo:report-draft:${slotId}`;
+const draftKey = (slotId: string) => `drrmo:report-draft:${slotId}`;
 
-export function readDraft(slotId: number): string {
+export function readDraft(slotId: string): string {
     try {
         return localStorage.getItem(draftKey(slotId)) ?? '';
     } catch {
@@ -15,7 +15,7 @@ export function readDraft(slotId: number): string {
 }
 
 // An empty text removes the draft, so nothing stale is left behind.
-export function saveDraft(slotId: number, text: string): void {
+export function saveDraft(slotId: string, text: string): void {
     try {
         if (text === '') localStorage.removeItem(draftKey(slotId));
         else localStorage.setItem(draftKey(slotId), text);
@@ -24,7 +24,7 @@ export function saveDraft(slotId: number, text: string): void {
     }
 }
 
-export function clearDraft(slotId: number): void {
+export function clearDraft(slotId: string): void {
     saveDraft(slotId, '');
 }
 

@@ -458,14 +458,13 @@ function AssignForm({ role, duties, dutyId, onPick, focusRequest }: AssignProps)
     const full = duty !== undefined && spotsTaken(duty) >= duty.headcount;
 
     const candidates = useQuery({
-        queryKey: ['requirement-candidates', Number(dutyId)],
-        queryFn: () => listCandidates(Number(dutyId)),
+        queryKey: ['requirement-candidates', dutyId],
+        queryFn: () => listCandidates(dutyId),
         enabled: dutyId !== '',
     });
 
     const add = useMutation({
-        mutationFn: () =>
-            assignPerson(Number(dutyId), Number(userId), full ? reason.trim() : undefined),
+        mutationFn: () => assignPerson(dutyId, userId, full ? reason.trim() : undefined),
         onSuccess: () => {
             setUserId('');
             setReason('');
@@ -605,7 +604,7 @@ function PickPeople({ requirement, onDone }: { requirement: Requirement; onDone:
     const labels = roleLabels[requirement.role];
     const limit = requirement.headcount;
     const headingId = `pick-${requirement.id}-heading`;
-    const [chosen, setChosen] = useState<number[]>([]);
+    const [chosen, setChosen] = useState<string[]>([]);
     const [search, setSearch] = useState('');
     const [error, setError] = useState<string | null>(null);
 
@@ -644,7 +643,7 @@ function PickPeople({ requirement, onDone }: { requirement: Requirement; onDone:
         : people;
     const full = chosen.length >= limit;
 
-    function toggle(id: number) {
+    function toggle(id: string) {
         setError(null);
         setChosen((list) =>
             list.includes(id) ? list.filter((item) => item !== id) : [...list, id],
@@ -824,7 +823,7 @@ function AddDuty({ event, role, taskTypes, onClose }: AddProps) {
     const save = useMutation({
         mutationFn: () =>
             createRequirement(event.id, {
-                duty_type_id: Number(dutyTypeId),
+                duty_type_id: dutyTypeId,
                 role,
                 team_needed: team,
                 headcount: Number(headcount),
@@ -1236,7 +1235,7 @@ function EventActions({ event }: { event: EventSummary }) {
 }
 
 export function EventDetail() {
-    const eventId = Number(useParams().id);
+    const eventId = useParams().id ?? '';
 
     const event = useQuery({ queryKey: ['event', eventId], queryFn: () => getEvent(eventId) });
     const lookups = useQuery({ queryKey: ['event-lookups'], queryFn: getLookups });

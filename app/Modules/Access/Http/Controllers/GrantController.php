@@ -11,8 +11,10 @@ use App\Modules\Access\Http\Resources\GrantResource;
 use App\Modules\Access\Models\Permission;
 use App\Modules\Access\Models\PermissionGrant;
 use App\Modules\Access\Support\PermissionMatrix;
+use App\Modules\Events\Models\Event;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
+use App\Support\PublicCode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -24,17 +26,17 @@ class GrantController
 {
     private const WITH = ['permission', 'user', 'event', 'grantedBy', 'revokedBy'];
 
-    /** Filters: user (id), event (id), active (1 for only grants in force now). */
+    /** Filters: user (public code), event (public code), active (1 for only grants in force now). */
     public function index(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('manage', PermissionGrant::class);
 
         $query = PermissionGrant::query()->with(self::WITH);
-        if (ctype_digit((string) $request->query('user'))) {
-            $query->where('user_id', (int) $request->query('user'));
+        if ($request->filled('user')) {
+            $query->where('user_id', PublicCode::toId(User::class, $request->query('user')));
         }
-        if (ctype_digit((string) $request->query('event'))) {
-            $query->where('event_id', (int) $request->query('event'));
+        if ($request->filled('event')) {
+            $query->where('event_id', PublicCode::toId(Event::class, $request->query('event')));
         }
         if ($request->boolean('active')) {
             $query->active();

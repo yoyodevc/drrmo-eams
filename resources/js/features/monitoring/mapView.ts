@@ -110,8 +110,8 @@ export function splitPeople(people: MapPerson[]) {
 
 // Events that have someone on duty, for the filter. Taken from the response so a person who holds
 // only `location.view` does not need the events permission.
-export function eventOptions(people: MapPerson[]): { id: number; title: string }[] {
-    const seen = new Map<number, string>();
+export function eventOptions(people: MapPerson[]): { id: string; title: string }[] {
+    const seen = new Map<string, string>();
     for (const p of people) seen.set(p.event_id, p.event_title ?? `Event ${p.event_id}`);
     return [...seen]
         .map(([id, title]) => ({ id, title }))

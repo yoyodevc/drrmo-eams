@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { hasUnread } from './unread';
 
 const item = (sent_at: string | null) => ({
-    id: 1,
+    id: 'n1',
     type: 'assignment.created',
     sent_at,
     event: null,

@@ -70,7 +70,7 @@ class DutyTypeController
     private function present(DutyType $type): array
     {
         return [
-            'id' => $type->id,
+            'id' => $type->public_code,
             'name' => $type->name,
             'active' => $type->active,
             'duties_count' => (int) (($type->requirements_count ?? 0) ?: ($type->assignments_count ?? 0)),

@@ -43,7 +43,7 @@ export function GrantsManager() {
 
     const refresh = () => queryClient.invalidateQueries({ queryKey: ['grants'] });
     const revoke = useMutation({
-        mutationFn: (id: number) => revokeGrant(id),
+        mutationFn: (id: string) => revokeGrant(id),
         onSuccess: async () => {
             await refresh();
             setEnding(null);

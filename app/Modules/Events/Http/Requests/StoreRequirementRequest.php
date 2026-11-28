@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Events\Http\Requests;
 
+use App\Modules\Events\Models\DutyType;
 use App\Modules\Events\Models\Event;
+use App\Support\PublicCode;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -17,6 +19,14 @@ class StoreRequirementRequest extends FormRequest
     public function authorize(): bool
     {
         return Gate::allows('create', Event::class);
+    }
+
+    /** Clients send public codes. The rules below work on the ids behind them. */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('duty_type_id')) {
+            $this->merge(['duty_type_id' => PublicCode::toId(DutyType::class, $this->input('duty_type_id'))]);
+        }
     }
 
     /** @return array<string, list<mixed>> */

@@ -7,7 +7,7 @@ import { listMyNotifications, type MyNotification } from './api';
 
 const event = 'eams-alerts-seen';
 
-function key(userId: number): string {
+function key(userId: string): string {
     return `eams.alerts.seen.${userId}`;
 }
 
@@ -15,7 +15,7 @@ export function hasUnread(items: MyNotification[], seenAt: number): boolean {
     return items.some((n) => n.sent_at !== null && new Date(n.sent_at).getTime() > seenAt);
 }
 
-function readSeen(userId: number | undefined): number {
+function readSeen(userId: string | undefined): number {
     if (userId === undefined) return Number.MAX_SAFE_INTEGER;
     try {
         return Number(localStorage.getItem(key(userId))) || 0;

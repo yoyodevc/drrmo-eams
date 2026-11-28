@@ -178,7 +178,7 @@ it('lets the person in once an admin approves', function () {
     $waiting = pendingApproval();
 
     $this->postJson('/api/login', ['email' => $waiting->email, 'password' => 'password'])->assertStatus(403);
-    withAuthCookies(loginCookies($admin))->postJson("/api/admin/registrations/{$waiting->id}/approve")->assertOk();
+    withAuthCookies(loginCookies($admin))->postJson("/api/admin/registrations/{$waiting->public_code}/approve")->assertOk();
     $this->postJson('/api/login', ['email' => $waiting->email, 'password' => 'password'])->assertOk();
 });
 
@@ -203,7 +203,7 @@ it('lets an admin list requests by status', function () {
     User::factory()->create(); // a normal active volunteer is not a request
 
     withAuthCookies(loginCookies($admin))->getJson('/api/admin/registrations')
-        ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $waiting->id)
+        ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $waiting->public_code)
         ->assertJsonPath('counts', ['pending_approval' => 1, 'pending_email' => 1, 'active' => 0, 'rejected' => 0, 'all' => 2]);
 
     withAuthCookies(loginCookies($admin))->getJson('/api/admin/registrations?status=pending_email')
@@ -217,7 +217,7 @@ it('approves a request, audits it, emails the person and lets them sign in', fun
     $admin = User::factory()->role(RoleCode::Admin)->create();
     $waiting = pendingApproval();
 
-    withAuthCookies(loginCookies($admin))->postJson("/api/admin/registrations/{$waiting->id}/approve")
+    withAuthCookies(loginCookies($admin))->postJson("/api/admin/registrations/{$waiting->public_code}/approve")
         ->assertOk()->assertJsonPath('data.account_status', 'active');
 
     expect(AuditLog::query()->where('action', 'registration.approved')->where('entity_id', $waiting->id)->where('actor_id', $admin->id)->exists())->toBeTrue();
@@ -228,7 +228,7 @@ it('approves a request, audits it, emails the person and lets them sign in', fun
 it('rejects a request with a reason that is kept, audited and emailed', function () {
     $admin = User::factory()->role(RoleCode::Admin)->create();
     $waiting = pendingApproval();
-    $url = "/api/admin/registrations/{$waiting->id}/reject";
+    $url = "/api/admin/registrations/{$waiting->public_code}/reject";
 
     withAuthCookies(loginCookies($admin))->postJson($url, [])->assertStatus(422)->assertJsonValidationErrors('reason');
     withAuthCookies(loginCookies($admin))->postJson($url, ['reason' => 'Not a ZPPSU volunteer'])
@@ -248,8 +248,8 @@ it('does not decide a request twice or before the email is confirmed', function 
     $done = pendingApproval();
     $done->forceFill(['account_status' => AccountStatus::Rejected])->save();
 
-    withAuthCookies(loginCookies($admin))->postJson("/api/admin/registrations/{$unconfirmed->id}/approve")->assertStatus(409);
-    withAuthCookies(loginCookies($admin))->postJson("/api/admin/registrations/{$done->id}/approve")->assertStatus(409);
+    withAuthCookies(loginCookies($admin))->postJson("/api/admin/registrations/{$unconfirmed->public_code}/approve")->assertStatus(409);
+    withAuthCookies(loginCookies($admin))->postJson("/api/admin/registrations/{$done->public_code}/approve")->assertStatus(409);
 });
 
 it('forbids everyone but an admin from the review endpoints', function (RoleCode $role) {
@@ -258,10 +258,10 @@ it('forbids everyone but an admin from the review endpoints', function (RoleCode
     $cookies = loginCookies($actor);
 
     withAuthCookies($cookies)->getJson('/api/admin/registrations')->assertForbidden();
-    withAuthCookies($cookies)->postJson("/api/admin/registrations/{$waiting->id}/approve")->assertForbidden();
-    withAuthCookies($cookies)->postJson("/api/admin/registrations/{$waiting->id}/reject", ['reason' => 'nope'])->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/admin/registrations/{$waiting->public_code}/approve")->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/admin/registrations/{$waiting->public_code}/reject", ['reason' => 'nope'])->assertForbidden();
     // Forbidden even with invalid input: the policy runs before validation.
-    withAuthCookies($cookies)->postJson("/api/admin/registrations/{$waiting->id}/reject", [])->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/admin/registrations/{$waiting->public_code}/reject", [])->assertForbidden();
 
     expect($waiting->refresh()->account_status)->toBe(AccountStatus::PendingApproval);
 })->with([RoleCode::Volunteer, RoleCode::Marshal, RoleCode::Coordinator]);

@@ -41,8 +41,8 @@ export function AlertSoundWatcher({ to }: { to: string }) {
     });
     const unlocked = useSyncExternalStore(subscribeSound, isUnlocked, () => false);
     const [openedAt] = useState(() => Date.now());
-    const [dismissed, setDismissed] = useState<number[]>([]);
-    const chimed = useRef<Set<number>>(new Set());
+    const [dismissed, setDismissed] = useState<string[]>([]);
+    const chimed = useRef<Set<string>>(new Set());
     const muted = settings.data?.settings.sound_muted ?? false;
 
     const read = useMutation({
@@ -119,7 +119,7 @@ export function AlertSoundWatcher({ to }: { to: string }) {
 
     // One chime for each new important alert, never together with an alarm.
     useEffect(() => {
-        const next = chimeKey === '' ? [] : chimeKey.split(',').map(Number);
+        const next = chimeKey === '' ? [] : chimeKey.split(',');
         const isNew = next.filter((id) => !chimed.current.has(id));
         next.forEach((id) => chimed.current.add(id));
         if (isNew.length > 0 && ringKey === '' && !muted) playChime();

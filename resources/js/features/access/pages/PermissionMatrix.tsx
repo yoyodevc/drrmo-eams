@@ -18,7 +18,7 @@ import { errorMessage, fieldErrors } from '@/features/personnel/people';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 
-type Pending = Record<number, Record<string, boolean>>;
+type Pending = Record<string, Record<string, boolean>>;
 
 function Legend() {
     return (
@@ -91,7 +91,7 @@ export function PermissionMatrix() {
         ? (Object.values(fieldErrors(save.error))[0] ?? errorMessage(save.error))
         : null;
 
-    const toggle = (roleId: number, held: boolean, code: string, on: boolean) => {
+    const toggle = (roleId: string, held: boolean, code: string, on: boolean) => {
         save.reset();
         setPending((current) => {
             const cells = { ...(current[roleId] ?? {}) };

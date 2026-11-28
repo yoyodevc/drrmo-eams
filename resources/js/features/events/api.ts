@@ -2,12 +2,12 @@
 import { api } from '@/shared/api/client';
 
 export interface CampusLocation {
-    id: number;
+    id: string;
     name: string;
 }
 
 export interface EventSummary {
-    id: number;
+    id: string;
     title: string;
     event_type: { value: string; label: string };
     requirements?: Requirement[];
@@ -22,7 +22,7 @@ export interface NewEvent {
     title: string;
     event_type: string;
     description: string;
-    campus_location_id: number;
+    campus_location_id: string;
     // ISO 8601 with offset.
     starts_at: string;
     ends_at: string;
@@ -42,7 +42,7 @@ export async function createEvent(input: NewEvent): Promise<EventSummary> {
 }
 
 export interface Option {
-    id: number;
+    id: string;
     name: string;
 }
 
@@ -53,8 +53,8 @@ export interface Lookups {
 }
 
 export interface Assignment {
-    id: number;
-    person: { id: number; name: string; email: string };
+    id: string;
+    person: { id: string; name: string; email: string };
     role: 'marshal' | 'volunteer';
     task_type: Option;
     status: 'assigned' | 'acknowledged' | 'on_duty' | 'completed' | 'cancelled' | 'no_show';
@@ -64,7 +64,7 @@ export interface Assignment {
 }
 
 export interface Candidate {
-    id: number;
+    id: string;
     name: string;
     role: 'marshal' | 'volunteer';
     // Title of an event whose shift overlaps this one, when there is one.
@@ -76,13 +76,13 @@ export async function getLookups(): Promise<Lookups> {
     return body.data;
 }
 
-export async function getEvent(id: number): Promise<EventSummary> {
+export async function getEvent(id: string): Promise<EventSummary> {
     const body = await api<{ data: EventSummary }>(`/api/events/${id}`);
     return body.data;
 }
 
 export interface Requirement {
-    id: number;
+    id: string;
     duty_type: Option;
     role: 'marshal' | 'volunteer';
     team_needed: string | null;
@@ -94,7 +94,7 @@ export interface Requirement {
 }
 
 export interface NewRequirement {
-    duty_type_id: number;
+    duty_type_id: string;
     role: string;
     team_needed: string;
     headcount: number;
@@ -105,7 +105,7 @@ export interface NewRequirement {
 }
 
 export async function createRequirement(
-    eventId: number,
+    eventId: string,
     input: NewRequirement,
 ): Promise<Requirement> {
     const body = await api<{ data: Requirement }>(`/api/events/${eventId}/requirements`, {
@@ -115,18 +115,18 @@ export async function createRequirement(
     return body.data;
 }
 
-export async function removeRequirement(id: number): Promise<void> {
+export async function removeRequirement(id: string): Promise<void> {
     await api(`/api/requirements/${id}`, { method: 'DELETE' });
 }
 
-export async function listCandidates(requirementId: number): Promise<Candidate[]> {
+export async function listCandidates(requirementId: string): Promise<Candidate[]> {
     const body = await api<{ data: Candidate[] }>(`/api/requirements/${requirementId}/candidates`);
     return body.data;
 }
 
 export async function assignPerson(
-    requirementId: number,
-    userId: number,
+    requirementId: string,
+    userId: string,
     overrideReason?: string,
 ): Promise<void> {
     await api(`/api/requirements/${requirementId}/assignments`, {
@@ -135,25 +135,25 @@ export async function assignPerson(
     });
 }
 
-export async function removeAssignment(id: number): Promise<void> {
+export async function removeAssignment(id: string): Promise<void> {
     await api(`/api/assignments/${id}`, { method: 'DELETE' });
 }
 
-export async function publishEvent(id: number): Promise<void> {
+export async function publishEvent(id: string): Promise<void> {
     await api(`/api/events/${id}/publish`, { method: 'POST' });
 }
 
-export async function cancelEvent(id: number): Promise<void> {
+export async function cancelEvent(id: string): Promise<void> {
     await api(`/api/events/${id}/cancel`, { method: 'POST' });
 }
 
 export interface MyAssignment {
-    id: number;
+    id: string;
     status: Assignment['status'];
     acknowledged_at: string | null;
     duty_started_at: string | null;
     duty_ended_at: string | null;
-    event: { id: number; title: string; status: string; location: string | null };
+    event: { id: string; title: string; status: string; location: string | null };
     duty_type: string | null;
     team_needed: string | null;
     instructions: string | null;
@@ -166,7 +166,7 @@ export async function listMyAssignments(): Promise<MyAssignment[]> {
     return body.data;
 }
 
-export async function updateEvent(id: number, input: NewEvent): Promise<EventSummary> {
+export async function updateEvent(id: string, input: NewEvent): Promise<EventSummary> {
     const body = await api<{ data: EventSummary }>(`/api/events/${id}`, {
         method: 'PUT',
         body: JSON.stringify(input),
@@ -174,26 +174,26 @@ export async function updateEvent(id: number, input: NewEvent): Promise<EventSum
     return body.data;
 }
 
-export async function cancelAssignment(id: number, reason: string): Promise<void> {
+export async function cancelAssignment(id: string, reason: string): Promise<void> {
     await api(`/api/assignments/${id}/cancel`, {
         method: 'POST',
         body: JSON.stringify({ reason }),
     });
 }
 
-export async function markNoShow(id: number): Promise<void> {
+export async function markNoShow(id: string): Promise<void> {
     await api(`/api/assignments/${id}/no-show`, { method: 'POST' });
 }
 
-export async function acknowledgeAssignment(id: number): Promise<void> {
+export async function acknowledgeAssignment(id: string): Promise<void> {
     await api(`/api/me/assignments/${id}/acknowledge`, { method: 'POST' });
 }
 
 export interface DashboardRow {
-    id: number;
+    id: string;
     person: string;
     status: Assignment['status'];
-    event: { id: number; title: string };
+    event: { id: string; title: string };
     duty: string | null;
     starts_at: string | null;
     ends_at: string | null;
@@ -202,7 +202,7 @@ export interface DashboardRow {
 
 export interface Dashboard {
     today_events: {
-        id: number;
+        id: string;
         title: string;
         location: string | null;
         starts_at: string;
@@ -231,7 +231,7 @@ export interface Dashboard {
     reports?: { overdue: number; missed: number };
     messages?: { unread: number };
     memos?: {
-        recent: { id: number; title: string; category: string; posted_at: string }[];
+        recent: { id: string; title: string; category: string; posted_at: string }[];
         this_week: number;
     };
     people?: { active: number };
@@ -244,7 +244,7 @@ export async function getDashboard(): Promise<Dashboard> {
 }
 
 export interface EventNotice {
-    id: number;
+    id: string;
     title: string;
     description: string | null;
     event_type: string;
@@ -260,7 +260,7 @@ export async function listEventNotices(): Promise<EventNotice[]> {
 }
 
 export interface CalendarEvent {
-    id: number;
+    id: string;
     title: string;
     status: EventSummary['status'];
     event_type: { value: string; label: string };
@@ -304,7 +304,7 @@ export async function deleteEventType(code: string): Promise<void> {
 }
 
 export interface DutyTypeRow {
-    id: number;
+    id: string;
     name: string;
     active: boolean;
     duties_count: number;
@@ -316,7 +316,7 @@ export async function listDutyTypes(): Promise<DutyTypeRow[]> {
 }
 
 export async function saveDutyType(
-    id: number | null,
+    id: string | null,
     input: { name: string; active: boolean },
 ): Promise<void> {
     await api(id === null ? '/api/duty-types' : `/api/duty-types/${id}`, {
@@ -325,12 +325,12 @@ export async function saveDutyType(
     });
 }
 
-export async function deleteDutyType(id: number): Promise<void> {
+export async function deleteDutyType(id: string): Promise<void> {
     await api(`/api/duty-types/${id}`, { method: 'DELETE' });
 }
 
 export interface LocationRow {
-    id: number;
+    id: string;
     name: string;
     latitude: number;
     longitude: number;
@@ -344,7 +344,7 @@ export async function listLocations(): Promise<LocationRow[]> {
 }
 
 export async function saveLocation(
-    id: number | null,
+    id: string | null,
     input: { name: string; latitude: number; longitude: number; active: boolean },
 ): Promise<void> {
     await api(id === null ? '/api/campus-locations' : `/api/campus-locations/${id}`, {
@@ -353,6 +353,6 @@ export async function saveLocation(
     });
 }
 
-export async function deleteLocation(id: number): Promise<void> {
+export async function deleteLocation(id: string): Promise<void> {
     await api(`/api/campus-locations/${id}`, { method: 'DELETE' });
 }

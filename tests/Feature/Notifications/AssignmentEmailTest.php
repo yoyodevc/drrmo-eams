@@ -35,8 +35,8 @@ it('queues one notification and one email for create, move and cancel', function
     $two = emailReq($event);
     $cookies = loginCookies($admin);
 
-    $id = withAuthCookies($cookies)->postJson("/api/requirements/{$one->id}/assignments", ['user_id' => $marshal->id])->assertCreated()->json('data.id');
-    withAuthCookies($cookies)->patchJson("/api/assignments/{$id}", ['requirement_id' => $two->id])->assertOk();
+    $id = withAuthCookies($cookies)->postJson("/api/requirements/{$one->public_code}/assignments", ['user_id' => $marshal->public_code])->assertCreated()->json('data.id');
+    withAuthCookies($cookies)->patchJson("/api/assignments/{$id}", ['requirement_id' => $two->public_code])->assertOk();
     withAuthCookies($cookies)->postJson("/api/assignments/{$id}/cancel", ['reason' => 'Event scope reduced'])->assertOk();
 
     expect(Notification::query()->orderBy('id')->pluck('type')->all())
@@ -54,13 +54,13 @@ it('stays quiet on a draft and emails each live assignee once when the event is 
     $req = emailReq($event);
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $marshal->id])->assertCreated();
-    $gone = withAuthCookies($cookies)->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $dropped->id])->assertCreated()->json('data.id');
+    withAuthCookies($cookies)->postJson("/api/requirements/{$req->public_code}/assignments", ['user_id' => $marshal->public_code])->assertCreated();
+    $gone = withAuthCookies($cookies)->postJson("/api/requirements/{$req->public_code}/assignments", ['user_id' => $dropped->public_code])->assertCreated()->json('data.id');
     withAuthCookies($cookies)->postJson("/api/assignments/{$gone}/cancel", ['reason' => 'Changed the plan'])->assertOk();
     expect(Notification::query()->count())->toBe(0);
     Queue::assertNothingPushed();
 
-    withAuthCookies($cookies)->postJson("/api/events/{$event->id}/publish")->assertOk();
+    withAuthCookies($cookies)->postJson("/api/events/{$event->public_code}/publish")->assertOk();
 
     expect(Notification::query()->pluck('user_id')->all())->toBe([$marshal->id])
         ->and(Notification::query()->sole()->type)->toBe('assignment.created');
@@ -74,7 +74,7 @@ it('emails nobody when a draft event is cancelled', function () {
     $req = emailReq($event);
     $req->assignments()->create(['event_id' => $event->id, 'user_id' => User::factory()->role(RoleCode::Marshal)->create()->id, 'duty_type_id' => $req->duty_type_id]);
 
-    withAuthCookies(loginCookies($admin))->postJson("/api/events/{$event->id}/cancel")->assertOk();
+    withAuthCookies(loginCookies($admin))->postJson("/api/events/{$event->public_code}/cancel")->assertOk();
 
     expect(Notification::query()->count())->toBe(0);
     Queue::assertNothingPushed();
@@ -99,8 +99,8 @@ it('sends the email with a link and marks the row sent', function () {
     SendNotificationEmail::dispatchSync($n);
 
     expect($n->fresh()->status)->toBe('sent')->and($n->fresh()->attempts)->toBe(1)
-        ->and($sent[0][0])->toBe('mara@example.test')->and($sent[0][1])->toContain('?assignment='.$a->id)
-        ->and($sent[0][2])->toContain('You have a new duty')->toContain('?assignment='.$a->id)->toContain('cid:zppsu-logo');
+        ->and($sent[0][0])->toBe('mara@example.test')->and($sent[0][1])->toContain('?assignment='.$a->public_code)
+        ->and($sent[0][2])->toContain('You have a new duty')->toContain('?assignment='.$a->public_code)->toContain('cid:zppsu-logo');
 });
 
 it('marks the notification failed after the job gives up', function () {
@@ -122,9 +122,9 @@ it('queues nothing when a non-admin tries to change an assignment', function () 
     $a = Assignment::query()->create(['event_id' => $event->id, 'requirement_id' => $req->id, 'user_id' => $marshal->id, 'duty_type_id' => $req->duty_type_id]);
     $cookies = loginCookies($marshal);
 
-    withAuthCookies($cookies)->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $marshal->id])->assertForbidden();
-    withAuthCookies($cookies)->patchJson("/api/assignments/{$a->id}", ['requirement_id' => $req->id])->assertForbidden();
-    withAuthCookies($cookies)->postJson("/api/assignments/{$a->id}/cancel", ['reason' => 'No reason really'])->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/requirements/{$req->public_code}/assignments", ['user_id' => $marshal->public_code])->assertForbidden();
+    withAuthCookies($cookies)->patchJson("/api/assignments/{$a->public_code}", ['requirement_id' => $req->public_code])->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/assignments/{$a->public_code}/cancel", ['reason' => 'No reason really'])->assertForbidden();
 
     expect(Notification::query()->count())->toBe(0);
     Queue::assertNothingPushed();
@@ -143,7 +143,7 @@ it('notifies every active assignee once when an event is cancelled', function ()
     }
     $req->assignments()->create(['event_id' => $event->id, 'user_id' => $gone->id, 'duty_type_id' => $req->duty_type_id, 'status' => 'cancelled']);
 
-    withAuthCookies(loginCookies($admin))->postJson("/api/events/{$event->id}/cancel")->assertOk();
+    withAuthCookies(loginCookies($admin))->postJson("/api/events/{$event->public_code}/cancel")->assertOk();
 
     expect(Notification::query()->pluck('user_id')->sort()->values()->all())->toBe(collect([$one->id, $two->id])->sort()->values()->all())
         ->and(Notification::query()->where('type', 'assignment.cancelled')->count())->toBe(2);
@@ -157,7 +157,7 @@ it('does not notify anyone when a non-admin tries to cancel an event', function 
     $req = emailReq($event);
     $req->assignments()->create(['event_id' => $event->id, 'user_id' => $marshal->id, 'duty_type_id' => $req->duty_type_id]);
 
-    withAuthCookies(loginCookies($marshal))->postJson("/api/events/{$event->id}/cancel")->assertForbidden();
+    withAuthCookies(loginCookies($marshal))->postJson("/api/events/{$event->public_code}/cancel")->assertForbidden();
 
     expect(Notification::query()->count())->toBe(0);
 });

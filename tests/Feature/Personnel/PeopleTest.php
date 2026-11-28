@@ -69,7 +69,7 @@ it('edits a person and audits before and after', function () {
     $person = User::factory()->role(RoleCode::Volunteer)->create(['email' => 'old@example.test']);
     $dept = Department::query()->create(['name' => 'Security Office']);
 
-    withAuthCookies(loginCookies($admin))->patchJson("/api/people/{$person->id}", newPerson(['email' => 'new@example.test', 'role' => 'marshal', 'department_id' => $dept->id]))
+    withAuthCookies(loginCookies($admin))->patchJson("/api/people/{$person->public_code}", newPerson(['email' => 'new@example.test', 'role' => 'marshal', 'department_id' => $dept->public_code]))
         ->assertOk()->assertJsonPath('data.role', 'marshal')->assertJsonPath('data.department.name', 'Security Office');
 
     expect($person->refresh()->email)->toBe('new@example.test');
@@ -80,7 +80,7 @@ it('edits a person and audits before and after', function () {
 it('does not let an admin change their own role', function () {
     $admin = User::factory()->role(RoleCode::Admin)->create();
 
-    withAuthCookies(loginCookies($admin))->patchJson("/api/people/{$admin->id}", newPerson(['email' => $admin->email, 'role' => 'volunteer']))->assertUnprocessable();
+    withAuthCookies(loginCookies($admin))->patchJson("/api/people/{$admin->public_code}", newPerson(['email' => $admin->email, 'role' => 'volunteer']))->assertUnprocessable();
     expect($admin->refresh()->roleCode())->toBe(RoleCode::Admin);
 });
 
@@ -99,7 +99,7 @@ it('lists people with filters and search', function () {
     $ok('?role=volunteer')->assertJsonCount(2, 'data');
     $ok('?team=ert')->assertJsonCount(1, 'data');
     $ok('?status=inactive')->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Jose Cruz');
-    $ok("?department={$dept->id}")->assertJsonCount(1, 'data');
+    $ok("?department={$dept->public_code}")->assertJsonCount(1, 'data');
     $ok('?search=maria santos')->assertJsonCount(1, 'data');
     $ok('?search=diaz')->assertJsonCount(1, 'data');
     $get('?role=nonsense')->assertUnprocessable();
@@ -109,7 +109,7 @@ it('shows one person', function () {
     $admin = User::factory()->role(RoleCode::Admin)->create();
     $person = User::factory()->role(RoleCode::Volunteer)->create();
 
-    withAuthCookies(loginCookies($admin))->getJson("/api/people/{$person->id}")->assertOk()->assertJsonPath('data.email', $person->email);
+    withAuthCookies(loginCookies($admin))->getJson("/api/people/{$person->public_code}")->assertOk()->assertJsonPath('data.email', $person->email);
 });
 
 it('keeps non-admins out of the people endpoints', function () {
@@ -117,11 +117,11 @@ it('keeps non-admins out of the people endpoints', function () {
     $other = User::factory()->role(RoleCode::Volunteer)->create();
 
     withAuthCookies(loginCookies($volunteer))->getJson('/api/people')->assertForbidden();
-    withAuthCookies(loginCookies($volunteer))->getJson("/api/people/{$other->id}")->assertForbidden();
+    withAuthCookies(loginCookies($volunteer))->getJson("/api/people/{$other->public_code}")->assertForbidden();
     withAuthCookies(loginCookies($volunteer))->getJson('/api/departments')->assertForbidden();
     withAuthCookies(loginCookies($volunteer))->postJson('/api/people', newPerson())->assertForbidden();
-    withAuthCookies(loginCookies($volunteer))->patchJson("/api/people/{$other->id}", newPerson())->assertForbidden();
-    withAuthCookies(loginCookies($volunteer))->postJson("/api/people/{$other->id}/invite")->assertForbidden();
+    withAuthCookies(loginCookies($volunteer))->patchJson("/api/people/{$other->public_code}", newPerson())->assertForbidden();
+    withAuthCookies(loginCookies($volunteer))->postJson("/api/people/{$other->public_code}/invite")->assertForbidden();
     $this->withAuthCookies([])->getJson('/api/people')->assertUnauthorized();
     expect(User::query()->where('email', 'ana.reyes@example.test')->exists())->toBeFalse();
 });

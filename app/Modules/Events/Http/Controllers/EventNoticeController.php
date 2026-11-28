@@ -25,7 +25,7 @@ class EventNoticeController
             ->orderBy('starts_at')->limit(50)->get();
 
         return response()->json(['data' => $events->map(fn (Event $e) => [
-            'id' => $e->id,
+            'id' => $e->public_code,
             'title' => $e->title,
             'description' => $e->description,
             'event_type' => $e->typeLabel(),

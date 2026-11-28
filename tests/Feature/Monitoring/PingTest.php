@@ -46,7 +46,7 @@ it('stores a batch of points for the owner while on duty', function () {
     $assignment = onDuty($user);
 
     withAuthCookies(loginCookies($user))
-        ->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point('-30 seconds'), point()]])
+        ->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point('-30 seconds'), point()]])
         ->assertOk()->assertJsonPath('data.accepted', 2)->assertJsonPath('data.rejected', 0);
 
     expect(LocationPing::query()->where('assignment_id', $assignment->id)->count())->toBe(2);
@@ -58,14 +58,14 @@ it('forbids pings on someone else\'s assignment and for roles without location.s
     $other = User::factory()->role(RoleCode::Marshal)->create();
     $admin = User::factory()->role(RoleCode::Admin)->create();
 
-    withAuthCookies(loginCookies($other))->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertForbidden();
-    withAuthCookies(loginCookies($admin))->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertForbidden();
+    withAuthCookies(loginCookies($other))->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point()]])->assertForbidden();
+    withAuthCookies(loginCookies($admin))->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point()]])->assertForbidden();
     expect(LocationPing::query()->count())->toBe(0);
 });
 
 it('requires login', function () {
     $assignment = onDuty(User::factory()->role(RoleCode::Marshal)->create());
-    $this->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertUnauthorized();
+    $this->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point()]])->assertUnauthorized();
 });
 
 it('rejects points outside the duty window and keeps the good ones', function () {
@@ -73,10 +73,10 @@ it('rejects points outside the duty window and keeps the good ones', function ()
     $assignment = onDuty($user);
     $cookies = loginCookies($user);
 
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point('-1 hour'), point('+1 hour'), point()]])
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point('-1 hour'), point('+1 hour'), point()]])
         ->assertOk()->assertJsonPath('data.accepted', 1)->assertJsonPath('data.rejected', 2);
 
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point('-1 hour')]])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point('-1 hour')]])->assertUnprocessable();
 });
 
 it('refuses pings when duty never started, after consent withdrawal, or with bad input', function () {
@@ -84,16 +84,16 @@ it('refuses pings when duty never started, after consent withdrawal, or with bad
     $assignment = onDuty($user);
     $cookies = loginCookies($user);
 
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => []])->assertUnprocessable();
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => array_fill(0, 51, point())])->assertUnprocessable();
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [['lat' => 95, 'lng' => 0, 'captured_at' => now()->toIso8601String()]]])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => []])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => array_fill(0, 51, point())])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [['lat' => 95, 'lng' => 0, 'captured_at' => now()->toIso8601String()]]])->assertUnprocessable();
 
     $assignment->update(['status' => 'assigned', 'duty_started_at' => null]);
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point()]])->assertUnprocessable();
 
     $assignment->update(['status' => 'on_duty', 'duty_started_at' => now()->subMinutes(2)]);
     ConsentRecord::query()->where('user_id', $user->id)->where('purpose', ConsentPurpose::LocationTracking)->update(['withdrawn_at' => now()]);
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point()]])->assertUnprocessable();
 });
 
 it('accepts queued points after duty ended, within the duty window', function () {
@@ -101,7 +101,7 @@ it('accepts queued points after duty ended, within the duty window', function ()
     $assignment = onDuty($user);
     $assignment->update(['status' => 'completed', 'duty_ended_at' => now()->subMinute()]);
 
-    withAuthCookies(loginCookies($user))->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point('-90 seconds'), point('+10 minutes')]])
+    withAuthCookies(loginCookies($user))->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point('-90 seconds'), point('+10 minutes')]])
         ->assertOk()->assertJsonPath('data.accepted', 1)->assertJsonPath('data.rejected', 1);
 });
 
@@ -111,9 +111,9 @@ it('limits uploads to 10 a minute per user', function () {
     $cookies = loginCookies($user);
 
     foreach (range(1, 10) as $i) {
-        withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertOk();
+        withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point()]])->assertOk();
     }
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/pings", ['points' => [point()]])->assertStatus(429);
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/pings", ['points' => [point()]])->assertStatus(429);
 });
 
 it('counts the retention cutoff in working days, skipping weekends', function () {

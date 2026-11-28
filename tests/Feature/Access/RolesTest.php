@@ -9,6 +9,7 @@ use App\Modules\Access\Models\Role;
 use App\Modules\Notifications\Contracts\MailSender;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Models\AuditLog;
+use App\Support\PublicCode;
 use Database\Seeders\PermissionSeeder;
 use Tests\Support\FakeMailSender;
 
@@ -24,6 +25,11 @@ function roleId(string $code): int
 }
 
 /** @return list<string> */
+function rolePublicCode(string $code): string
+{
+    return Role::query()->where('code', $code)->value('public_code');
+}
+
 function codesOf(string $role): array
 {
     return Role::query()->where('code', $role)->firstOrFail()->permissions()->pluck('code')->sort()->values()->all();
@@ -60,7 +66,7 @@ it('lists every role with its people, permissions and locked cells', function ()
 
 it('keeps every role endpoint to admins', function (RoleCode $code) {
     $cookies = loginCookies(User::factory()->role($code)->create());
-    $id = roleId('coordinator');
+    $id = rolePublicCode('coordinator');
 
     withAuthCookies($cookies)->getJson('/api/roles')->assertForbidden();
     withAuthCookies($cookies)->getJson('/api/permissions')->assertForbidden();
@@ -86,14 +92,14 @@ it('does not let a grant of people.manage open the role screens', function () {
 
 it('creates a custom role from a copy, without the duty or admin-only cells, and audits it', function () {
     $id = withAuthCookies(adminSession())->postJson('/api/roles', [
-        'name' => '  Records   officer ', 'description' => 'Keeps the audit trail', 'copy_from' => roleId('marshal'),
+        'name' => '  Records   officer ', 'description' => 'Keeps the audit trail', 'copy_from' => rolePublicCode('marshal'),
     ])->assertCreated()->assertJsonPath('data.name', 'Records officer')->assertJsonPath('data.is_system', false)
         ->json('data.id');
 
-    $role = Role::query()->findOrFail($id);
+    $role = Role::query()->findOrFail(PublicCode::toId(Role::class, $id));
     expect($role->code)->toBe('records_officer')
         ->and(codesOf('records_officer'))->toBe(['memos.view', 'messages.use', 'profile.own']);
-    expect(AuditLog::query()->where('action', 'role.created')->where('entity_id', $id)->exists())->toBeTrue();
+    expect(AuditLog::query()->where('action', 'role.created')->where('entity_id', PublicCode::toId(Role::class, $id))->exists())->toBeTrue();
 
     withAuthCookies(adminSession())->postJson('/api/roles', ['name' => 'records officer'])
         ->assertUnprocessable()->assertJsonValidationErrors('name');
@@ -103,7 +109,7 @@ it('never reuses a built-in code for a custom role', function () {
     withAuthCookies(adminSession())->postJson('/api/roles', ['name' => 'Admin'])->assertUnprocessable();
     $id = withAuthCookies(adminSession())->postJson('/api/roles', ['name' => 'ADMIN!'])->json('data.id');
 
-    expect(Role::query()->findOrFail($id)->code)->toBe('role_admin');
+    expect(Role::query()->findOrFail(PublicCode::toId(Role::class, $id))->code)->toBe('role_admin');
 });
 
 it('saves role permissions from the matrix and the role gains them at once', function () {
@@ -111,8 +117,8 @@ it('saves role permissions from the matrix and the role gains them at once', fun
     $codes = [...codesOf('coordinator'), 'reports.view', 'audit.view'];
 
     withAuthCookies(adminSession())->putJson('/api/roles/permissions', ['roles' => [
-        ['id' => roleId('coordinator'), 'permissions' => $codes],
-        ['id' => roleId('volunteer'), 'permissions' => codesOf('volunteer')],
+        ['id' => rolePublicCode('coordinator'), 'permissions' => $codes],
+        ['id' => rolePublicCode('volunteer'), 'permissions' => codesOf('volunteer')],
     ]])->assertOk();
 
     expect(codesOf('coordinator'))->toContain('reports.view', 'audit.view');
@@ -129,8 +135,8 @@ it('rejects a change to a locked cell and saves nothing', function (string $role
     $codes = array_values(array_diff([...codesOf($role), ...$change['add']], $change['remove']));
 
     withAuthCookies(adminSession())->putJson('/api/roles/permissions', ['roles' => [
-        ['id' => roleId($other), 'permissions' => $before],
-        ['id' => roleId($role), 'permissions' => $codes],
+        ['id' => rolePublicCode($other), 'permissions' => $before],
+        ['id' => rolePublicCode($role), 'permissions' => $codes],
     ]])->assertUnprocessable()->assertJsonValidationErrors('roles.1.permissions');
 
     expect(codesOf($other))->toBe($before);
@@ -149,15 +155,15 @@ it('keeps built-in roles, and deletes a custom role only once it is empty', func
     $person = User::factory()->role(RoleCode::Volunteer)->create();
     $person->forceFill(['role_id' => $custom->id])->save();
 
-    withAuthCookies($cookies)->patchJson('/api/roles/'.roleId('marshal'), ['name' => 'Field crew'])->assertUnprocessable();
-    withAuthCookies($cookies)->deleteJson('/api/roles/'.roleId('marshal'))->assertUnprocessable();
-    withAuthCookies($cookies)->deleteJson("/api/roles/{$custom->id}")->assertUnprocessable();
+    withAuthCookies($cookies)->patchJson('/api/roles/'.rolePublicCode('marshal'), ['name' => 'Field crew'])->assertUnprocessable();
+    withAuthCookies($cookies)->deleteJson('/api/roles/'.rolePublicCode('marshal'))->assertUnprocessable();
+    withAuthCookies($cookies)->deleteJson("/api/roles/{$custom->public_code}")->assertUnprocessable();
 
-    withAuthCookies($cookies)->patchJson("/api/roles/{$custom->id}", ['name' => 'Front desk', 'description' => 'Office help'])
+    withAuthCookies($cookies)->patchJson("/api/roles/{$custom->public_code}", ['name' => 'Front desk', 'description' => 'Office help'])
         ->assertOk()->assertJsonPath('data.name', 'Front desk');
 
     $person->forceFill(['role_id' => roleId('volunteer')])->save();
-    withAuthCookies($cookies)->deleteJson("/api/roles/{$custom->id}")->assertNoContent();
+    withAuthCookies($cookies)->deleteJson("/api/roles/{$custom->public_code}")->assertNoContent();
 
     expect(Role::query()->find($custom->id))->toBeNull()
         ->and(AuditLog::query()->where('action', 'role.deleted')->exists())->toBeTrue();
@@ -170,13 +176,13 @@ it('moves people into a role and audits each change, but not the admin themselve
     $ben = User::factory()->role(RoleCode::Marshal)->create();
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->postJson("/api/roles/{$custom->id}/members", ['user_ids' => [$ana->id, $ben->id]])
+    withAuthCookies($cookies)->postJson("/api/roles/{$custom->public_code}/members", ['user_ids' => [$ana->public_code, $ben->public_code]])
         ->assertOk()->assertJsonPath('data.members_count', 2);
 
     expect($ana->refresh()->role_id)->toBe($custom->id)
         ->and(AuditLog::query()->where('action', 'person.role_changed')->count())->toBe(2);
 
-    withAuthCookies($cookies)->postJson("/api/roles/{$custom->id}/members", ['user_ids' => [$admin->id]])
+    withAuthCookies($cookies)->postJson("/api/roles/{$custom->public_code}/members", ['user_ids' => [$admin->public_code]])
         ->assertUnprocessable()->assertJsonValidationErrors('user_ids');
     expect($admin->refresh()->role_id)->toBe(roleId('admin'));
 });
@@ -210,7 +216,7 @@ it('stops anyone from handing out a role with more access than they hold', funct
     withAuthCookies($cookies)->postJson('/api/people', $person())->assertCreated();
     withAuthCookies($cookies)->postJson('/api/people', $person(['role' => 'records_officer']))->assertForbidden();
     withAuthCookies($cookies)->postJson('/api/people', $person(['role' => 'admin']))->assertForbidden();
-    withAuthCookies($cookies)->patchJson("/api/people/{$admin->id}", $person(['email' => $admin->email, 'role' => 'admin']))->assertForbidden();
+    withAuthCookies($cookies)->patchJson("/api/people/{$admin->public_code}", $person(['email' => $admin->email, 'role' => 'admin']))->assertForbidden();
 
     $options = collect(withAuthCookies($cookies)->getJson('/api/role-options')->assertOk()->json('data'))->keyBy('code');
     expect($options['volunteer']['can_assign'])->toBeTrue()

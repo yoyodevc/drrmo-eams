@@ -52,10 +52,10 @@ it('shows the latest ping per on-duty person, with live, stale and no-location s
     $byId = collect($people)->keyBy('assignment_id');
 
     expect($people)->toHaveCount(3)
-        ->and($byId[$live->id]['state'])->toBe('live')->and($byId[$live->id]['ping']['lat'])->toBe(6.95)
-        ->and($byId[$stale->id]['state'])->toBe('stale')
-        ->and($byId[$none->id]['state'])->toBe('none')->and($byId[$none->id]['ping'])->toBeNull()
-        ->and($byId->has($ended->id))->toBeFalse();
+        ->and($byId[$live->public_code]['state'])->toBe('live')->and($byId[$live->public_code]['ping']['lat'])->toBe(6.95)
+        ->and($byId[$stale->public_code]['state'])->toBe('stale')
+        ->and($byId[$none->public_code]['state'])->toBe('none')->and($byId[$none->public_code]['ping'])->toBeNull()
+        ->and($byId->has($ended->public_code))->toBeFalse();
 });
 
 it('filters by event and writes one audit row', function () {
@@ -63,7 +63,7 @@ it('filters by event and writes one audit row', function () {
     $a = mapOnDuty(User::factory()->role(RoleCode::Marshal)->create());
     mapOnDuty(User::factory()->role(RoleCode::Marshal)->create());
 
-    withAuthCookies(loginCookies($admin))->getJson('/api/map/latest?event_id='.$a->event_id)->assertOk()->assertJsonCount(1, 'data.people');
+    withAuthCookies(loginCookies($admin))->getJson('/api/map/latest?event_id='.$a->event->public_code)->assertOk()->assertJsonCount(1, 'data.people');
 
     expect(AuditLog::query()->where('action', 'location.viewed')->where('actor_id', $admin->id)->count())->toBe(1);
 });
@@ -76,7 +76,7 @@ it('draws the trail for one assignment in time order and audits once', function 
     pingAt($a->id, '-3 minutes', 6.91);
     pingAt($other->id, '-1 minute');
 
-    $points = withAuthCookies(loginCookies($admin))->getJson("/api/map/trail/{$a->id}")->assertOk()->json('data.points');
+    $points = withAuthCookies(loginCookies($admin))->getJson("/api/map/trail/{$a->public_code}")->assertOk()->json('data.points');
 
     expect(array_column($points, 'lat'))->toBe([6.91, 6.93]);
     expect(AuditLog::query()->where('action', 'location.trail_viewed')->count())->toBe(1);
@@ -89,7 +89,7 @@ it('keeps location data away from everyone without location.view', function () {
     foreach ([RoleCode::Marshal, RoleCode::Volunteer, RoleCode::Coordinator] as $role) {
         $cookies = loginCookies(User::factory()->role($role)->create());
         withAuthCookies($cookies)->getJson('/api/map/latest')->assertForbidden();
-        withAuthCookies($cookies)->getJson("/api/map/trail/{$a->id}")->assertForbidden();
+        withAuthCookies($cookies)->getJson("/api/map/trail/{$a->public_code}")->assertForbidden();
     }
     expect(AuditLog::query()->where('action', 'like', 'location.%')->count())->toBe(0);
 });

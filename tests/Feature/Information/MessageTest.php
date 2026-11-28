@@ -96,16 +96,16 @@ it('lets an admin open a conversation, mark it read for every admin, and answer'
     Message::factory()->create(['sender_id' => $ana->id, 'body' => 'Where do I report?']);
 
     $cookies = loginCookies($first);
-    withAuthCookies($cookies)->getJson("/api/inbox/{$ana->id}")->assertOk()
+    withAuthCookies($cookies)->getJson("/api/inbox/{$ana->public_code}")->assertOk()
         ->assertJsonPath('person.name', 'Ana Cruz')
         ->assertJsonPath('data.0.body', 'Where do I report?')
         ->assertJsonPath('data.0.sender', 'Ana Cruz');
 
-    withAuthCookies($cookies)->postJson("/api/inbox/{$ana->id}/read")->assertOk()->assertJsonPath('unread', 0);
+    withAuthCookies($cookies)->postJson("/api/inbox/{$ana->public_code}/read")->assertOk()->assertJsonPath('unread', 0);
     // The inbox is shared, so the other admin sees it as read too.
     withAuthCookies(loginCookies($second))->getJson('/api/inbox/unread')->assertOk()->assertJsonPath('unread', 0);
 
-    withAuthCookies($cookies)->postJson("/api/inbox/{$ana->id}/reply", ['body' => 'Report to the DRRMO office, Room 2.'])
+    withAuthCookies($cookies)->postJson("/api/inbox/{$ana->public_code}/reply", ['body' => 'Report to the DRRMO office, Room 2.'])
         ->assertCreated()
         ->assertJsonPath('data.from_office', true)
         ->assertJsonPath('data.sender', 'Dina Reyes');
@@ -120,8 +120,8 @@ it('does not start a conversation from the office side', function () {
     $stranger = User::factory()->role(RoleCode::Volunteer)->create();
     $cookies = loginCookies(User::factory()->role(RoleCode::Admin)->create());
 
-    withAuthCookies($cookies)->postJson("/api/inbox/{$stranger->id}/reply", ['body' => 'Hello?'])->assertNotFound();
-    withAuthCookies($cookies)->postJson("/api/inbox/{$stranger->id}/reply", ['body' => ' '])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/inbox/{$stranger->public_code}/reply", ['body' => 'Hello?'])->assertNotFound();
+    withAuthCookies($cookies)->postJson("/api/inbox/{$stranger->public_code}/reply", ['body' => ' '])->assertUnprocessable();
 
     expect(Message::query()->count())->toBe(0);
 });
@@ -133,9 +133,9 @@ it('keeps the inbox away from everyone without the inbox permission', function (
 
     withAuthCookies($cookies)->getJson('/api/inbox')->assertForbidden();
     withAuthCookies($cookies)->getJson('/api/inbox/unread')->assertForbidden();
-    withAuthCookies($cookies)->getJson("/api/inbox/{$ana->id}")->assertForbidden();
-    withAuthCookies($cookies)->postJson("/api/inbox/{$ana->id}/reply", ['body' => 'Hi'])->assertForbidden();
-    withAuthCookies($cookies)->postJson("/api/inbox/{$ana->id}/read")->assertForbidden();
+    withAuthCookies($cookies)->getJson("/api/inbox/{$ana->public_code}")->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/inbox/{$ana->public_code}/reply", ['body' => 'Hi'])->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/inbox/{$ana->public_code}/read")->assertForbidden();
 
     expect(Message::query()->count())->toBe(1)->and(Message::query()->sole()->read_at)->toBeNull();
 })->with([RoleCode::Volunteer, RoleCode::Marshal, RoleCode::Coordinator]);
@@ -160,19 +160,19 @@ it('lets any person write to any other active person and keeps it out of the off
     $ana = User::factory()->role($from)->create(['first_name' => 'Ana', 'last_name' => 'Cruz']);
     $ben = User::factory()->role($to)->create(['first_name' => 'Ben', 'last_name' => 'Lim']);
 
-    withAuthCookies(loginCookies($ana))->postJson("/api/me/chats/{$ben->id}", ['body' => ' Can you cover my shift? '])
+    withAuthCookies(loginCookies($ana))->postJson("/api/me/chats/{$ben->public_code}", ['body' => ' Can you cover my shift? '])
         ->assertCreated()->assertJsonPath('data.body', 'Can you cover my shift?')->assertJsonPath('data.mine', true);
 
     $cookies = loginCookies($ben);
     withAuthCookies($cookies)->getJson('/api/me/messages/unread')->assertJsonPath('unread', 1);
-    withAuthCookies($cookies)->getJson("/api/me/chats/{$ana->id}")->assertOk()
+    withAuthCookies($cookies)->getJson("/api/me/chats/{$ana->public_code}")->assertOk()
         ->assertJsonPath('person.name', 'Ana Cruz')->assertJsonPath('data.0.mine', false)->assertJsonPath('data.0.sender', 'Ana Cruz');
     withAuthCookies($cookies)->getJson('/api/me/chats')->assertOk()
         ->assertJsonPath('data.0.person.name', 'Ana Cruz')->assertJsonPath('data.0.unread', 1)->assertJsonPath('unread', 1);
     // The office conversation stays empty on both sides.
     withAuthCookies($cookies)->getJson('/api/me/messages')->assertJsonPath('data', [])->assertJsonPath('unread', 0);
 
-    withAuthCookies($cookies)->postJson("/api/me/chats/{$ana->id}/read")->assertOk()->assertJsonPath('unread', 0);
+    withAuthCookies($cookies)->postJson("/api/me/chats/{$ana->public_code}/read")->assertOk()->assertJsonPath('unread', 0);
     withAuthCookies($cookies)->getJson('/api/me/messages/unread')->assertJsonPath('unread', 0);
 
     $admin = User::factory()->role(RoleCode::Admin)->create();
@@ -188,11 +188,11 @@ it('hides a direct conversation from everyone who is not in it', function () {
     $ana = User::factory()->role(RoleCode::Volunteer)->create();
     $ben = User::factory()->role(RoleCode::Volunteer)->create();
     $eve = User::factory()->role(RoleCode::Admin)->create();
-    withAuthCookies(loginCookies($ana))->postJson("/api/me/chats/{$ben->id}", ['body' => 'Private'])->assertCreated();
+    withAuthCookies(loginCookies($ana))->postJson("/api/me/chats/{$ben->public_code}", ['body' => 'Private'])->assertCreated();
 
     // Eve, even as an admin, sees an empty conversation with Ana, and no thread with Ben.
     $cookies = loginCookies($eve);
-    withAuthCookies($cookies)->getJson("/api/me/chats/{$ana->id}")->assertOk()->assertJsonPath('data', []);
+    withAuthCookies($cookies)->getJson("/api/me/chats/{$ana->public_code}")->assertOk()->assertJsonPath('data', []);
     withAuthCookies($cookies)->getJson('/api/me/chats')->assertJsonPath('data', []);
 });
 
@@ -201,9 +201,9 @@ it('does not let a person message themselves or someone who cannot sign in', fun
     $gone = User::factory()->role(RoleCode::Volunteer)->create(['disabled_at' => now()]);
     $cookies = loginCookies($ana);
 
-    withAuthCookies($cookies)->postJson("/api/me/chats/{$ana->id}", ['body' => 'Hi me'])->assertUnprocessable();
-    withAuthCookies($cookies)->postJson("/api/me/chats/{$gone->id}", ['body' => 'Hi'])->assertUnprocessable();
-    withAuthCookies($cookies)->postJson('/api/me/chats/'.User::factory()->create()->id, ['body' => ' '])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/chats/{$ana->public_code}", ['body' => 'Hi me'])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/me/chats/{$gone->public_code}", ['body' => 'Hi'])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson('/api/me/chats/'.User::factory()->create()->public_code, ['body' => ' '])->assertUnprocessable();
 
     expect(Message::query()->count())->toBe(0);
 });
@@ -235,20 +235,20 @@ it('tells the sender when their message was seen, on every kind of conversation'
     // To the office: seen once an admin opens the conversation.
     withAuthCookies($anaCookies)->postJson('/api/me/messages', ['body' => 'Is the drill on?'])->assertJsonPath('data.seen', false);
     $adminCookies = loginCookies($admin);
-    withAuthCookies($adminCookies)->postJson("/api/inbox/{$ana->id}/read")->assertOk();
+    withAuthCookies($adminCookies)->postJson("/api/inbox/{$ana->public_code}/read")->assertOk();
     withAuthCookies($anaCookies)->getJson('/api/me/messages')->assertJsonPath('data.0.seen', true);
 
     // The office answer: seen once the person opens it.
-    withAuthCookies($adminCookies)->postJson("/api/inbox/{$ana->id}/reply", ['body' => 'Yes, at 8.'])->assertJsonPath('data.seen', false);
+    withAuthCookies($adminCookies)->postJson("/api/inbox/{$ana->public_code}/reply", ['body' => 'Yes, at 8.'])->assertJsonPath('data.seen', false);
     withAuthCookies($anaCookies)->postJson('/api/me/messages/read')->assertOk();
-    withAuthCookies($adminCookies)->getJson("/api/inbox/{$ana->id}")->assertJsonPath('data.1.seen', true)->assertJsonPath('data.0.seen', false);
+    withAuthCookies($adminCookies)->getJson("/api/inbox/{$ana->public_code}")->assertJsonPath('data.1.seen', true)->assertJsonPath('data.0.seen', false);
 
     // Person to person: seen once the other person opens it, and never set on their side.
-    withAuthCookies($anaCookies)->postJson("/api/me/chats/{$ben->id}", ['body' => 'Hi Ben'])->assertJsonPath('data.seen', false);
+    withAuthCookies($anaCookies)->postJson("/api/me/chats/{$ben->public_code}", ['body' => 'Hi Ben'])->assertJsonPath('data.seen', false);
     $benCookies = loginCookies($ben);
-    withAuthCookies($benCookies)->postJson("/api/me/chats/{$ana->id}/read")->assertOk();
-    withAuthCookies($benCookies)->getJson("/api/me/chats/{$ana->id}")->assertJsonPath('data.0.seen', false);
-    withAuthCookies($anaCookies)->getJson("/api/me/chats/{$ben->id}")->assertJsonPath('data.0.seen', true);
+    withAuthCookies($benCookies)->postJson("/api/me/chats/{$ana->public_code}/read")->assertOk();
+    withAuthCookies($benCookies)->getJson("/api/me/chats/{$ana->public_code}")->assertJsonPath('data.0.seen', false);
+    withAuthCookies($anaCookies)->getJson("/api/me/chats/{$ben->public_code}")->assertJsonPath('data.0.seen', true);
 });
 
 it('finds people by their full name', function () {

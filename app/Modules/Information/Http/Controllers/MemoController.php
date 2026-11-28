@@ -206,7 +206,7 @@ class MemoController
     private function row(Memo $m): array
     {
         return [
-            'id' => $m->id,
+            'id' => $m->public_code,
             'title' => $m->title,
             'category' => $m->category->value,
             'category_label' => $m->category->label(),

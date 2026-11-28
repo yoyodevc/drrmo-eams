@@ -77,6 +77,6 @@ class EmergencyContactController
     /** @return array<string, mixed> */
     private function present(EmergencyContact $c): array
     {
-        return ['id' => $c->id, 'name' => $c->name, 'relationship' => $c->relationship, 'phone' => $c->phone];
+        return ['id' => $c->public_code, 'name' => $c->name, 'relationship' => $c->relationship, 'phone' => $c->phone];
     }
 }

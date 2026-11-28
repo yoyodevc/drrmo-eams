@@ -4,7 +4,7 @@ import { api } from '@/shared/api/client';
 export type NotificationStatus = 'queued' | 'sent' | 'failed';
 
 export interface NotificationRow {
-    id: number;
+    id: string;
     type: string;
     status: NotificationStatus;
     attempts: number;
@@ -42,16 +42,16 @@ export async function listNotifications(f: NotificationFilters): Promise<Notific
     return api<NotificationPage>(`/api/notifications${qs ? `?${qs}` : ''}`);
 }
 
-export async function retryNotification(id: number): Promise<void> {
+export async function retryNotification(id: string): Promise<void> {
     await api(`/api/notifications/${id}/retry`, { method: 'POST' });
 }
 
 export interface MyNotification {
-    id: number;
+    id: string;
     type: string;
     sent_at: string | null;
     event: string | null;
-    assignment_id: number | null;
+    assignment_id: string | null;
 }
 
 export async function listMyNotifications(): Promise<MyNotification[]> {
@@ -61,10 +61,10 @@ export async function listMyNotifications(): Promise<MyNotification[]> {
 
 // In app alerts. Today they carry emergencies. Always the signed in person's own.
 export interface InAppAlert {
-    id: number;
+    id: string;
     type: string;
-    emergency_report_id: number | null;
-    site_report_id: number | null;
+    emergency_report_id: string | null;
+    site_report_id: string | null;
     event: string | null;
     due_at: string | null;
     about: string | null;
@@ -89,7 +89,7 @@ export interface AlertSettings {
 }
 
 export interface PushDevice {
-    id: number;
+    id: string;
     label: string | null;
     last_used_at: string | null;
     endpoint_hash: string;
@@ -125,7 +125,7 @@ export async function unsubscribePush(endpoint: string): Promise<void> {
     await api('/api/push/subscribe', { method: 'DELETE', body: JSON.stringify({ endpoint }) });
 }
 
-export async function removePushDevice(id: number): Promise<void> {
+export async function removePushDevice(id: string): Promise<void> {
     await api(`/api/push/devices/${id}`, { method: 'DELETE' });
 }
 

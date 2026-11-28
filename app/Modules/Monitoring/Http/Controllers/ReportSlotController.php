@@ -85,8 +85,8 @@ class ReportSlotController
     public static function row(SiteReport $r): array
     {
         return [
-            'id' => $r->id,
-            'assignment_id' => $r->assignment_id,
+            'id' => $r->public_code,
+            'assignment_id' => $r->assignment->public_code,
             'event' => $r->assignment->event->title ?? null,
             'due_at' => $r->due_at->toIso8601String(),
             'status' => $r->status->value,

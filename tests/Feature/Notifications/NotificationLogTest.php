@@ -45,8 +45,8 @@ it('retries only failed notifications and writes an audit row', function () {
     $sent = logRow($marshal, 'sent', ['sent_at' => now()]);
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->postJson("/api/notifications/{$sent->id}/retry")->assertUnprocessable();
-    withAuthCookies($cookies)->postJson("/api/notifications/{$failed->id}/retry")
+    withAuthCookies($cookies)->postJson("/api/notifications/{$sent->public_code}/retry")->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/notifications/{$failed->public_code}/retry")
         ->assertOk()->assertJsonPath('data.status', 'queued');
 
     expect($failed->fresh()->last_error)->toBeNull();
@@ -60,7 +60,7 @@ it('keeps the log away from non admins', function () {
     $cookies = loginCookies($marshal);
 
     withAuthCookies($cookies)->getJson('/api/notifications')->assertForbidden();
-    withAuthCookies($cookies)->postJson("/api/notifications/{$failed->id}/retry")->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/notifications/{$failed->public_code}/retry")->assertForbidden();
 });
 
 it('shows a person only their own sent notifications', function () {

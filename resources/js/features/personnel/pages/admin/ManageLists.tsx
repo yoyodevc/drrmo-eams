@@ -280,9 +280,9 @@ function ListPanel({ kind, list }: { kind: ListKind; list: UseQueryResult<Unit[]
             if (kind === 'event-types')
                 return saveEventType(input.key === null ? null : String(input.key), body);
             if (kind === 'duty-types')
-                return saveDutyType(input.key === null ? null : Number(input.key), body);
+                return saveDutyType(input.key === null ? null : String(input.key), body);
             if (kind === 'locations')
-                return saveLocation(input.key === null ? null : Number(input.key), {
+                return saveLocation(input.key === null ? null : String(input.key), {
                     ...body,
                     latitude: input.latitude ?? 0,
                     longitude: input.longitude ?? 0,
@@ -298,8 +298,8 @@ function ListPanel({ kind, list }: { kind: ListKind; list: UseQueryResult<Unit[]
     const remove = useMutation({
         mutationFn: (unit: Unit) => {
             if (kind === 'event-types') return deleteEventType(String(unit.key));
-            if (kind === 'duty-types') return deleteDutyType(Number(unit.key));
-            if (kind === 'locations') return deleteLocation(Number(unit.key));
+            if (kind === 'duty-types') return deleteDutyType(String(unit.key));
+            if (kind === 'locations') return deleteLocation(String(unit.key));
             return deleteOrgUnit(kind, unit.key);
         },
         onSuccess: async () => {

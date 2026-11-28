@@ -87,7 +87,7 @@ it('blocks deleting a location that events use and forbids volunteers', function
     $event = Event::factory()->create();
     $volunteer = User::factory()->role(RoleCode::Volunteer)->create();
 
-    withAuthCookies(loginCookies($admin))->deleteJson("/api/campus-locations/{$event->campus_location_id}")->assertUnprocessable();
+    withAuthCookies(loginCookies($admin))->deleteJson("/api/campus-locations/{$event->location->public_code}")->assertUnprocessable();
     withAuthCookies(loginCookies($volunteer))->getJson('/api/campus-locations')->assertForbidden();
-    withAuthCookies(loginCookies($volunteer))->deleteJson("/api/campus-locations/{$event->campus_location_id}")->assertForbidden();
+    withAuthCookies(loginCookies($volunteer))->deleteJson("/api/campus-locations/{$event->location->public_code}")->assertForbidden();
 });

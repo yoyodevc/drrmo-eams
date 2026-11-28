@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { PersonalCalendar } from './PersonalCalendar';
 
 const duty = {
-    id: 1,
+    id: 'd1',
     title: 'Campus fun run',
     starts_at: new Date(2026, 10, 9, 8, 0).toISOString(),
     ends_at: new Date(2026, 10, 9, 17, 0).toISOString(),

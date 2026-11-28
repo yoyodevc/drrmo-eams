@@ -9,9 +9,11 @@ use App\Modules\Personnel\Actions\PersonInviter;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Enums\AvailabilityStatus;
 use App\Modules\Personnel\Http\Requests\PersonRequest;
+use App\Modules\Personnel\Models\Department;
 use App\Modules\Personnel\Models\Team;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
+use App\Support\PublicCode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -45,8 +47,9 @@ class PeopleController
             $query->where('status', $status);
         }
         if (($department = $this->filter($request, 'department')) !== null) {
-            abort_unless(ctype_digit($department), 422, 'Unknown department filter.');
-            $query->where('department_id', (int) $department);
+            $departmentId = PublicCode::toId(Department::class, $department);
+            abort_unless($departmentId > 0, 422, 'Unknown department filter.');
+            $query->where('department_id', $departmentId);
         }
         if (($search = $this->filter($request, 'search')) !== null) {
             $like = '%'.addcslashes($search, '%_\\').'%';
@@ -159,18 +162,18 @@ class PeopleController
     private function present(User $user): array
     {
         return [
-            'id' => $user->id,
+            'id' => $user->public_code,
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
             'name' => $user->name,
             'email' => $user->email,
             'contact_number' => $user->contact_number,
             'role' => $user->role?->code,
-            'role_id' => $user->role_id,
+            'role_id' => $user->role?->public_code,
             'role_name' => $user->role?->name,
             'team' => $user->team,
             'team_name' => $user->teamName(),
-            'department' => $user->department ? ['id' => $user->department->id, 'name' => $user->department->name] : null,
+            'department' => $user->department ? ['id' => $user->department->public_code, 'name' => $user->department->name] : null,
             'status' => $user->status->value,
             'account_status' => $user->account_status->value,
             'last_login_at' => $user->last_login_at?->toIso8601String(),

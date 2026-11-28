@@ -13,8 +13,8 @@ import {
 
 const now = Date.parse('2026-11-13T01:00:00Z');
 const person = (id: number, state: MapPerson['state'], event = 1): MapPerson => ({
-    assignment_id: id,
-    event_id: event,
+    assignment_id: `a${id}`,
+    event_id: `e${event}`,
     event_title: `Event ${event}`,
     name: `P${id}`,
     state,
@@ -37,10 +37,10 @@ describe('splitPeople', () => {
     it('puts stale and no-location people in their own lists', () => {
         const people = [person(1, 'live'), person(2, 'stale'), person(3, 'none')];
         const { onMap, live, stale, none } = splitPeople(people);
-        expect(onMap.map((p) => p.assignment_id)).toEqual([1, 2]);
-        expect(live.map((p) => p.assignment_id)).toEqual([1]);
-        expect(stale.map((p) => p.assignment_id)).toEqual([2]);
-        expect(none.map((p) => p.assignment_id)).toEqual([3]);
+        expect(onMap.map((p) => p.assignment_id)).toEqual(['a1', 'a2']);
+        expect(live.map((p) => p.assignment_id)).toEqual(['a1']);
+        expect(stale.map((p) => p.assignment_id)).toEqual(['a2']);
+        expect(none.map((p) => p.assignment_id)).toEqual(['a3']);
     });
 });
 
@@ -52,8 +52,8 @@ describe('eventOptions', () => {
             person(3, 'none', 2),
         ]);
         expect(opts).toEqual([
-            { id: 1, title: 'Event 1' },
-            { id: 2, title: 'Event 2' },
+            { id: 'e1', title: 'Event 1' },
+            { id: 'e2', title: 'Event 2' },
         ]);
     });
 });

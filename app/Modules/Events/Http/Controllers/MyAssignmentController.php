@@ -26,13 +26,13 @@ class MyAssignmentController
             ->values();
 
         return response()->json(['data' => $rows->map(fn (Assignment $a) => [
-            'id' => $a->id,
+            'id' => $a->public_code,
             'status' => $a->status->value,
             'acknowledged_at' => $a->acknowledged_at?->toIso8601String(),
             'duty_started_at' => $a->duty_started_at?->toIso8601String(),
             'duty_ended_at' => $a->duty_ended_at?->toIso8601String(),
             'event' => [
-                'id' => $a->event->id,
+                'id' => $a->event->public_code,
                 'title' => $a->event->title,
                 'status' => $a->event->status->value,
                 'location' => $a->event->location?->name,

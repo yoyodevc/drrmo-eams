@@ -1,11 +1,11 @@
 // Typed calls to the Monitoring module endpoints.
 import { api } from '@/shared/api/client';
 
-export async function startDuty(assignmentId: number): Promise<void> {
+export async function startDuty(assignmentId: string): Promise<void> {
     await api(`/api/me/assignments/${assignmentId}/start-duty`, { method: 'POST' });
 }
 
-export async function endDuty(assignmentId: number): Promise<void> {
+export async function endDuty(assignmentId: string): Promise<void> {
     await api(`/api/me/assignments/${assignmentId}/end-duty`, { method: 'POST' });
 }
 
@@ -17,7 +17,7 @@ export type PingPoint = {
 };
 
 export async function uploadPings(
-    assignmentId: number,
+    assignmentId: string,
     points: PingPoint[],
 ): Promise<{ accepted: number; rejected: number }> {
     const response = await api<{ data: { accepted: number; rejected: number } }>(
@@ -31,8 +31,8 @@ export async function uploadPings(
 export type MapState = 'live' | 'stale' | 'none';
 
 export type MapPerson = {
-    assignment_id: number;
-    event_id: number;
+    assignment_id: string;
+    event_id: string;
     event_title: string | null;
     name: string;
     state: MapState;
@@ -41,13 +41,13 @@ export type MapPerson = {
 
 export type LatestMap = { people: MapPerson[]; stale_after_seconds: number; generated_at: string };
 
-export async function getLatestMap(eventId?: number): Promise<LatestMap> {
+export async function getLatestMap(eventId?: string): Promise<LatestMap> {
     const query = eventId ? `?event_id=${eventId}` : '';
     const response = await api<{ data: LatestMap }>(`/api/map/latest${query}`);
     return response.data;
 }
 
-export async function getTrail(assignmentId: number): Promise<PingPoint[]> {
+export async function getTrail(assignmentId: string): Promise<PingPoint[]> {
     const response = await api<{ data: { points: PingPoint[] } }>(`/api/map/trail/${assignmentId}`);
     return response.data.points;
 }
@@ -56,8 +56,8 @@ export async function getTrail(assignmentId: number): Promise<PingPoint[]> {
 export type ReportStatus = 'pending' | 'submitted' | 'overdue' | 'late' | 'missed';
 
 export type ReportSlot = {
-    id: number;
-    assignment_id: number;
+    id: string;
+    assignment_id: string;
     event: string | null;
     due_at: string;
     status: ReportStatus;
@@ -72,7 +72,7 @@ export async function listReportSlots(): Promise<ReportSlot[]> {
 }
 
 export async function submitReport(
-    slotId: number,
+    slotId: string,
     summary: string,
     photo: Blob | null,
 ): Promise<ReportSlot> {
@@ -88,14 +88,14 @@ export async function submitReport(
 
 // Admin report feed (S4.8). Needs `reports.view`.
 export type FeedReport = {
-    id: number;
+    id: string;
     status: ReportStatus;
     due_at: string;
     submitted_at: string | null;
     summary: string | null;
     has_photo: boolean;
     author: string | null;
-    event: { id: number; title: string | null };
+    event: { id: string; title: string | null };
     location: string | null;
 };
 
@@ -104,7 +104,7 @@ export type FeedFilters = { event_id: string; location_id: string; from: string;
 export type ReportFeed = {
     data: FeedReport[];
     meta: { current_page: number; last_page: number; total: number };
-    filters: { events: { id: number; title: string }[]; locations: { id: number; name: string }[] };
+    filters: { events: { id: string; title: string }[]; locations: { id: string; name: string }[] };
 };
 
 export async function getReportFeed(filters: FeedFilters, page: number): Promise<ReportFeed> {
@@ -113,7 +113,7 @@ export async function getReportFeed(filters: FeedFilters, page: number): Promise
     return api<ReportFeed>(`/api/reports?${query.toString()}`);
 }
 
-export const reportPhotoUrl = (id: number) => `/api/reports/${id}/photo`;
+export const reportPhotoUrl = (id: string) => `/api/reports/${id}/photo`;
 
 // Emergency reports. Any person on duty can send one. Reviewers (the two global marshals and admins) read them.
 export type EmergencyType = 'medical' | 'fire' | 'security' | 'other';
@@ -128,7 +128,7 @@ export const emergencyTypes: { value: EmergencyType; label: string }[] = [
 export type MyEmergencyStatus = 'sent' | 'acknowledged' | 'escalated' | 'resolved';
 
 export type MyEmergency = {
-    id: number;
+    id: string;
     client_id: string;
     type: EmergencyType;
     note: string | null;
@@ -143,7 +143,7 @@ export type MyEmergency = {
 };
 
 export async function sendEmergency(input: {
-    assignmentId: number;
+    assignmentId: string;
     clientId: string;
     type: EmergencyType;
     note: string;
@@ -167,7 +167,7 @@ export async function listMyEmergencies(): Promise<MyEmergency[]> {
 }
 
 export type ReviewEmergency = {
-    id: number;
+    id: string;
     type: EmergencyType;
     note: string | null;
     has_photo: boolean;
@@ -176,7 +176,7 @@ export type ReviewEmergency = {
     escalated: boolean;
     sent_at: string;
     escalated_at: string | null;
-    event: { id: number; title: string | null };
+    event: { id: string; title: string | null };
     reporter: string | null;
     acknowledged_by: string | null;
     acknowledged_at: string | null;
@@ -198,30 +198,30 @@ export async function listEmergencies(status: string): Promise<ReviewEmergency[]
     return response.data;
 }
 
-export async function getEmergency(id: number): Promise<ReviewEmergency> {
+export async function getEmergency(id: string): Promise<ReviewEmergency> {
     const response = await api<{ data: ReviewEmergency }>(`/api/emergencies/${id}`);
     return response.data;
 }
 
-export async function acknowledgeEmergency(id: number): Promise<void> {
+export async function acknowledgeEmergency(id: string): Promise<void> {
     await api(`/api/emergencies/${id}/acknowledge`, { method: 'POST' });
 }
 
-export async function resolveEmergency(id: number, note: string): Promise<void> {
+export async function resolveEmergency(id: string, note: string): Promise<void> {
     await api(`/api/emergencies/${id}/resolve`, {
         method: 'POST',
         body: JSON.stringify({ note: note || null }),
     });
 }
 
-export const emergencyPhotoUrl = (id: number) => `/api/emergencies/${id}/photo`;
-export const myEmergencyPhotoUrl = (id: number) => `/api/me/emergencies/${id}/photo`;
+export const emergencyPhotoUrl = (id: string) => `/api/emergencies/${id}/photo`;
+export const myEmergencyPhotoUrl = (id: string) => `/api/me/emergencies/${id}/photo`;
 
 // Settings: the (at most 2) marshals who review every report and emergency. Needs `access.manage`.
 export type ReportReviewerSettings = {
     max: number;
-    user_ids: number[];
-    candidates: { id: number; name: string; email: string }[];
+    user_ids: string[];
+    candidates: { id: string; name: string; email: string }[];
 };
 
 export async function getReportReviewers(): Promise<ReportReviewerSettings> {
@@ -229,7 +229,7 @@ export async function getReportReviewers(): Promise<ReportReviewerSettings> {
     return response.data;
 }
 
-export async function saveReportReviewers(userIds: number[]): Promise<void> {
+export async function saveReportReviewers(userIds: string[]): Promise<void> {
     await api('/api/report-reviewers', {
         method: 'PUT',
         body: JSON.stringify({ user_ids: userIds }),
@@ -238,7 +238,7 @@ export async function saveReportReviewers(userIds: number[]): Promise<void> {
 
 // Emergencies of the event since the last report, for the report form. No place and no photo.
 export type SinceEmergency = {
-    id: number;
+    id: string;
     type: EmergencyType;
     note: string | null;
     status: 'sent' | 'acknowledged' | 'resolved';
@@ -246,7 +246,7 @@ export type SinceEmergency = {
     sent_at: string;
 };
 
-export async function listEmergenciesSinceLastReport(slotId: number): Promise<SinceEmergency[]> {
+export async function listEmergenciesSinceLastReport(slotId: string): Promise<SinceEmergency[]> {
     const response = await api<{ data: SinceEmergency[] }>(
         `/api/me/report-slots/${slotId}/emergencies`,
     );
@@ -256,7 +256,7 @@ export async function listEmergenciesSinceLastReport(slotId: number): Promise<Si
 // The needs attention view (admins and reviewer marshals).
 export type Attention = {
     emergencies: {
-        id: number;
+        id: string;
         type: EmergencyType;
         status: 'sent' | 'acknowledged';
         escalated: boolean;
@@ -266,14 +266,14 @@ export type Attention = {
         acknowledged_by: string | null;
     }[];
     reports: {
-        id: number;
+        id: string;
         status: 'overdue' | 'missed';
         due_at: string;
         event: string | null;
         author: string | null;
     }[];
     events: {
-        event_id: number;
+        event_id: string;
         event: string | null;
         on_time: number;
         late: number;

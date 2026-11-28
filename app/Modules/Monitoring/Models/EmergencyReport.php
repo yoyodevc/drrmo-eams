@@ -9,6 +9,7 @@ use App\Modules\Events\Models\Event;
 use App\Modules\Monitoring\Enums\EmergencyStatus;
 use App\Modules\Monitoring\Enums\EmergencyType;
 use App\Modules\Personnel\Models\User;
+use App\Support\HasPublicCode;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -27,9 +28,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|Carbon|null $acknowledged_at
  * @property CarbonImmutable|Carbon|null $resolved_at
  * @property CarbonImmutable|Carbon $created_at
+ * @property string $public_code
  */
 class EmergencyReport extends Model
 {
+    use HasPublicCode;
+
     protected $fillable = [
         'assignment_id', 'event_id', 'user_id', 'client_id', 'type', 'note', 'photo_path', 'photo_name',
         'latitude', 'longitude', 'accuracy_m', 'location_captured_at', 'status', 'escalated_at', 'reminded_at',

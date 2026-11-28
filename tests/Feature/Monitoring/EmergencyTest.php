@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Access\Enums\Role as RoleCode;
+use App\Modules\Events\Models\Assignment;
 use App\Modules\Monitoring\Models\EmergencyReport;
 use App\Modules\Monitoring\Models\LocationPing;
 use App\Modules\Monitoring\Models\ReportReviewer;
@@ -40,7 +41,9 @@ function emergencyScene(): array
 
 function sendEmergency($test, User $user, int $assignmentId, array $over = [])
 {
-    return $test->withAuthCookies(loginCookies($user))->post("/api/me/assignments/{$assignmentId}/emergencies", [
+    $code = Assignment::query()->findOrFail($assignmentId)->public_code;
+
+    return $test->withAuthCookies(loginCookies($user))->post("/api/me/assignments/{$code}/emergencies", [
         'client_id' => 'abcd1234-ef56', 'type' => 'medical', 'note' => 'Student fainted at gate 2.', ...$over,
     ], ['Accept' => 'application/json']);
 }
@@ -98,9 +101,9 @@ it('keeps the list and the detail from people who are not reviewers', function (
 
     foreach ([$user, $stranger] as $who) {
         $this->withAuthCookies(loginCookies($who))->getJson('/api/emergencies')->assertForbidden();
-        $this->withAuthCookies(loginCookies($who))->getJson("/api/emergencies/{$report->id}")->assertForbidden();
-        $this->withAuthCookies(loginCookies($who))->postJson("/api/emergencies/{$report->id}/acknowledge")->assertForbidden();
-        $this->withAuthCookies(loginCookies($who))->postJson("/api/emergencies/{$report->id}/resolve")->assertForbidden();
+        $this->withAuthCookies(loginCookies($who))->getJson("/api/emergencies/{$report->public_code}")->assertForbidden();
+        $this->withAuthCookies(loginCookies($who))->postJson("/api/emergencies/{$report->public_code}/acknowledge")->assertForbidden();
+        $this->withAuthCookies(loginCookies($who))->postJson("/api/emergencies/{$report->public_code}/resolve")->assertForbidden();
     }
     expect($report->fresh()->status->value)->toBe('sent');
 });
@@ -113,7 +116,7 @@ it('lets a reviewer see the location and audits every view', function () {
     $list = $this->withAuthCookies(loginCookies($reviewers[0]))->getJson('/api/emergencies')->assertOk();
     expect(json_encode($list->json()))->not->toContain('6.9214');
 
-    $this->withAuthCookies(loginCookies($reviewers[0]))->getJson("/api/emergencies/{$report->id}")->assertOk()
+    $this->withAuthCookies(loginCookies($reviewers[0]))->getJson("/api/emergencies/{$report->public_code}")->assertOk()
         ->assertJsonPath('data.location.lat', 6.9214)->assertJsonPath('data.reporter', 'Mara Reyes');
     expect(AuditLog::query()->where('action', 'emergency.location_viewed')->where('actor_id', $reviewers[0]->id)->count())->toBe(1);
 });
@@ -124,15 +127,15 @@ it('follows sent, acknowledged, resolved, and the reporter sees who and when', f
     $report = EmergencyReport::query()->firstOrFail();
 
     $this->travelTo(CarbonImmutable::parse('2026-11-16 10:02:00'));
-    $this->withAuthCookies(loginCookies($reviewers[0]))->postJson("/api/emergencies/{$report->id}/acknowledge")->assertOk()->assertJsonPath('data.status', 'acknowledged');
+    $this->withAuthCookies(loginCookies($reviewers[0]))->postJson("/api/emergencies/{$report->public_code}/acknowledge")->assertOk()->assertJsonPath('data.status', 'acknowledged');
     // A second reviewer does not take it over.
-    $this->withAuthCookies(loginCookies($reviewers[1]))->postJson("/api/emergencies/{$report->id}/acknowledge")->assertOk();
+    $this->withAuthCookies(loginCookies($reviewers[1]))->postJson("/api/emergencies/{$report->public_code}/acknowledge")->assertOk();
     expect($report->fresh()->acknowledged_by)->toBe($reviewers[0]->id);
 
     $mine = $this->withAuthCookies(loginCookies($user))->getJson('/api/me/emergencies')->assertOk();
     $mine->assertJsonPath('data.0.status', 'acknowledged')->assertJsonPath('data.0.acknowledged_by', $reviewers[0]->name);
 
-    $this->withAuthCookies(loginCookies($reviewers[0]))->postJson("/api/emergencies/{$report->id}/resolve", ['note' => 'Taken to the clinic.'])->assertOk()->assertJsonPath('data.status', 'resolved');
+    $this->withAuthCookies(loginCookies($reviewers[0]))->postJson("/api/emergencies/{$report->public_code}/resolve", ['note' => 'Taken to the clinic.'])->assertOk()->assertJsonPath('data.status', 'resolved');
     $this->withAuthCookies(loginCookies($user))->getJson('/api/me/emergencies')->assertJsonPath('data.0.status', 'resolved')->assertJsonPath('data.0.resolution_note', 'Taken to the clinic.');
     expect(AuditLog::query()->whereIn('action', ['emergency.acknowledged', 'emergency.resolved'])->count())->toBe(2);
 });
@@ -160,7 +163,7 @@ it('does not escalate an acknowledged emergency', function () {
     [$user, $assignment, $reviewers] = emergencyScene();
     sendEmergency($this, $user, $assignment->id)->assertCreated();
     $report = EmergencyReport::query()->firstOrFail();
-    $this->withAuthCookies(loginCookies($reviewers[0]))->postJson("/api/emergencies/{$report->id}/acknowledge")->assertOk();
+    $this->withAuthCookies(loginCookies($reviewers[0]))->postJson("/api/emergencies/{$report->public_code}/acknowledge")->assertOk();
 
     $this->travelTo(CarbonImmutable::parse('2026-11-16 10:30:00'));
     Artisan::call('monitoring:escalate-emergencies');
@@ -186,7 +189,7 @@ it('drops the emergency alert once the emergency is acknowledged', function () {
     $report = EmergencyReport::query()->firstOrFail();
 
     $this->withAuthCookies(loginCookies($reviewers[0]))->getJson('/api/me/alerts')->assertJsonPath('unread', 1);
-    $this->withAuthCookies(loginCookies($reviewers[1]))->postJson("/api/emergencies/{$report->id}/acknowledge")->assertOk();
+    $this->withAuthCookies(loginCookies($reviewers[1]))->postJson("/api/emergencies/{$report->public_code}/acknowledge")->assertOk();
 
     // Neither the acknowledger nor the other reviewer keeps the banner.
     foreach ($reviewers as $reviewer) {

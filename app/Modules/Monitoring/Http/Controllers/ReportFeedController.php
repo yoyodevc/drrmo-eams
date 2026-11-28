@@ -9,6 +9,7 @@ use App\Modules\Events\Models\Event;
 use App\Modules\Monitoring\Models\SiteReport;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
+use App\Support\PublicCode;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +29,12 @@ class ReportFeedController
         /** @var User $user */
         $user = $request->user();
 
+        // The filters arrive as public codes. An unknown one gives 0, which matches nothing.
+        foreach (['event_id' => Event::class, 'location_id' => CampusLocation::class] as $key => $model) {
+            if ($request->filled($key)) {
+                $request->merge([$key => PublicCode::toId($model, $request->input($key))]);
+            }
+        }
         $f = $request->validate([
             'event_id' => ['nullable', 'integer'],
             'location_id' => ['nullable', 'integer'],
@@ -36,11 +43,11 @@ class ReportFeedController
         ]);
 
         $scoped = $this->scoped($user);
-        $query = (clone $scoped)->with(['assignment.user:id,first_name,last_name', 'assignment.event:id,title,campus_location_id', 'assignment.event.location:id,name']);
-        if (! empty($f['event_id'])) {
+        $query = (clone $scoped)->with(['assignment.user:id,first_name,last_name', 'assignment.event:id,public_code,title,campus_location_id', 'assignment.event.location:id,name']);
+        if (isset($f['event_id'])) {
             $query->whereHas('assignment', fn ($q) => $q->where('event_id', (int) $f['event_id']));
         }
-        if (! empty($f['location_id'])) {
+        if (isset($f['location_id'])) {
             $query->whereHas('assignment.event', fn ($q) => $q->where('campus_location_id', (int) $f['location_id']));
         }
         if (! empty($f['from'])) {
@@ -68,7 +75,7 @@ class ReportFeedController
     {
         Gate::authorize('view', $report);
         $audit->log('report.viewed', $report, meta: ['event_id' => $report->assignment->event_id]);
-        $report->load(['assignment.user:id,first_name,last_name', 'assignment.event:id,title,campus_location_id', 'assignment.event.location:id,name']);
+        $report->load(['assignment.user:id,first_name,last_name', 'assignment.event:id,public_code,title,campus_location_id', 'assignment.event.location:id,name']);
 
         return response()->json(['data' => $this->row($report)]);
     }
@@ -100,17 +107,17 @@ class ReportFeedController
 
     /**
      * @param  Builder<SiteReport>  $scoped
-     * @return array{events: list<array{id: int, title: string}>, locations: list<array{id: int, name: string}>}
+     * @return array{events: list<array{id: string, title: string}>, locations: list<array{id: string, name: string}>}
      */
     private function filterOptions(Builder $scoped): array
     {
         $eventIds = (clone $scoped)->join('assignments', 'assignments.id', '=', 'site_reports.assignment_id')->distinct()->pluck('assignments.event_id');
-        $events = Event::query()->whereIn('id', $eventIds)->orderBy('title')->get(['id', 'title', 'campus_location_id']);
-        $locations = CampusLocation::query()->whereIn('id', $events->pluck('campus_location_id'))->orderBy('name')->get(['id', 'name']);
+        $events = Event::query()->whereIn('id', $eventIds)->orderBy('title')->get(['id', 'public_code', 'title', 'campus_location_id']);
+        $locations = CampusLocation::query()->whereIn('id', $events->pluck('campus_location_id'))->orderBy('name')->get(['id', 'public_code', 'name']);
 
         return [
-            'events' => $events->map(fn (Event $e) => ['id' => $e->id, 'title' => $e->title])->values()->all(),
-            'locations' => $locations->map(fn (CampusLocation $l) => ['id' => $l->id, 'name' => $l->name])->values()->all(),
+            'events' => $events->map(fn (Event $e) => ['id' => $e->public_code, 'title' => $e->title])->values()->all(),
+            'locations' => $locations->map(fn (CampusLocation $l) => ['id' => $l->public_code, 'name' => $l->name])->values()->all(),
         ];
     }
 
@@ -120,14 +127,14 @@ class ReportFeedController
         $assignment = $r->assignment;
 
         return [
-            'id' => $r->id,
+            'id' => $r->public_code,
             'status' => $r->status->value,
             'due_at' => $r->due_at->toIso8601String(),
             'submitted_at' => $r->submitted_at?->toIso8601String(),
             'summary' => $r->summary,
             'has_photo' => $r->photo_path !== null,
             'author' => $assignment->user->name ?? null,
-            'event' => ['id' => $assignment->event_id, 'title' => $assignment->event->title ?? null],
+            'event' => ['id' => $assignment->event->public_code ?? null, 'title' => $assignment->event->title ?? null],
             'location' => $assignment->event->location->name ?? null,
         ];
     }

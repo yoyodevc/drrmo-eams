@@ -1,18 +1,16 @@
-// Emails link to the duties page with ?assignment=<id>. These helpers read that id and say where
+// Emails link to the duties page with ?assignment=<code>. These helpers read that code and say where
 // the matching duty sits, so the page can scroll to it and highlight it.
 import type { MyAssignment } from '@/features/events/api';
 
-/** The assignment id from a link, or null when it is missing or not a whole number. */
-export function linkedAssignmentId(value: string | null): number | null {
-    if (value === null || !/^\d+$/.test(value)) return null;
-    const id = Number(value);
-    return id > 0 ? id : null;
+/** The assignment's public code from a link, or null when it is missing or not a code. */
+export function linkedAssignmentId(value: string | null): string | null {
+    return value !== null && /^[a-z][a-z0-9]{15}$/.test(value) ? value : null;
 }
 
 export type LinkedDuty = { duty: MyAssignment; cancelled: boolean };
 
 /** Finds the linked duty among the person's own duties. Someone else's id finds nothing. */
-export function findLinkedDuty(duties: MyAssignment[], id: number | null): LinkedDuty | null {
+export function findLinkedDuty(duties: MyAssignment[], id: string | null): LinkedDuty | null {
     if (id === null) return null;
     const duty = duties.find((d) => d.id === id);
     if (!duty) return null;
@@ -20,7 +18,7 @@ export function findLinkedDuty(duties: MyAssignment[], id: number | null): Linke
 }
 
 /**
- * Keeps ?assignment=<id> when a person is sent from one page to another (sign in, home redirect).
+ * Keeps ?assignment=<code> when a person is sent from one page to another (sign in, home redirect).
  * Only the duties page (/me) uses it, so every other path comes back unchanged.
  */
 export function keepLinkedAssignment(path: string, search: string): string {

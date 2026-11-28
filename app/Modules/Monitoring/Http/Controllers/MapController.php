@@ -6,9 +6,11 @@ namespace App\Modules\Monitoring\Http\Controllers;
 
 use App\Modules\Events\Enums\AssignmentStatus;
 use App\Modules\Events\Models\Assignment;
+use App\Modules\Events\Models\Event;
 use App\Modules\Monitoring\Models\LocationPing;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
+use App\Support\PublicCode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,12 +23,13 @@ class MapController
     public function latest(Request $request, AuditLogger $audit): JsonResponse
     {
         $this->authorizeView($request);
-        $eventId = $request->integer('event_id') ?: null;
+        // An unknown code gives 0, which matches no event. It must never widen to every event.
+        $eventId = $request->filled('event_id') ? (int) PublicCode::toId(Event::class, $request->query('event_id')) : null;
 
         $assignments = Assignment::query()
             ->with(['user', 'event'])
             ->where('status', AssignmentStatus::OnDuty->value)
-            ->when($eventId, fn ($q) => $q->where('event_id', $eventId))
+            ->when($eventId !== null, fn ($q) => $q->where('event_id', $eventId))
             ->get();
 
         // Latest ping per assignment, served by the (assignment_id, captured_at) index (docs/DATABASE.md).
@@ -48,8 +51,8 @@ class MapController
             $user = $a->user;
 
             return [
-                'assignment_id' => $a->id,
-                'event_id' => $a->event_id,
+                'assignment_id' => $a->public_code,
+                'event_id' => $a->event?->public_code,
                 'event_title' => $a->event?->title,
                 'name' => $user instanceof User ? $user->name : 'Unknown',
                 'state' => $ping === null ? 'none' : ($ping->captured_at->diffInSeconds($now, true) >= self::STALE_SECONDS ? 'stale' : 'live'),
@@ -85,7 +88,7 @@ class MapController
         // One audit row per request, not one per pin.
         $audit->log('location.trail_viewed', $assignment, $assignment->id, ['points' => $points->count()]);
 
-        return response()->json(['data' => ['assignment_id' => $assignment->id, 'points' => $points]]);
+        return response()->json(['data' => ['assignment_id' => $assignment->public_code, 'points' => $points]]);
     }
 
     private function authorizeView(Request $request): void

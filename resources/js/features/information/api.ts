@@ -10,7 +10,7 @@ export interface MemoFile {
 }
 
 export interface Memo {
-    id: number;
+    id: string;
     title: string;
     category: string;
     category_label: string;
@@ -59,12 +59,12 @@ export async function listMemos(
     return api<MemoPage>(`/api/memos${qs ? `?${qs}` : ''}`);
 }
 
-export async function getMemo(id: number): Promise<Memo> {
+export async function getMemo(id: string): Promise<Memo> {
     const body = await api<{ data: Memo }>(`/api/memos/${id}`);
     return body.data;
 }
 
-export async function saveMemo(id: number | null, input: MemoInput): Promise<Memo> {
+export async function saveMemo(id: string | null, input: MemoInput): Promise<Memo> {
     const form = new FormData();
     form.set('title', input.title);
     form.set('category', input.category);
@@ -80,12 +80,12 @@ export async function saveMemo(id: number | null, input: MemoInput): Promise<Mem
     return body.data;
 }
 
-export async function deleteMemo(id: number): Promise<void> {
+export async function deleteMemo(id: string): Promise<void> {
     await api(`/api/memos/${id}`, { method: 'DELETE' });
 }
 
-export const memoFileUrl = (id: number) => `/api/memos/${id}/file`;
-export const memoPreviewUrl = (id: number) => `/api/memos/${id}/preview`;
+export const memoFileUrl = (id: string) => `/api/memos/${id}/file`;
+export const memoPreviewUrl = (id: string) => `/api/memos/${id}/preview`;
 
 // The raw bytes of a memo file or its PDF copy, for the preview pane to draw.
 export async function fetchMemoBytes(url: string): Promise<ArrayBuffer> {

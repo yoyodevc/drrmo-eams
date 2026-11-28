@@ -2,7 +2,7 @@
 import { Alert } from '@/shared/ui/Alert';
 import { useDutyTracker } from '../hooks/useDutyTracker';
 
-export function TrackingBanner({ assignmentId }: { assignmentId: number }) {
+export function TrackingBanner({ assignmentId }: { assignmentId: string }) {
     const { state, pending, wakeLock } = useDutyTracker(assignmentId, true);
     const waiting =
         pending > 0 ? ` ${pending} point${pending === 1 ? '' : 's'} waiting to upload.` : '';

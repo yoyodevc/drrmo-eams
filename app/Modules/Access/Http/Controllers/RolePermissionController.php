@@ -9,6 +9,7 @@ use App\Modules\Access\Models\Permission;
 use App\Modules\Access\Models\Role;
 use App\Modules\Access\Support\PermissionMatrix;
 use App\Modules\Records\Contracts\AuditLogger;
+use App\Support\PublicCode;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,12 @@ class RolePermissionController
     {
         Gate::authorize('manage', Role::class);
 
+        if (is_array($request->input('roles'))) {
+            $request->merge(['roles' => array_map(
+                fn (mixed $row) => is_array($row) ? [...$row, 'id' => PublicCode::toId(Role::class, $row['id'] ?? null)] : $row,
+                $request->input('roles'),
+            )]);
+        }
         $request->validate([
             'roles' => ['required', 'array', 'min:1', 'max:50'],
             'roles.*.id' => ['required', 'integer', 'distinct', 'exists:roles,id'],

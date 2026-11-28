@@ -32,7 +32,7 @@ class RoleResource extends JsonResource
         $members = (int) ($this->resource->getAttribute('users_count') ?? 0);
 
         return [
-            'id' => $this->id,
+            'id' => $this->public_code,
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,

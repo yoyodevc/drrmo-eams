@@ -53,7 +53,7 @@ function Section({
 
 export function NewEvent() {
     const navigate = useNavigate();
-    const editingId = Number(useParams().id) || null;
+    const editingId = useParams().id ?? null;
     const queryClient = useQueryClient();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -71,7 +71,7 @@ export function NewEvent() {
     const lookups = useQuery({ queryKey: ['event-lookups'], queryFn: getLookups });
     const existing = useQuery({
         queryKey: ['event', editingId],
-        queryFn: () => getEvent(editingId ?? 0),
+        queryFn: () => getEvent(editingId ?? ''),
         enabled: editingId !== null,
     });
     const [filled, setFilled] = useState(false);
@@ -111,7 +111,7 @@ export function NewEvent() {
             title: title.trim(),
             event_type: eventType,
             description: description.trim(),
-            campus_location_id: Number(locationId),
+            campus_location_id: locationId,
             // The date fields give local time. Convert so the server gets an exact moment.
             starts_at: startsAt ? new Date(startsAt).toISOString() : '',
             ends_at: endsAt ? new Date(endsAt).toISOString() : '',

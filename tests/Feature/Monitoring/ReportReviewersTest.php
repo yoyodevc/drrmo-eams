@@ -24,12 +24,12 @@ it('lets an admin pick up to 2 marshals as reviewers and audits it', function ()
     $admin = User::factory()->role(RoleCode::Admin)->create();
     [$a, $b, $c] = User::factory()->role(RoleCode::Marshal)->count(3)->create();
 
-    $this->withAuthCookies(loginCookies($admin))->putJson('/api/report-reviewers', ['user_ids' => [$a->id, $b->id]])
-        ->assertOk()->assertJsonPath('data.user_ids', [$a->id, $b->id]);
+    $this->withAuthCookies(loginCookies($admin))->putJson('/api/report-reviewers', ['user_ids' => [$a->public_code, $b->public_code]])
+        ->assertOk()->assertJsonPath('data.user_ids', [$a->public_code, $b->public_code]);
     expect(ReportReviewer::query()->count())->toBe(2);
 
     // Swapping one out keeps the limit.
-    $this->withAuthCookies(loginCookies($admin))->putJson('/api/report-reviewers', ['user_ids' => [$b->id, $c->id]])->assertOk();
+    $this->withAuthCookies(loginCookies($admin))->putJson('/api/report-reviewers', ['user_ids' => [$b->public_code, $c->public_code]])->assertOk();
     expect(ReportReviewer::query()->pluck('user_id')->sort()->values()->all())->toBe(collect([$b->id, $c->id])->sort()->values()->all())
         ->and(AuditLog::query()->where('action', 'report_reviewers.changed')->count())->toBe(2);
 
@@ -41,9 +41,9 @@ it('refuses a third reviewer, a non marshal, and anyone but an admin', function 
     [$a, $b, $c] = User::factory()->role(RoleCode::Marshal)->count(3)->create();
     $volunteer = User::factory()->role(RoleCode::Volunteer)->create();
 
-    $this->withAuthCookies(loginCookies($admin))->putJson('/api/report-reviewers', ['user_ids' => [$a->id, $b->id, $c->id]])->assertUnprocessable();
-    $this->withAuthCookies(loginCookies($admin))->putJson('/api/report-reviewers', ['user_ids' => [$volunteer->id]])->assertUnprocessable();
-    $this->withAuthCookies(loginCookies($a))->putJson('/api/report-reviewers', ['user_ids' => [$a->id]])->assertForbidden();
+    $this->withAuthCookies(loginCookies($admin))->putJson('/api/report-reviewers', ['user_ids' => [$a->public_code, $b->public_code, $c->public_code]])->assertUnprocessable();
+    $this->withAuthCookies(loginCookies($admin))->putJson('/api/report-reviewers', ['user_ids' => [$volunteer->public_code]])->assertUnprocessable();
+    $this->withAuthCookies(loginCookies($a))->putJson('/api/report-reviewers', ['user_ids' => [$a->public_code]])->assertForbidden();
     $this->withAuthCookies(loginCookies($a))->getJson('/api/report-reviewers')->assertForbidden();
     expect(ReportReviewer::query()->count())->toBe(0);
 });
@@ -96,7 +96,7 @@ it('reminds the reporter 15 minutes before and at the due time, in app and by em
 it('does not remind about a report that is already sent, and hides its old alert', function () {
     [$user, $slot] = slotDueAt('2026-11-16 10:10:00');
     Artisan::call('notifications:send-report-reminders');
-    $this->withAuthCookies(loginCookies($user))->getJson('/api/me/alerts')->assertJsonPath('unread', 1)->assertJsonPath('data.0.site_report_id', $slot->id);
+    $this->withAuthCookies(loginCookies($user))->getJson('/api/me/alerts')->assertJsonPath('unread', 1)->assertJsonPath('data.0.site_report_id', $slot->public_code);
 
     $slot->update(['status' => 'submitted']);
     $this->withAuthCookies(loginCookies($user))->getJson('/api/me/alerts')->assertJsonPath('unread', 0);
@@ -127,7 +127,7 @@ it('closes a slot nobody filled as missed an hour after it was due, once, and te
 it('does not let a missed report be filled in', function () {
     [$user, $slot] = slotDueAt('2026-11-16 08:00:00', 'missed');
 
-    $this->withAuthCookies(loginCookies($user))->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'Too late.'])->assertUnprocessable();
+    $this->withAuthCookies(loginCookies($user))->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'Too late.'])->assertUnprocessable();
     expect($slot->fresh()->summary)->toBeNull();
 });
 

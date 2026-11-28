@@ -6,6 +6,7 @@ namespace App\Modules\Access\Models;
 
 use App\Modules\Events\Models\Event;
 use App\Modules\Personnel\Models\User;
+use App\Support\HasPublicCode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,9 +21,12 @@ use Illuminate\Support\Carbon;
  * @property Carbon $ends_at
  * @property string $reason
  * @property Carbon|null $revoked_at
+ * @property string $public_code
  */
 class PermissionGrant extends Model
 {
+    use HasPublicCode;
+
     protected $fillable = ['user_id', 'permission_id', 'event_id', 'starts_at', 'ends_at', 'reason', 'granted_by', 'revoked_at', 'revoked_by'];
 
     /** @return array<string, string> */

@@ -29,7 +29,7 @@ it('adds and deactivates a duty type, audits it, and keeps inactive ones out of 
 
     expect($offered())->not->toContain($id)
         ->and(AuditLog::query()->whereIn('action', ['duty_type.created', 'duty_type.updated'])->count())->toBe(2);
-    $as()->postJson("/api/events/{$event->id}/requirements", ['duty_type_id' => $id])
+    $as()->postJson("/api/events/{$event->public_code}/requirements", ['duty_type_id' => $id])
         ->assertUnprocessable()->assertJsonValidationErrors('duty_type_id');
 });
 
@@ -43,14 +43,14 @@ it('refuses to delete a duty type that a duty uses but deletes an unused one', f
         'shift_starts_at' => $event->starts_at, 'shift_ends_at' => $event->ends_at,
     ]);
 
-    withAuthCookies(loginCookies($admin))->deleteJson("/api/duty-types/{$used->id}")->assertUnprocessable();
-    withAuthCookies(loginCookies($admin))->deleteJson("/api/duty-types/{$spare->id}")->assertNoContent();
+    withAuthCookies(loginCookies($admin))->deleteJson("/api/duty-types/{$used->public_code}")->assertUnprocessable();
+    withAuthCookies(loginCookies($admin))->deleteJson("/api/duty-types/{$spare->public_code}")->assertNoContent();
     expect(DutyType::query()->whereKey($spare->id)->exists())->toBeFalse();
 });
 
 it('forbids a volunteer from managing duty types', function () {
     $volunteer = User::factory()->role(RoleCode::Volunteer)->create();
-    $id = DutyType::query()->value('id');
+    $id = DutyType::query()->value('public_code');
     $as = fn () => withAuthCookies(loginCookies($volunteer));
 
     $as()->getJson('/api/duty-types')->assertForbidden();

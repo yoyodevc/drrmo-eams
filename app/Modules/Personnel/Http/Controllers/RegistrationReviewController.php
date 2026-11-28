@@ -90,7 +90,7 @@ class RegistrationReviewController
     private function present(User $user): array
     {
         return [
-            'id' => $user->id,
+            'id' => $user->public_code,
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
             'name' => $user->name,

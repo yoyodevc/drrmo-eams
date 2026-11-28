@@ -33,7 +33,7 @@ function reporterWithSlot(string $status = 'pending'): array
 it('saves a report on time with a photo kept on the private disk', function () {
     [$user, $slot] = reporterWithSlot();
 
-    $response = withAuthCookies(loginCookies($user))->post("/api/me/report-slots/{$slot->id}", [
+    $response = withAuthCookies(loginCookies($user))->post("/api/me/report-slots/{$slot->public_code}", [
         'summary' => 'Gate 2 is clear. Crowd is calm.',
         'photo' => UploadedFile::fake()->image('gate.jpg', 800, 600),
     ], ['Accept' => 'application/json'])->assertOk();
@@ -50,11 +50,11 @@ it('marks a report sent after the grace period, or after it went overdue, as lat
     [$user, $slot] = reporterWithSlot();
     $this->travelTo(CarbonImmutable::parse('2026-11-16 10:20:00'));
 
-    withAuthCookies(loginCookies($user))->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'Late but here.'])
+    withAuthCookies(loginCookies($user))->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'Late but here.'])
         ->assertOk()->assertJsonPath('data.status', 'late');
 
     [$user2, $overdue] = reporterWithSlot('overdue');
-    withAuthCookies(loginCookies($user2))->postJson("/api/me/report-slots/{$overdue->id}", ['summary' => 'After the alert.'])
+    withAuthCookies(loginCookies($user2))->postJson("/api/me/report-slots/{$overdue->public_code}", ['summary' => 'After the alert.'])
         ->assertOk()->assertJsonPath('data.status', 'late');
 });
 
@@ -62,8 +62,8 @@ it('returns the same report on a double submit and keeps the first one', functio
     [$user, $slot] = reporterWithSlot();
     $cookies = loginCookies($user);
 
-    $first = withAuthCookies($cookies)->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'First'])->assertOk()->json('data');
-    $second = withAuthCookies($cookies)->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'Second try'])->assertOk()->json('data');
+    $first = withAuthCookies($cookies)->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'First'])->assertOk()->json('data');
+    $second = withAuthCookies($cookies)->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'Second try'])->assertOk()->json('data');
 
     expect($second['id'])->toBe($first['id'])->and($second['summary'])->toBe('First')->and($second['submitted_at'])->toBe($first['submitted_at']);
     expect(SiteReport::query()->count())->toBe(1)->and(AuditLog::query()->where('action', 'report.submitted')->count())->toBe(1);
@@ -76,25 +76,25 @@ it('only lets the slot owner submit, and only while the grant holds', function (
     $admin = User::factory()->role(RoleCode::Admin)->create();
 
     foreach ([$other, $admin] as $intruder) {
-        withAuthCookies(loginCookies($intruder))->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'Not mine'])->assertForbidden();
+        withAuthCookies(loginCookies($intruder))->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'Not mine'])->assertForbidden();
     }
     expect($slot->fresh()->summary)->toBeNull();
 
     $owner->grants()->update(['revoked_at' => now()]);
-    withAuthCookies(loginCookies($owner))->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'Grant gone'])->assertForbidden();
-    $this->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'x'])->assertForbidden();
+    withAuthCookies(loginCookies($owner))->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'Grant gone'])->assertForbidden();
+    $this->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'x'])->assertForbidden();
 });
 
 it('needs a sign in', function () {
     [, $slot] = reporterWithSlot();
-    $this->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'x'])->assertUnauthorized();
+    $this->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'x'])->assertUnauthorized();
     $this->getJson('/api/me/report-slots')->assertUnauthorized();
 });
 
 it('checks the summary and the photo on the server', function () {
     [$user, $slot] = reporterWithSlot();
     $cookies = loginCookies($user);
-    $url = "/api/me/report-slots/{$slot->id}";
+    $url = "/api/me/report-slots/{$slot->public_code}";
 
     withAuthCookies($cookies)->postJson($url, [])->assertUnprocessable()->assertJsonValidationErrors(['summary']);
     withAuthCookies($cookies)->postJson($url, ['summary' => str_repeat('a', 1001)])->assertUnprocessable()->assertJsonValidationErrors(['summary']);
@@ -117,12 +117,12 @@ it('lists only my own slots and serves my photo to me alone', function () {
     $cookies = loginCookies($user);
 
     $ids = collect(withAuthCookies($cookies)->getJson('/api/me/report-slots')->assertOk()->json('data'))->pluck('id')->all();
-    expect($ids)->toBe([$slot->id])->not->toContain($theirs->id);
+    expect($ids)->toBe([$slot->public_code])->not->toContain($theirs->public_code);
 
-    withAuthCookies($cookies)->post("/api/me/report-slots/{$slot->id}", ['summary' => 'With photo', 'photo' => UploadedFile::fake()->image('p.png')], ['Accept' => 'application/json'])->assertOk();
-    withAuthCookies($cookies)->get("/api/me/report-slots/{$slot->id}/photo")->assertOk()->assertHeader('content-type', 'image/png');
-    withAuthCookies($cookies)->get("/api/me/report-slots/{$theirs->id}/photo")->assertForbidden();
-    withAuthCookies(loginCookies(User::factory()->role(RoleCode::Volunteer)->create()))->get("/api/me/report-slots/{$slot->id}/photo")->assertForbidden();
+    withAuthCookies($cookies)->post("/api/me/report-slots/{$slot->public_code}", ['summary' => 'With photo', 'photo' => UploadedFile::fake()->image('p.png')], ['Accept' => 'application/json'])->assertOk();
+    withAuthCookies($cookies)->get("/api/me/report-slots/{$slot->public_code}/photo")->assertOk()->assertHeader('content-type', 'image/png');
+    withAuthCookies($cookies)->get("/api/me/report-slots/{$theirs->public_code}/photo")->assertForbidden();
+    withAuthCookies(loginCookies(User::factory()->role(RoleCode::Volunteer)->create()))->get("/api/me/report-slots/{$slot->public_code}/photo")->assertForbidden();
 });
 
 it('limits report uploads to 6 a minute per person', function () {
@@ -130,7 +130,7 @@ it('limits report uploads to 6 a minute per person', function () {
     $cookies = loginCookies($user);
 
     foreach (range(1, 6) as $i) {
-        withAuthCookies($cookies)->postJson("/api/me/report-slots/{$slot->id}", ['summary' => "try {$i}"])->assertOk();
+        withAuthCookies($cookies)->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => "try {$i}"])->assertOk();
     }
-    withAuthCookies($cookies)->postJson("/api/me/report-slots/{$slot->id}", ['summary' => 'seventh'])->assertStatus(429);
+    withAuthCookies($cookies)->postJson("/api/me/report-slots/{$slot->public_code}", ['summary' => 'seventh'])->assertStatus(429);
 });

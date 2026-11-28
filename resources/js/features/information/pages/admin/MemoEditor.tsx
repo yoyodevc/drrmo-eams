@@ -54,10 +54,10 @@ function FieldError({ id, children }: { id: string; children: ReactNode }) {
 
 export function MemoEditor() {
     const params = useParams();
-    const editingId = params.id ? Number(params.id) : null;
+    const editingId = params.id ?? null;
     const existing = useQuery({
         queryKey: ['memo', editingId],
-        queryFn: () => getMemo(editingId as number),
+        queryFn: () => getMemo(editingId as string),
         enabled: editingId !== null,
     });
     // The category list comes with the memo list, which is usually cached already.

@@ -49,7 +49,7 @@ class DutyController
     private function respond(Assignment $assignment): JsonResponse
     {
         return response()->json(['data' => [
-            'id' => $assignment->id,
+            'id' => $assignment->public_code,
             'status' => $assignment->status->value,
             'duty_started_at' => $assignment->duty_started_at?->toIso8601String(),
             'duty_ended_at' => $assignment->duty_ended_at?->toIso8601String(),

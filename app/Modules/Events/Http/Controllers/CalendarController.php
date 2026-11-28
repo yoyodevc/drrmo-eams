@@ -27,7 +27,7 @@ class CalendarController
             ->orderBy('starts_at')->limit(500)->get();
 
         return response()->json(['data' => $events->map(fn (Event $e) => [
-            'id' => $e->id,
+            'id' => $e->public_code,
             'title' => $e->title,
             'status' => $e->status->value,
             'event_type' => ['value' => $e->event_type, 'label' => $e->typeLabel()],

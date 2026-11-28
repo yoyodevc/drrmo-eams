@@ -75,7 +75,7 @@ it('reads the user from the access cookie', function () {
     $user = User::factory()->create();
     $cookies = loginCookies($user);
 
-    withAuthCookies($cookies)->getJson('/api/me')->assertOk()->assertJsonPath('data.id', $user->id);
+    withAuthCookies($cookies)->getJson('/api/me')->assertOk()->assertJsonPath('data.id', $user->public_code);
     withAuthCookies([])->getJson('/api/me')->assertUnauthorized();
 });
 

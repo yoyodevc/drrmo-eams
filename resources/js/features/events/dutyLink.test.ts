@@ -2,15 +2,19 @@ import { describe, expect, it } from 'vitest';
 import type { MyAssignment } from '@/features/events/api';
 import { findLinkedDuty, linkedAssignmentId } from './dutyLink';
 
-const duty = (id: number, eventStatus = 'published') =>
+const one = 'abcdefgh23456789';
+const two = 'mnpqrstu23456789';
+
+const duty = (id: string, eventStatus = 'published') =>
     ({ id, event: { status: eventStatus } }) as unknown as MyAssignment;
 
 describe('linkedAssignmentId', () => {
-    it('reads a whole number', () => {
-        expect(linkedAssignmentId('42')).toBe(42);
+    it('reads a public code', () => {
+        expect(linkedAssignmentId(one)).toBe(one);
     });
     it('ignores anything else', () => {
-        for (const bad of [null, '', '0', '-3', '4.5', 'abc', '7x']) {
+        // A record number is not a code.
+        for (const bad of [null, '', '0', '42', 'abc', `${one}x`, '1bcdefgh23456789']) {
             expect(linkedAssignmentId(bad)).toBeNull();
         }
     });
@@ -18,31 +22,31 @@ describe('linkedAssignmentId', () => {
 
 describe('findLinkedDuty', () => {
     it('finds the duty and says if its event was cancelled', () => {
-        const list = [duty(1), duty(2, 'cancelled')];
-        expect(findLinkedDuty(list, 1)?.cancelled).toBe(false);
-        expect(findLinkedDuty(list, 2)?.cancelled).toBe(true);
+        const list = [duty(one), duty(two, 'cancelled')];
+        expect(findLinkedDuty(list, one)?.cancelled).toBe(false);
+        expect(findLinkedDuty(list, two)?.cancelled).toBe(true);
     });
     it('finds nothing for an id that is not in the list', () => {
-        expect(findLinkedDuty([duty(1)], 99)).toBeNull();
-        expect(findLinkedDuty([duty(1)], null)).toBeNull();
+        expect(findLinkedDuty([duty(one)], two)).toBeNull();
+        expect(findLinkedDuty([duty(one)], null)).toBeNull();
     });
 });
 
 import { keepLinkedAssignment, loginPathFor } from './dutyLink';
 
 describe('keepLinkedAssignment', () => {
-    it('keeps the id on the duties page', () => {
-        expect(keepLinkedAssignment('/me', '?assignment=12')).toBe('/me?assignment=12');
+    it('keeps the code on the duties page', () => {
+        expect(keepLinkedAssignment('/me', `?assignment=${one}`)).toBe(`/me?assignment=${one}`);
     });
-    it('drops a bad id and leaves other pages alone', () => {
+    it('drops a bad value and leaves other pages alone', () => {
         expect(keepLinkedAssignment('/me', '?assignment=abc')).toBe('/me');
-        expect(keepLinkedAssignment('/admin', '?assignment=12')).toBe('/admin');
+        expect(keepLinkedAssignment('/admin', `?assignment=${one}`)).toBe('/admin');
     });
 });
 
 describe('loginPathFor', () => {
-    it('remembers a good id and ignores anything else', () => {
-        expect(loginPathFor('?assignment=12')).toBe('/login?assignment=12');
+    it('remembers a good code and ignores anything else', () => {
+        expect(loginPathFor(`?assignment=${one}`)).toBe(`/login?assignment=${one}`);
         expect(loginPathFor('?assignment=x')).toBe('/login');
         expect(loginPathFor('')).toBe('/login');
     });
