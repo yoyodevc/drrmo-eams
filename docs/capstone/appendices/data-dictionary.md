@@ -165,7 +165,7 @@ Indexes: starts_at, status.
 | event_id | foreign key | restrict on delete |
 | duty_type_id | foreign key | restrict on delete |
 | role | string(20) | marshal or volunteer |
-| team_needed | string(100), nullable | the team the person must be in, or empty for any team |
+| team_needed | string(100), nullable | optional station for the duty, free text, for example Gate A |
 | headcount | smallint | people needed |
 | shift_starts_at, shift_ends_at | datetime | |
 | instructions | text, nullable | shown to the person on their duty |

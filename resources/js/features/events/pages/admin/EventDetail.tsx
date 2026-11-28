@@ -900,7 +900,7 @@ function AddDuty({ event, role, taskTypes, onClose }: AddProps) {
                 <div className="grid grid-cols-[1fr_6rem] gap-3 @lg:col-span-2 @lg:grid-cols-[1fr_8rem]">
                     <TextField
                         id={`${prefix}-team`}
-                        label="Team (optional)"
+                        label="Station (optional)"
                         value={team}
                         onChange={(e) => setTeam(e.target.value)}
                         error={first('team_needed')}
