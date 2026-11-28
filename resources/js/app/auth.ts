@@ -11,7 +11,7 @@ import {
 } from '@/shared/api/client';
 
 export interface Me {
-    id: number;
+    id: string;
     first_name: string;
     last_name: string;
     // First and last name together, for display.
@@ -28,7 +28,7 @@ export interface Me {
     // Every grant in force now, including ones for one event.
     grants?: {
         permission: string;
-        event_id: number | null;
+        event_id: string | null;
         event_title: string | null;
         ends_at: string;
     }[];

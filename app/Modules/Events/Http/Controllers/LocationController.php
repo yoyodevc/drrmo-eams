@@ -66,6 +66,6 @@ class LocationController
     /** @return array<string, mixed> */
     private function present(CampusLocation $l): array
     {
-        return [...$this->snapshot($l), 'id' => $l->id, 'events_count' => (int) ($l->events_count ?? 0)];
+        return [...$this->snapshot($l), 'id' => $l->public_code, 'events_count' => (int) ($l->events_count ?? 0)];
     }
 }

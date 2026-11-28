@@ -175,7 +175,7 @@ function DutyList({
     title: string;
     duties: MyAssignment[];
     ended?: boolean;
-    linkedId?: number | null;
+    linkedId?: string | null;
 }) {
     const id = `duties-${title.toLowerCase()}`;
     return (

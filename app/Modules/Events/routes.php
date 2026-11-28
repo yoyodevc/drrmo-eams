@@ -6,6 +6,7 @@ use App\Modules\Events\Http\Controllers\AcknowledgeController;
 use App\Modules\Events\Http\Controllers\AssignmentController;
 use App\Modules\Events\Http\Controllers\CalendarController;
 use App\Modules\Events\Http\Controllers\DashboardController;
+use App\Modules\Events\Http\Controllers\DutyTypeController;
 use App\Modules\Events\Http\Controllers\EventController;
 use App\Modules\Events\Http\Controllers\EventNoticeController;
 use App\Modules\Events\Http\Controllers\EventTypeController;
@@ -21,6 +22,11 @@ Route::get('/event-types', [EventTypeController::class, 'index']);
 Route::post('/event-types', [EventTypeController::class, 'store']);
 Route::patch('/event-types/{event_type}', [EventTypeController::class, 'update']);
 Route::delete('/event-types/{event_type}', [EventTypeController::class, 'destroy']);
+
+Route::get('/duty-types', [DutyTypeController::class, 'index']);
+Route::post('/duty-types', [DutyTypeController::class, 'store']);
+Route::patch('/duty-types/{duty_type}', [DutyTypeController::class, 'update']);
+Route::delete('/duty-types/{duty_type}', [DutyTypeController::class, 'destroy']);
 
 Route::get('/campus-locations', [LocationController::class, 'index']);
 Route::post('/campus-locations', [LocationController::class, 'store']);

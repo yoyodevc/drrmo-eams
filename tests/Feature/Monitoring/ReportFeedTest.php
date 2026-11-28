@@ -44,7 +44,7 @@ it('lists reports newest first with the author, event, place and status', functi
 
     $rows = withAuthCookies(loginCookies($admin))->getJson('/api/reports')->assertOk()->json('data');
 
-    expect(array_column($rows, 'id'))->toBe([$overdue->id, $new->id, $old->id])
+    expect(array_column($rows, 'id'))->toBe([$overdue->public_code, $new->public_code, $old->public_code])
         ->and($rows[0]['status'])->toBe('overdue')->and($rows[1]['status'])->toBe('late')
         ->and($rows[2]['author'])->toBe('Mara Reyes')->and($rows[2]['summary'])->toBe('All calm')
         ->and($rows[2]['event']['title'])->toBe($old->assignment->event->title);
@@ -58,11 +58,11 @@ it('filters by event, place and date', function () {
 
     $ids = fn (string $query) => array_column(withAuthCookies($cookies)->getJson('/api/reports'.$query)->assertOk()->json('data'), 'id');
 
-    expect($ids('?event_id='.$a->assignment->event_id))->toBe([$a->id])
-        ->and($ids('?location_id='.$b->assignment->event->campus_location_id))->toContain($b->id)
+    expect($ids('?event_id='.$a->assignment->event->public_code))->toBe([$a->public_code])
+        ->and($ids('?location_id='.$b->assignment->event->location->public_code))->toContain($b->public_code)
         // Manila is 8 hours ahead: 08:00 UTC on the 16th is the 16th in Manila.
-        ->and($ids('?from=2026-11-16&to=2026-11-16'))->toBe([$b->id])
-        ->and($ids('?from=2026-11-15&to=2026-11-15'))->toBe([$a->id]);
+        ->and($ids('?from=2026-11-16&to=2026-11-16'))->toBe([$b->public_code])
+        ->and($ids('?from=2026-11-15&to=2026-11-15'))->toBe([$a->public_code]);
     withAuthCookies($cookies)->getJson('/api/reports?from=2026-11-16&to=2026-11-15')->assertUnprocessable();
 });
 
@@ -72,9 +72,9 @@ it('serves the photo through the API to people who may read reports', function (
     $without = feedReport('2026-11-16 09:00:00');
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->get("/api/reports/{$with->id}/photo")->assertOk();
-    withAuthCookies($cookies)->get("/api/reports/{$without->id}/photo")->assertNotFound();
-    withAuthCookies($cookies)->getJson("/api/reports/{$with->id}")->assertOk()->assertJsonPath('data.has_photo', true);
+    withAuthCookies($cookies)->get("/api/reports/{$with->public_code}/photo")->assertOk();
+    withAuthCookies($cookies)->get("/api/reports/{$without->public_code}/photo")->assertNotFound();
+    withAuthCookies($cookies)->getJson("/api/reports/{$with->public_code}")->assertOk()->assertJsonPath('data.has_photo', true);
 });
 
 it('shows a person with an event grant only that event, and refuses the others', function () {
@@ -85,13 +85,13 @@ it('shows a person with an event grant only that event, and refuses the others',
     $cookies = loginCookies($viewer);
 
     $response = withAuthCookies($cookies)->getJson('/api/reports')->assertOk();
-    expect(array_column($response->json('data'), 'id'))->toBe([$mine->id])
-        ->and(array_column($response->json('filters.events'), 'id'))->toBe([$mine->assignment->event_id]);
+    expect(array_column($response->json('data'), 'id'))->toBe([$mine->public_code])
+        ->and(array_column($response->json('filters.events'), 'id'))->toBe([$mine->assignment->event->public_code]);
 
-    withAuthCookies($cookies)->getJson("/api/reports/{$mine->id}")->assertOk();
-    withAuthCookies($cookies)->getJson("/api/reports/{$theirs->id}")->assertForbidden();
-    withAuthCookies($cookies)->get("/api/reports/{$theirs->id}/photo")->assertForbidden();
-    withAuthCookies($cookies)->getJson('/api/reports?event_id='.$theirs->assignment->event_id)->assertOk()->assertJsonCount(0, 'data');
+    withAuthCookies($cookies)->getJson("/api/reports/{$mine->public_code}")->assertOk();
+    withAuthCookies($cookies)->getJson("/api/reports/{$theirs->public_code}")->assertForbidden();
+    withAuthCookies($cookies)->get("/api/reports/{$theirs->public_code}/photo")->assertForbidden();
+    withAuthCookies($cookies)->getJson('/api/reports?event_id='.$theirs->assignment->event->public_code)->assertOk()->assertJsonCount(0, 'data');
 });
 
 it('keeps the feed away from everyone else', function () {
@@ -102,8 +102,8 @@ it('keeps the feed away from everyone else', function () {
     foreach ([$reporter, User::factory()->role(RoleCode::Volunteer)->create(), User::factory()->role(RoleCode::Coordinator)->create()] as $person) {
         $cookies = loginCookies($person);
         withAuthCookies($cookies)->getJson('/api/reports')->assertForbidden();
-        withAuthCookies($cookies)->getJson("/api/reports/{$report->id}")->assertForbidden();
-        withAuthCookies($cookies)->get("/api/reports/{$report->id}/photo")->assertForbidden();
+        withAuthCookies($cookies)->getJson("/api/reports/{$report->public_code}")->assertForbidden();
+        withAuthCookies($cookies)->get("/api/reports/{$report->public_code}/photo")->assertForbidden();
     }
 });
 

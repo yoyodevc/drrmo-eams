@@ -6,6 +6,7 @@ use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Information\Models\Memo;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Models\AuditLog;
+use App\Support\PublicCode;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -31,7 +32,7 @@ it('lets an admin post a memo with text and another with a PDF', function () {
         'file' => UploadedFile::fake()->create('evac map.pdf', 200, 'application/pdf'),
     ])->assertCreated()->assertJsonPath('data.file.name', 'evac map.pdf')->json('data.id');
 
-    $path = Memo::query()->findOrFail($id)->file_path;
+    $path = Memo::query()->findOrFail(PublicCode::toId(Memo::class, $id))->file_path;
     expect($path)->toStartWith('memos/')->not->toContain('evac');
     Storage::disk('local')->assertExists($path);
 });
@@ -61,9 +62,9 @@ it('lets every role read memos and open the file', function () {
 
     foreach ([RoleCode::Marshal, RoleCode::Volunteer, RoleCode::Coordinator] as $role) {
         $cookies = loginCookies(User::factory()->role($role)->create());
-        withAuthCookies($cookies)->getJson('/api/memos')->assertOk()->assertJsonPath('data.0.id', $memo->id)->assertJsonCount(5, 'categories');
-        withAuthCookies($cookies)->getJson("/api/memos/{$memo->id}")->assertOk()->assertJsonPath('data.body', $memo->body);
-        withAuthCookies($cookies)->get("/api/memos/{$memo->id}/file")->assertOk()->assertHeader('X-Content-Type-Options', 'nosniff');
+        withAuthCookies($cookies)->getJson('/api/memos')->assertOk()->assertJsonPath('data.0.id', $memo->public_code)->assertJsonCount(5, 'categories');
+        withAuthCookies($cookies)->getJson("/api/memos/{$memo->public_code}")->assertOk()->assertJsonPath('data.body', $memo->body);
+        withAuthCookies($cookies)->get("/api/memos/{$memo->public_code}/file")->assertOk()->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 });
 
@@ -101,8 +102,8 @@ it('keeps memos away from signed out visitors', function () {
     $memo = Memo::factory()->create();
 
     $this->getJson('/api/memos')->assertUnauthorized();
-    $this->getJson("/api/memos/{$memo->id}")->assertUnauthorized();
-    $this->getJson("/api/memos/{$memo->id}/file")->assertUnauthorized();
+    $this->getJson("/api/memos/{$memo->public_code}")->assertUnauthorized();
+    $this->getJson("/api/memos/{$memo->public_code}/file")->assertUnauthorized();
 });
 
 it('does not let a non-admin post, edit or delete a memo', function () {
@@ -111,8 +112,8 @@ it('does not let a non-admin post, edit or delete a memo', function () {
     foreach ([RoleCode::Marshal, RoleCode::Volunteer, RoleCode::Coordinator] as $role) {
         $cookies = loginCookies(User::factory()->role($role)->create());
         withAuthCookies($cookies)->postJson('/api/memos', ['title' => 'Mine', 'category' => 'other', 'body' => 'x'])->assertForbidden();
-        withAuthCookies($cookies)->patchJson("/api/memos/{$memo->id}", ['title' => 'Changed', 'category' => 'other', 'body' => 'x'])->assertForbidden();
-        withAuthCookies($cookies)->deleteJson("/api/memos/{$memo->id}")->assertForbidden();
+        withAuthCookies($cookies)->patchJson("/api/memos/{$memo->public_code}", ['title' => 'Changed', 'category' => 'other', 'body' => 'x'])->assertForbidden();
+        withAuthCookies($cookies)->deleteJson("/api/memos/{$memo->public_code}")->assertForbidden();
     }
 
     expect(Memo::query()->count())->toBe(1)->and($memo->fresh()->title)->toBe('Original');
@@ -123,17 +124,17 @@ it('replaces a file, removes the old one, and can drop the file when text remain
     $memo = Memo::factory()->create(['file_path' => 'memos/old.pdf', 'file_name' => 'old.pdf', 'file_mime' => 'application/pdf', 'file_size' => 3]);
     $cookies = loginCookies(User::factory()->role(RoleCode::Admin)->create());
 
-    withAuthCookies($cookies)->post("/api/memos/{$memo->id}", [
+    withAuthCookies($cookies)->post("/api/memos/{$memo->public_code}", [
         '_method' => 'PATCH', 'title' => 'Updated', 'category' => 'advisory', 'body' => $memo->body,
         'file' => UploadedFile::fake()->image('poster.png'),
     ], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('data.file.name', 'poster.png');
     Storage::disk('local')->assertMissing('memos/old.pdf');
 
-    withAuthCookies($cookies)->patchJson("/api/memos/{$memo->id}", ['title' => 'Updated', 'category' => 'advisory', 'body' => 'Text stays', 'remove_file' => true])
+    withAuthCookies($cookies)->patchJson("/api/memos/{$memo->public_code}", ['title' => 'Updated', 'category' => 'advisory', 'body' => 'Text stays', 'remove_file' => true])
         ->assertOk()->assertJsonPath('data.file', null);
 
     // Without text, the last file cannot be removed.
-    withAuthCookies($cookies)->patchJson("/api/memos/{$memo->id}", ['title' => 'Updated', 'category' => 'advisory', 'body' => '', 'remove_file' => true])
+    withAuthCookies($cookies)->patchJson("/api/memos/{$memo->public_code}", ['title' => 'Updated', 'category' => 'advisory', 'body' => '', 'remove_file' => true])
         ->assertUnprocessable()->assertJsonValidationErrors('body');
 });
 
@@ -142,10 +143,10 @@ it('soft deletes a memo, writes an audit row, and hides it from readers', functi
     $memo = Memo::factory()->create(['title' => 'Old advisory']);
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->deleteJson("/api/memos/{$memo->id}")->assertNoContent();
+    withAuthCookies($cookies)->deleteJson("/api/memos/{$memo->public_code}")->assertNoContent();
 
     expect(Memo::withTrashed()->find($memo->id)?->trashed())->toBeTrue()
         ->and(AuditLog::query()->where('action', 'memo.deleted')->where('actor_id', $admin->id)->sole()->meta['title'])->toBe('Old advisory');
     withAuthCookies($cookies)->getJson('/api/memos')->assertOk()->assertJsonCount(0, 'data');
-    withAuthCookies($cookies)->getJson("/api/memos/{$memo->id}")->assertNotFound();
+    withAuthCookies($cookies)->getJson("/api/memos/{$memo->public_code}")->assertNotFound();
 });

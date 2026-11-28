@@ -94,7 +94,7 @@ class VolunteerStatusController
     private function present(User $user): array
     {
         return [
-            'id' => $user->id,
+            'id' => $user->public_code,
             'name' => $user->name,
             'email' => $user->email,
             'status' => $user->status->value,

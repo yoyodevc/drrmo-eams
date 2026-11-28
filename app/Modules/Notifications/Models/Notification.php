@@ -8,6 +8,7 @@ use App\Modules\Events\Models\Assignment;
 use App\Modules\Monitoring\Models\EmergencyReport;
 use App\Modules\Monitoring\Models\SiteReport;
 use App\Modules\Personnel\Models\User;
+use App\Support\HasPublicCode;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -18,9 +19,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $attempts
  * @property CarbonImmutable|Carbon|null $sent_at
+ * @property string $public_code
  */
 class Notification extends Model
 {
+    use HasPublicCode;
+
     public const UPDATED_AT = null;
 
     protected $fillable = ['user_id', 'assignment_id', 'site_report_id', 'emergency_report_id', 'subject_user_id', 'type', 'channel', 'status', 'attempts', 'last_error', 'scheduled_for', 'sent_at', 'read_at'];

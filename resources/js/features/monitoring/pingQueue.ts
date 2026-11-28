@@ -6,9 +6,9 @@ export const BATCH_SIZE = 50;
 // Hard cap so a phone offline all day cannot fill its storage. Oldest points go first.
 export const MAX_QUEUED = 1000;
 
-const key = (assignmentId: number) => `drrmo.pings.${assignmentId}`;
+const key = (assignmentId: string) => `drrmo.pings.${assignmentId}`;
 
-export function readQueue(assignmentId: number): PingPoint[] {
+export function readQueue(assignmentId: string): PingPoint[] {
     try {
         const raw = localStorage.getItem(key(assignmentId));
         const parsed: unknown = raw ? JSON.parse(raw) : [];
@@ -18,7 +18,7 @@ export function readQueue(assignmentId: number): PingPoint[] {
     }
 }
 
-function write(assignmentId: number, points: PingPoint[]): void {
+function write(assignmentId: string, points: PingPoint[]): void {
     try {
         if (points.length === 0) localStorage.removeItem(key(assignmentId));
         else localStorage.setItem(key(assignmentId), JSON.stringify(points));
@@ -27,23 +27,23 @@ function write(assignmentId: number, points: PingPoint[]): void {
     }
 }
 
-export function enqueue(assignmentId: number, point: PingPoint): number {
+export function enqueue(assignmentId: string, point: PingPoint): number {
     const next = [...readQueue(assignmentId), point].slice(-MAX_QUEUED);
     write(assignmentId, next);
     return next.length;
 }
 
-export function nextBatch(assignmentId: number): PingPoint[] {
+export function nextBatch(assignmentId: string): PingPoint[] {
     return readQueue(assignmentId).slice(0, BATCH_SIZE);
 }
 
 /** Drop the first `count` points, which the server has taken (or refused for good). */
-export function dropSent(assignmentId: number, count: number): number {
+export function dropSent(assignmentId: string, count: number): number {
     const rest = readQueue(assignmentId).slice(count);
     write(assignmentId, rest);
     return rest.length;
 }
 
-export function clearQueue(assignmentId: number): void {
+export function clearQueue(assignmentId: string): void {
     write(assignmentId, []);
 }

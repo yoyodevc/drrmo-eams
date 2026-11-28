@@ -12,7 +12,7 @@ import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { getReportReviewers, saveReportReviewers } from '../../api';
 
-type Candidate = { id: number; name: string; email: string };
+type Candidate = { id: string; name: string; email: string };
 
 function nameParts(name: string): [string, string] {
     const parts = name.trim().split(/\s+/);
@@ -142,10 +142,10 @@ export function ReportReviewers() {
         queryKey: ['report-reviewers'],
         queryFn: getReportReviewers,
     });
-    const [picked, setPicked] = useState<number[] | null>(null);
+    const [picked, setPicked] = useState<string[] | null>(null);
     const [search, setSearch] = useState('');
     const save = useMutation({
-        mutationFn: (ids: number[]) => saveReportReviewers(ids),
+        mutationFn: (ids: string[]) => saveReportReviewers(ids),
         onSuccess: async () => {
             setPicked(null);
             await queryClient.invalidateQueries({ queryKey: ['report-reviewers'] });
@@ -201,7 +201,7 @@ export function ReportReviewers() {
     const changes =
         ids.filter((id) => !saved.includes(id)).length +
         saved.filter((id) => !ids.includes(id)).length;
-    const toggle = (id: number) => {
+    const toggle = (id: string) => {
         save.reset();
         setPicked(ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
     };

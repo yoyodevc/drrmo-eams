@@ -15,8 +15,8 @@ class RequirementResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'duty_type' => ['id' => $this->dutyType->id, 'name' => $this->dutyType->name],
+            'id' => $this->public_code,
+            'duty_type' => ['id' => $this->dutyType->public_code, 'name' => $this->dutyType->name],
             'role' => $this->role,
             'team_needed' => $this->team_needed,
             'headcount' => $this->headcount,

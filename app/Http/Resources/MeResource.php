@@ -30,7 +30,7 @@ class MeResource extends JsonResource
         $roleCodes = $role?->permissions->pluck('code') ?? collect();
 
         return [
-            'id' => $this->id,
+            'id' => $this->public_code,
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'name' => $this->name,
@@ -48,7 +48,7 @@ class MeResource extends JsonResource
             // Every grant in force now, so the app can show event scoped access and when it ends.
             'grants' => $grants->map(fn ($g) => [
                 'permission' => $g->permission->code,
-                'event_id' => $g->event_id,
+                'event_id' => $g->event?->public_code,
                 'event_title' => $g->event?->title,
                 'ends_at' => $g->ends_at->toIso8601String(),
             ])->values()->all(),

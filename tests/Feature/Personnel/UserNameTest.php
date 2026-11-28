@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Personnel\Models\User;
+use App\Support\PublicCode;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -34,7 +35,7 @@ it('splits old names at the last space and puts one word names in first_name', f
         ['one@example.test', 'Cher'],
     ] as [$email, $name]) {
         DB::table('users')->insert([
-            'name' => $name, 'email' => $email, 'role_id' => $roleId, 'password' => 'x',
+            'public_code' => PublicCode::make(), 'name' => $name, 'email' => $email, 'role_id' => $roleId, 'password' => 'x',
             'created_at' => $now, 'updated_at' => $now,
         ]);
     }

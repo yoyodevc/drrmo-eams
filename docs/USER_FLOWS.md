@@ -8,7 +8,7 @@ These are the "day in the life" flows. Each one lists the device, the steps, the
 
 **Steps**
 1. Admin opens Events and clicks New event. Fills in title, location, start and end, department (or campus wide). Saves as draft.
-2. On the event page, adds duty requirements: for example "Crowd control, Marshal, Security team, 6 people, 7:00 AM to 12:00 NN, gather at the main gate".
+2. On the event page, adds duty requirements: for example "Crowd control, Marshal, station Gate A, 6 people, 7:00 AM to 12:00 NN, gather at the main gate".
 3. Clicks Assign on a requirement. A side panel lists candidates. Each candidate shows team, status and warning chips ("overlapping shift", "inactive").
 4. Ticks people and saves. If the headcount is exceeded, a dialog asks for a reason.
 5. Publishes the event. Emails go out.

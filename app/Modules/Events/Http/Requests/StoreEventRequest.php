@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Events\Http\Requests;
 
+use App\Modules\Events\Models\CampusLocation;
 use App\Modules\Events\Models\Event;
+use App\Modules\Personnel\Models\Department;
+use App\Support\PublicCode;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -32,6 +35,15 @@ class StoreEventRequest extends FormRequest
         }
 
         return $data;
+    }
+
+    /** Clients send public codes. The rules below work on the ids behind them. */
+    protected function prepareForValidation(): void
+    {
+        $this->merge(array_filter([
+            'campus_location_id' => PublicCode::toId(CampusLocation::class, $this->input('campus_location_id')),
+            'department_id' => PublicCode::toId(Department::class, $this->input('department_id')),
+        ], fn (?int $id) => $id !== null));
     }
 
     /** @return array<string, list<mixed>> */

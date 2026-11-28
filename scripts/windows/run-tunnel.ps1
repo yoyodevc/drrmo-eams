@@ -22,7 +22,8 @@ npm run build
 Set-EnvValue 'TRUSTED_PROXIES' '127.0.0.1'
 php artisan config:clear | Out-Null
 Start-Window 'DRRMO web' "php artisan serve --host=127.0.0.1 --port=$Port"
-Start-Window 'DRRMO queue' 'php artisan queue:work --tries=3 --sleep=3'
+Start-Window 'DRRMO queue' 'php artisan queue:work --queue=high,default --tries=3 --sleep=3'
+Start-Window 'DRRMO scheduler' 'php artisan schedule:work'
 $up = $false
 for ($i = 0; $i -lt 30 -and -not $up; $i++) {
     Start-Sleep -Seconds 1
@@ -103,7 +104,7 @@ if ($ok) { Write-Host 'Tunnel check: OK' -ForegroundColor Green }
 else { Write-Warning 'The public URL did not answer from this PC. Wait a minute and retry, or check the network (firewall, VPN).' }
 Write-Host ''
 Write-Host "Public URL: $url" -ForegroundColor Green
-Write-Host 'Press Enter here to stop the tunnel (close the web and queue windows too).'
+Write-Host 'Press Enter here to stop the tunnel (close the web, queue and scheduler windows too).'
 Read-Host | Out-Null
 Stop-Process -Id $cf.Id -Force -ErrorAction SilentlyContinue
 if ($caddy) { Stop-Process -Id $caddy.Id -Force -ErrorAction SilentlyContinue }

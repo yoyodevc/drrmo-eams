@@ -38,7 +38,7 @@ class AssignmentController
             ->get();
 
         return response()->json(['data' => $people->map(fn (User $u) => [
-            'id' => $u->id,
+            'id' => $u->public_code,
             'name' => $u->name,
             'role' => $u->role?->code,
             'conflict' => $requirement->overlapFor($u->id)?->event->title,

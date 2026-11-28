@@ -4,10 +4,10 @@ import { api } from '@/shared/api/client';
 export type GrantStatus = 'active' | 'upcoming' | 'ended' | 'revoked';
 
 export interface Grant {
-    id: number;
+    id: string;
     permission: { code: string; label: string; description: string };
-    person: { id: number; name: string | null };
-    event: { id: number; title: string } | null;
+    person: { id: string; name: string | null };
+    event: { id: string; title: string } | null;
     starts_at: string;
     ends_at: string;
     reason: string;
@@ -18,9 +18,9 @@ export interface Grant {
 }
 
 export interface NewGrant {
-    user_id: number;
+    user_id: string;
     permission: string;
-    event_id: number | null;
+    event_id: string | null;
     // ISO 8601 with offset.
     starts_at: string;
     ends_at: string;
@@ -43,7 +43,7 @@ export async function grantOptions(): Promise<GrantOption[]> {
 }
 
 // One person's grants, or every grant when no person is given.
-export async function listGrants(userId?: number): Promise<Grant[]> {
+export async function listGrants(userId?: string): Promise<Grant[]> {
     const body = await api<{ data: Grant[] }>(
         userId ? `/api/grants?user=${userId}` : '/api/grants',
     );
@@ -58,7 +58,7 @@ export async function createGrant(input: NewGrant): Promise<Grant> {
     return body.data;
 }
 
-export async function revokeGrant(id: number): Promise<Grant> {
+export async function revokeGrant(id: string): Promise<Grant> {
     const body = await api<{ data: Grant }>(`/api/grants/${id}/revoke`, { method: 'POST' });
     return body.data;
 }
@@ -88,7 +88,7 @@ export interface PermissionGroup {
 }
 
 export interface Role {
-    id: number;
+    id: string;
     code: string;
     name: string;
     description: string | null;
@@ -124,7 +124,7 @@ export async function listRoles(): Promise<Role[]> {
     return body.data;
 }
 
-export async function getRole(id: number): Promise<Role> {
+export async function getRole(id: string): Promise<Role> {
     const body = await api<{ data: Role }>(`/api/roles/${id}`);
     return body.data;
 }
@@ -137,7 +137,7 @@ export async function roleOptions(): Promise<RoleOption[]> {
 export async function createRole(input: {
     name: string;
     description: string;
-    copy_from: number | null;
+    copy_from: string | null;
 }): Promise<Role> {
     const body = await api<{ data: Role }>('/api/roles', {
         method: 'POST',
@@ -147,7 +147,7 @@ export async function createRole(input: {
 }
 
 export async function updateRole(
-    id: number,
+    id: string,
     input: { name: string; description: string },
 ): Promise<Role> {
     const body = await api<{ data: Role }>(`/api/roles/${id}`, {
@@ -157,13 +157,13 @@ export async function updateRole(
     return body.data;
 }
 
-export async function deleteRole(id: number): Promise<void> {
+export async function deleteRole(id: string): Promise<void> {
     await api(`/api/roles/${id}`, { method: 'DELETE' });
 }
 
 // Saves several roles at once. All or nothing.
 export async function saveRolePermissions(
-    roles: { id: number; permissions: string[] }[],
+    roles: { id: string; permissions: string[] }[],
 ): Promise<Role[]> {
     const body = await api<{ data: Role[] }>('/api/roles/permissions', {
         method: 'PUT',
@@ -172,7 +172,7 @@ export async function saveRolePermissions(
     return body.data;
 }
 
-export async function addRoleMembers(roleId: number, userIds: number[]): Promise<Role> {
+export async function addRoleMembers(roleId: string, userIds: string[]): Promise<Role> {
     const body = await api<{ data: Role }>(`/api/roles/${roleId}/members`, {
         method: 'POST',
         body: JSON.stringify({ user_ids: userIds }),

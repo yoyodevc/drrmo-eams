@@ -17,7 +17,7 @@ export function EmergenciesSinceLast({
     slotId,
     onAdd,
 }: {
-    slotId: number;
+    slotId: string;
     onAdd: (line: string) => void;
 }) {
     const me = useMe().data;

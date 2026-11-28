@@ -19,7 +19,7 @@ it('switches a volunteer inactive with a reason, writes history and audits it', 
     $admin = User::factory()->role(RoleCode::Admin)->create();
     $volunteer = User::factory()->role(RoleCode::Volunteer)->create();
 
-    withAuthCookies(loginCookies($admin))->putJson("/api/admin/volunteers/{$volunteer->id}/status", ['status' => 'inactive', 'reason' => 'On leave this month'])
+    withAuthCookies(loginCookies($admin))->putJson("/api/admin/volunteers/{$volunteer->public_code}/status", ['status' => 'inactive', 'reason' => 'On leave this month'])
         ->assertOk()->assertJsonPath('data.status', 'inactive');
 
     expect($volunteer->refresh()->status)->toBe(AvailabilityStatus::Inactive);
@@ -30,7 +30,7 @@ it('switches a volunteer inactive with a reason, writes history and audits it', 
         ->and($log->changed_by)->toBe($admin->id);
     expect(AuditLog::query()->where('action', 'volunteer.status_changed')->exists())->toBeTrue();
 
-    withAuthCookies(loginCookies($admin))->getJson("/api/admin/volunteers/{$volunteer->id}/status-history")
+    withAuthCookies(loginCookies($admin))->getJson("/api/admin/volunteers/{$volunteer->public_code}/status-history")
         ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.reason', 'On leave this month');
 });
 
@@ -38,9 +38,9 @@ it('needs a reason and a real change', function () {
     $admin = User::factory()->role(RoleCode::Admin)->create();
     $volunteer = User::factory()->role(RoleCode::Volunteer)->create();
 
-    withAuthCookies(loginCookies($admin))->putJson("/api/admin/volunteers/{$volunteer->id}/status", ['status' => 'inactive'])
+    withAuthCookies(loginCookies($admin))->putJson("/api/admin/volunteers/{$volunteer->public_code}/status", ['status' => 'inactive'])
         ->assertUnprocessable()->assertJsonValidationErrors('reason');
-    withAuthCookies(loginCookies($admin))->putJson("/api/admin/volunteers/{$volunteer->id}/status", ['status' => 'active', 'reason' => 'Already fine'])
+    withAuthCookies(loginCookies($admin))->putJson("/api/admin/volunteers/{$volunteer->public_code}/status", ['status' => 'active', 'reason' => 'Already fine'])
         ->assertUnprocessable();
     expect(VolunteerStatusLog::query()->count())->toBe(0);
 });
@@ -61,8 +61,8 @@ it('keeps non-admins out', function () {
     $other = User::factory()->role(RoleCode::Volunteer)->create();
 
     withAuthCookies(loginCookies($volunteer))->getJson('/api/admin/volunteers')->assertForbidden();
-    withAuthCookies(loginCookies($volunteer))->putJson("/api/admin/volunteers/{$other->id}/status", ['status' => 'inactive', 'reason' => 'Nope nope'])->assertForbidden();
-    withAuthCookies(loginCookies($volunteer))->getJson("/api/admin/volunteers/{$other->id}/status-history")->assertForbidden();
+    withAuthCookies(loginCookies($volunteer))->putJson("/api/admin/volunteers/{$other->public_code}/status", ['status' => 'inactive', 'reason' => 'Nope nope'])->assertForbidden();
+    withAuthCookies(loginCookies($volunteer))->getJson("/api/admin/volunteers/{$other->public_code}/status-history")->assertForbidden();
     expect($other->refresh()->status)->toBe(AvailabilityStatus::Active);
 });
 
@@ -78,9 +78,9 @@ it('does not offer or assign an inactive volunteer', function () {
         'shift_ends_at' => $event->ends_at,
     ]);
 
-    withAuthCookies(loginCookies($admin))->getJson("/api/requirements/{$req->id}/candidates")
+    withAuthCookies(loginCookies($admin))->getJson("/api/requirements/{$req->public_code}/candidates")
         ->assertOk()->assertJsonMissing(['id' => $gone->id]);
-    withAuthCookies(loginCookies($admin))->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $gone->id])
+    withAuthCookies(loginCookies($admin))->postJson("/api/requirements/{$req->public_code}/assignments", ['user_id' => $gone->public_code])
         ->assertUnprocessable();
 });
 

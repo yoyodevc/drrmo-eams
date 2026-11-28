@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Events\Http\Requests;
 
+use App\Modules\Events\Models\DutyType;
 use App\Modules\Events\Models\Event;
+use App\Support\PublicCode;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /** Adds a duty requirement. The shift must sit inside the event time. */
@@ -18,11 +21,19 @@ class StoreRequirementRequest extends FormRequest
         return Gate::allows('create', Event::class);
     }
 
+    /** Clients send public codes. The rules below work on the ids behind them. */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('duty_type_id')) {
+            $this->merge(['duty_type_id' => PublicCode::toId(DutyType::class, $this->input('duty_type_id'))]);
+        }
+    }
+
     /** @return array<string, list<mixed>> */
     public function rules(): array
     {
         return [
-            'duty_type_id' => ['required', 'integer', 'exists:duty_types,id'],
+            'duty_type_id' => ['required', 'integer', Rule::exists('duty_types', 'id')->where('active', true)],
             'role' => ['required', 'in:marshal,volunteer'],
             'team_needed' => ['nullable', 'string', 'max:100'],
             'headcount' => ['required', 'integer', 'min:1', 'max:500'],

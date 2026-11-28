@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications\Services;
 
+use App\Modules\Monitoring\Models\SiteReport;
 use App\Modules\Notifications\Enums\NotificationType;
 use App\Modules\Notifications\Jobs\SendNotificationEmail;
 use App\Modules\Notifications\Models\Notification;
@@ -29,8 +30,9 @@ class AlertSender
         // A push problem must never stop the in app alert or the email.
         try {
             [$title, $body] = $type->pushText();
-            $url = isset($about['site_report_id']) && in_array($type, [NotificationType::ReportDue, NotificationType::ReportReminder], true)
-                ? '/me/reports/'.$about['site_report_id'] : '/';
+            $code = isset($about['site_report_id']) && in_array($type, [NotificationType::ReportDue, NotificationType::ReportReminder], true)
+                ? SiteReport::query()->whereKey($about['site_report_id'])->value('public_code') : null;
+            $url = $code === null ? '/' : '/me/reports/'.$code;
             $this->pusher->send($userId, $type, $title, $body, $url, $about);
         } catch (Throwable $e) {
             report($e);

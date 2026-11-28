@@ -78,7 +78,7 @@ One tap starts one sign out. The label changes to "Signing out..." and the butto
 | A-Notification log | Admin | Table: recipient, type, status, attempts, time, error. Retry button on failed rows. Daily send count against the provider limit. | List only |
 | A-Reports | Admin, report reviewers, granted users | Three tabs. Needs attention: open emergencies, overdue and missed reports, with counts for each event. Emergencies: open and past emergencies with type, person, time, place (audited) and Acknowledge and Resolve buttons. All reports: the report feed (A-Report feed). Open emergencies are never hidden. | Same tabs, one column |
 | A-Report reviewers | Admin | Under Access control. Pick up to 2 active marshals who read every site report and emergency and get the alerts. | One column |
-| A-Manage lists | Admin | One screen with four lists: teams, departments, event types and campus locations (with a map pin). Add, rename, switch off. Switched off items stay on old records. | One column |
+| A-Manage lists | Admin | One screen with five lists: teams, departments, event types, duty types and campus locations (with a map pin). Add, rename, switch off. Switched off items stay on old records. | One column |
 | A-Notifications | Admin | The notification log and, for the admin's own account, the Alerts settings page (sound, push, quiet hours, devices). | List only |
 | A-DRRMO inbox | Admin | Two panes: conversations on the left, messages on the right. | One pane at a time |
 

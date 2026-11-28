@@ -11,6 +11,7 @@ use App\Modules\Access\Models\Role;
 use App\Modules\Personnel\Contracts\PersonRoleChanger;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Models\User;
+use App\Support\PublicCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -23,6 +24,7 @@ class RoleMemberController
     {
         Gate::authorize('manage', Role::class);
 
+        $request->merge(['user_ids' => PublicCode::toIds(User::class, $request->input('user_ids'))]);
         $request->validate([
             'user_ids' => ['required', 'array', 'min:1', 'max:100'],
             'user_ids.*' => ['integer', 'distinct', 'exists:users,id'],

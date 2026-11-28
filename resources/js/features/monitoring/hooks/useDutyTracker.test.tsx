@@ -46,7 +46,7 @@ describe('wake lock state', () => {
         const request = vi.fn().mockResolvedValue(sentinel);
         Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request } });
 
-        const { result, unmount } = renderHook(() => useDutyTracker(1, true));
+        const { result, unmount } = renderHook(() => useDutyTracker('a1', true));
         await waitFor(() => expect(result.current.wakeLock).toBe('active'));
         expect(request).toHaveBeenCalledWith('screen');
 
@@ -62,7 +62,7 @@ describe('wake lock state', () => {
         const request = vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(second);
         Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request } });
 
-        const { result, unmount } = renderHook(() => useDutyTracker(1, true));
+        const { result, unmount } = renderHook(() => useDutyTracker('a1', true));
         await waitFor(() => expect(result.current.wakeLock).toBe('active'));
 
         // The browser drops the lock when the page is hidden.
@@ -82,7 +82,7 @@ describe('wake lock state', () => {
     });
 
     it('says unsupported when the browser has no Wake Lock', async () => {
-        const { result, unmount } = renderHook(() => useDutyTracker(1, true));
+        const { result, unmount } = renderHook(() => useDutyTracker('a1', true));
         await waitFor(() => expect(result.current.wakeLock).toBe('unsupported'));
         unmount();
     });
@@ -93,7 +93,7 @@ describe('wake lock state', () => {
             .mockRejectedValue(new DOMException('Battery saver', 'NotAllowedError'));
         Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request } });
 
-        const { result, unmount } = renderHook(() => useDutyTracker(1, true));
+        const { result, unmount } = renderHook(() => useDutyTracker('a1', true));
         await waitFor(() => expect(result.current.wakeLock).toBe('denied'));
         unmount();
     });

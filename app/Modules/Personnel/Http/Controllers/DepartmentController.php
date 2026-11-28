@@ -70,7 +70,7 @@ class DepartmentController
     private function present(Department $department): array
     {
         return [
-            'id' => $department->id,
+            'id' => $department->public_code,
             'name' => $department->name,
             'active' => $department->active,
             'people_count' => (int) ($department->users_count ?? 0),

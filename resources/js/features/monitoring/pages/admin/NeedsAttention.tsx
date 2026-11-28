@@ -12,7 +12,6 @@ import {
     ago,
     CheckIcon,
     ChevronIcon,
-    headCell,
     linkClass,
     nameParts,
     Panel,
@@ -26,32 +25,34 @@ type OpenEmergency = Attention['emergencies'][number];
 type LateReport = Attention['reports'][number];
 type EventCounts = Attention['events'][number];
 
+// One summary number. The number carries the weight; a thin bar on top marks the ones above zero.
 function Stat({
     label,
     hint,
     value,
-    dot,
+    tone,
+    bar,
 }: {
     label: string;
     hint: string;
     value: number;
-    dot: string;
+    tone: string;
+    bar: string;
 }) {
+    const on = value > 0;
     return (
-        <div className="bg-white px-4 py-4 md:px-5">
-            <p className="flex items-center gap-2 text-sm font-medium text-stone-700">
-                <span
-                    aria-hidden="true"
-                    className={`size-2 shrink-0 rounded-full ${value > 0 ? dot : 'bg-stone-300'}`}
-                />
-                {label}
-            </p>
+        <div className="relative bg-white px-4 pt-4 pb-4 md:px-5 md:pt-5">
+            <span
+                aria-hidden="true"
+                className={`absolute inset-x-0 top-0 h-[3px] max-lg:hidden ${on ? bar : 'bg-transparent'}`}
+            />
+            <p className="text-sm font-medium text-stone-600">{label}</p>
             <p
-                className={`mt-1.5 text-3xl font-semibold tracking-tight tabular-nums ${value > 0 ? 'text-stone-900' : 'text-stone-400'}`}
+                className={`mt-1 text-4xl leading-none font-semibold tracking-tight tabular-nums md:mt-2 ${on ? tone : 'text-stone-300'}`}
             >
                 {value}
             </p>
-            <p className="mt-0.5 text-sm text-pretty text-stone-500">{hint}</p>
+            <p className="mt-2 text-sm text-pretty text-stone-500 max-sm:hidden">{hint}</p>
         </div>
     );
 }
@@ -154,116 +155,93 @@ function LateReports({ reports, now }: { reports: LateReport[]; now: number }) {
                 </Link>
             }
         >
-            {/* Phones and small tablets: one row per report. */}
-            <ul className="divide-y divide-stone-100 md:hidden">
+            <ul className="divide-y divide-stone-100">
                 {reports.map((r) => {
                     const [first, last] = nameParts(r.author);
                     return (
-                        <li key={r.id} className="flex items-center gap-3 px-4 py-3.5">
+                        <li
+                            key={r.id}
+                            className="flex min-h-16 items-center gap-3 px-4 py-3 md:gap-4 md:px-5"
+                        >
                             <Avatar first={first} last={last} />
-                            <div className="min-w-0 flex-1">
+                            <div className="min-w-0 flex-1 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-center md:gap-6">
                                 <p className="truncate font-semibold text-stone-900">
                                     {r.author ?? 'Unknown'}
                                 </p>
                                 <p className="truncate text-sm text-stone-600">
                                     {r.event ?? 'Event'}
                                 </p>
-                                <p className="text-sm text-stone-500 tabular-nums">
-                                    Due {when(r.due_at, now)}
+                            </div>
+                            <div className="flex shrink-0 flex-col items-end gap-1 md:w-48 md:flex-row-reverse lg:w-72 md:items-center md:justify-start md:gap-3">
+                                <ReportChip status={r.status} />
+                                <p className="text-sm whitespace-nowrap text-stone-500 tabular-nums">
+                                    <span className="max-lg:hidden">{when(r.due_at, now)} · </span>
+                                    {ago(r.due_at, now)}
                                 </p>
                             </div>
-                            <ReportChip status={r.status} />
                         </li>
                     );
                 })}
             </ul>
-
-            {/* 768 px and up: a table. */}
-            <div className="hidden md:block">
-                <table className="w-full table-fixed text-left">
-                    <colgroup>
-                        <col className="w-[34%]" />
-                        <col className="w-[30%]" />
-                        <col className="w-[22%]" />
-                        <col className="w-[14%]" />
-                    </colgroup>
-                    <thead className="border-b border-stone-200">
-                        <tr>
-                            <th scope="col" className={headCell}>
-                                Person
-                            </th>
-                            <th scope="col" className={headCell}>
-                                Event
-                            </th>
-                            <th scope="col" className={headCell}>
-                                Was due
-                            </th>
-                            <th scope="col" className={headCell}>
-                                Status
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100">
-                        {reports.map((r) => {
-                            const [first, last] = nameParts(r.author);
-                            return (
-                                <tr key={r.id}>
-                                    <td className="px-5 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar first={first} last={last} />
-                                            <span className="truncate font-medium text-stone-900">
-                                                {r.author ?? 'Unknown'}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="truncate px-5 py-3 text-sm text-stone-700">
-                                        {r.event ?? 'Event'}
-                                    </td>
-                                    <td className="px-5 py-3 text-sm tabular-nums">
-                                        <p className="text-stone-800">{when(r.due_at, now)}</p>
-                                        <p className="text-stone-500">{ago(r.due_at, now)}</p>
-                                    </td>
-                                    <td className="px-5 py-3">
-                                        <ReportChip status={r.status} />
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
         </Panel>
     );
 }
 
-function Count({ n, tone }: { n: number; tone: string }) {
-    return (
-        <span className={`tabular-nums ${n > 0 ? `font-semibold ${tone}` : 'text-stone-500'}`}>
-            {n}
-        </span>
-    );
-}
+const parts = [
+    { key: 'on_time', label: 'On time', bar: 'bg-green-600', dot: 'bg-green-600' },
+    { key: 'late', label: 'Late', bar: 'bg-amber-400', dot: 'bg-amber-400' },
+    { key: 'overdue', label: 'Overdue', bar: 'bg-ember-500', dot: 'bg-ember-500' },
+    { key: 'missed', label: 'Missed', bar: 'bg-red-700', dot: 'bg-red-700' },
+] as const;
 
-// Share of due reports that came in on time. Zero due reports shows a dash.
-function OnTimeBar({ ev }: { ev: EventCounts }) {
+// How the due reports of one event split up, as one bar. The numbers sit under it, so the bar is
+// never the only way to read them.
+function Health({ ev }: { ev: EventCounts }) {
     const due = ev.on_time + ev.late + ev.overdue + ev.missed;
-    if (due === 0) return <span className="text-stone-500">No reports due</span>;
-    const share = Math.round((ev.on_time / due) * 100);
     return (
-        <div className="flex items-center gap-3">
+        <div className="min-w-0">
             <div
                 aria-hidden="true"
-                className="h-1.5 w-full max-w-36 overflow-hidden rounded-full bg-stone-100"
+                className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-stone-100"
             >
-                <div className="h-full rounded-full bg-green-700" style={{ width: `${share}%` }} />
+                {due > 0 &&
+                    parts.map(
+                        (p) =>
+                            ev[p.key] > 0 && (
+                                <span
+                                    key={p.key}
+                                    className={`h-full ${p.bar}`}
+                                    style={{ width: `${(ev[p.key] / due) * 100}%` }}
+                                />
+                            ),
+                    )}
             </div>
-            <span className="w-11 shrink-0 text-right text-stone-700 tabular-nums">{share}%</span>
+            <ul className="mt-2 grid grid-cols-4 gap-2 text-sm text-stone-600 tabular-nums sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
+                {parts.map((p) => (
+                    <li
+                        key={p.key}
+                        className="flex flex-col sm:flex-row sm:items-center sm:gap-1.5"
+                    >
+                        <span className="flex items-center gap-1.5">
+                            <span
+                                aria-hidden="true"
+                                className={`size-2 rounded-full ${ev[p.key] > 0 ? p.dot : 'bg-stone-200'}`}
+                            />
+                            <span className={ev[p.key] > 0 ? 'font-semibold text-stone-900' : ''}>
+                                {ev[p.key]}
+                            </span>
+                        </span>
+                        <span className="max-sm:text-xs max-sm:text-stone-500">
+                            {p.label.toLowerCase()}
+                        </span>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }
 
 function ByEvent({ events }: { events: EventCounts[] }) {
-    const feedFor = (ev: EventCounts) => `/admin/reports/feed?event_id=${ev.event_id}`;
     return (
         <Panel
             id="attention-events"
@@ -280,114 +258,35 @@ function ByEvent({ events }: { events: EventCounts[] }) {
                     No site reports have fallen due yet.
                 </p>
             ) : (
-                <>
-                    {/* Phones and small tablets: the four numbers under each event. */}
-                    <ul className="divide-y divide-stone-100 md:hidden">
-                        {events.map((ev) => (
+                <ul className="divide-y divide-stone-100">
+                    {events.map((ev) => {
+                        const due = ev.on_time + ev.late + ev.overdue + ev.missed;
+                        const share = due > 0 ? Math.round((ev.on_time / due) * 100) : null;
+                        return (
                             <li key={ev.event_id}>
                                 <Link
-                                    to={feedFor(ev)}
-                                    className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-stone-50 active:bg-stone-100"
+                                    to={`/admin/reports/feed?event_id=${ev.event_id}`}
+                                    className="group flex items-center gap-3 px-4 py-4 transition-colors hover:bg-stone-50 focus-visible:bg-stone-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-maroon-600 active:bg-stone-100 md:gap-4 md:px-5"
                                 >
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block truncate font-semibold text-stone-900">
-                                            {ev.event ?? 'Event'}
+                                    <span className="grid min-w-0 flex-1 gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-center md:gap-8">
+                                        <span className="min-w-0">
+                                            <span className="block truncate font-semibold text-stone-900 group-hover:text-maroon-700">
+                                                {ev.event ?? 'Event'}
+                                            </span>
+                                            <span className="mt-0.5 block text-sm text-stone-500 tabular-nums">
+                                                {share === null
+                                                    ? 'No reports due yet'
+                                                    : `${due} due · ${share}% on time`}
+                                            </span>
                                         </span>
-                                        <span className="mt-2 grid grid-cols-4 gap-2">
-                                            {(
-                                                [
-                                                    [ev.on_time, 'On time', 'text-green-800'],
-                                                    [ev.late, 'Late', 'text-amber-900'],
-                                                    [ev.overdue, 'Overdue', 'text-ember-700'],
-                                                    [ev.missed, 'Missed', 'text-red-800'],
-                                                ] as const
-                                            ).map(([n, label, tone]) => (
-                                                <span key={label} className="block">
-                                                    <span className="block text-base">
-                                                        <Count n={n} tone={tone} />
-                                                    </span>
-                                                    <span className="block text-xs text-stone-500">
-                                                        {label}
-                                                    </span>
-                                                </span>
-                                            ))}
-                                        </span>
+                                        {due > 0 && <Health ev={ev} />}
                                     </span>
-                                    <ChevronIcon className="size-5 shrink-0 text-stone-400" />
+                                    <ChevronIcon className="size-5 shrink-0 text-stone-300 transition-colors group-hover:text-maroon-700" />
                                 </Link>
                             </li>
-                        ))}
-                    </ul>
-
-                    {/* 768 px and up: a table where the whole row opens the event's reports. */}
-                    <div className="hidden overflow-x-auto md:block">
-                        <table className="w-full min-w-[680px] table-fixed text-left text-sm">
-                            <thead className="border-b border-stone-200">
-                                <tr>
-                                    <th scope="col" className={headCell}>
-                                        Event
-                                    </th>
-                                    <th scope="col" className={`${headCell} w-28 text-right`}>
-                                        On time
-                                    </th>
-                                    <th scope="col" className={`${headCell} w-28 text-right`}>
-                                        Late
-                                    </th>
-                                    <th scope="col" className={`${headCell} w-28 text-right`}>
-                                        Overdue
-                                    </th>
-                                    <th scope="col" className={`${headCell} w-28 text-right`}>
-                                        Missed
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className={`${headCell} hidden w-56 lg:table-cell`}
-                                    >
-                                        On time rate
-                                    </th>
-                                    <th scope="col" className="w-12">
-                                        <span className="sr-only">Open</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-stone-100">
-                                {events.map((ev) => (
-                                    <tr
-                                        key={ev.event_id}
-                                        className="group relative cursor-pointer transition-colors focus-within:bg-stone-50 hover:bg-stone-50"
-                                    >
-                                        <td className="px-5 py-3.5">
-                                            <Link
-                                                to={feedFor(ev)}
-                                                className="block truncate font-medium text-stone-900 underline-offset-2 group-hover:text-maroon-700 group-hover:underline after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-maroon-600 focus-visible:after:ring-inset"
-                                            >
-                                                {ev.event ?? 'Event'}
-                                            </Link>
-                                        </td>
-                                        <td className="px-5 py-3.5 text-right">
-                                            <Count n={ev.on_time} tone="text-green-800" />
-                                        </td>
-                                        <td className="px-5 py-3.5 text-right">
-                                            <Count n={ev.late} tone="text-amber-900" />
-                                        </td>
-                                        <td className="px-5 py-3.5 text-right">
-                                            <Count n={ev.overdue} tone="text-ember-700" />
-                                        </td>
-                                        <td className="px-5 py-3.5 text-right">
-                                            <Count n={ev.missed} tone="text-red-800" />
-                                        </td>
-                                        <td className="hidden px-5 py-3.5 lg:table-cell">
-                                            <OnTimeBar ev={ev} />
-                                        </td>
-                                        <td className="py-3.5 pr-4 pl-2">
-                                            <ChevronIcon className="size-4 text-stone-300 transition-colors group-hover:text-maroon-700" />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
+                        );
+                    })}
+                </ul>
             )}
         </Panel>
     );
@@ -443,21 +342,30 @@ export function NeedsAttention() {
                     label="Not acknowledged"
                     hint="Emergencies nobody took on yet"
                     value={waiting}
-                    dot="bg-red-700"
+                    tone="text-red-700"
+                    bar="bg-red-700"
                 />
                 <Stat
                     label="Being handled"
                     hint="Acknowledged, not resolved"
                     value={emergencies.length - waiting}
-                    dot="bg-green-700"
+                    tone="text-stone-900"
+                    bar="bg-green-600"
                 />
                 <Stat
                     label="Overdue reports"
                     hint="Past due, can still be sent"
                     value={overdue}
-                    dot="bg-ember-500"
+                    tone="text-ember-700"
+                    bar="bg-ember-500"
                 />
-                <Stat label="Missed reports" hint="Never sent" value={missed} dot="bg-red-700" />
+                <Stat
+                    label="Missed reports"
+                    hint="Never sent"
+                    value={missed}
+                    tone="text-red-800"
+                    bar="bg-red-700"
+                />
             </div>
 
             {allClear && (

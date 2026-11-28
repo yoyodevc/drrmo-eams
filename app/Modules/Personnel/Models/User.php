@@ -12,6 +12,7 @@ use App\Modules\Notifications\Contracts\EmailMessage;
 use App\Modules\Notifications\Contracts\MailSender;
 use App\Modules\Personnel\Enums\AccountStatus;
 use App\Modules\Personnel\Enums\AvailabilityStatus;
+use App\Support\HasPublicCode;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -37,6 +38,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $verification_sent_at
  * @property Carbon|null $reviewed_at
  * @property Carbon|null $last_login_at
+ * @property string $public_code
  */
 #[Fillable(['first_name', 'last_name', 'email', 'contact_number', 'role_id', 'department_id', 'team', 'status', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -45,6 +47,8 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    use HasPublicCode;
 
     /** @return array<string, string> */
     protected function casts(): array

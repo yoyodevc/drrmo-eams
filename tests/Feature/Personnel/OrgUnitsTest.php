@@ -68,7 +68,7 @@ it('adds, edits and deletes a department, and blocks one that has people', funct
 
     $busy = Department::query()->create(['name' => 'Security Office']);
     User::factory()->role(RoleCode::Volunteer)->create(['department_id' => $busy->id]);
-    $as()->deleteJson("/api/departments/{$busy->id}")->assertUnprocessable();
+    $as()->deleteJson("/api/departments/{$busy->public_code}")->assertUnprocessable();
     $as()->deleteJson("/api/departments/{$id}")->assertNoContent();
 
     expect(AuditLog::query()->where('action', 'like', 'department.%')->count())->toBe(3);
@@ -84,8 +84,8 @@ it('keeps non-admins out of team and department changes', function () {
     $as()->patchJson('/api/teams/ert', ['name' => 'Nope'])->assertForbidden();
     $as()->deleteJson('/api/teams/ert')->assertForbidden();
     $as()->postJson('/api/departments', ['name' => 'Nope'])->assertForbidden();
-    $as()->patchJson("/api/departments/{$dept->id}", ['name' => 'Nope'])->assertForbidden();
-    $as()->deleteJson("/api/departments/{$dept->id}")->assertForbidden();
+    $as()->patchJson("/api/departments/{$dept->public_code}", ['name' => 'Nope'])->assertForbidden();
+    $as()->deleteJson("/api/departments/{$dept->public_code}")->assertForbidden();
 });
 
 it('only accepts an existing team on a person', function () {

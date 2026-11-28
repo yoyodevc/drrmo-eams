@@ -66,6 +66,7 @@ Count: 5 + 5 + 6 + 3 + 4 + 2 + 2 = 27 tables. Each appears once. Each module als
 - **Owns:** app shell, Blade entry view, `bootstrap/app.php`, `routes/api.php` (which only includes module route files), auth endpoints, `/api/me`, the `EnsureConsented` middleware, the service worker (`public/sw.js`) and web manifest, layouts, UI kit, API client, PWA files, error handling.
 - **Endpoints:** `POST /api/login`, `POST /api/refresh`, `POST /api/logout`, `POST /api/forgot-password`, `POST /api/reset-password`, `GET /api/me`. Auth is the JWT guard (`auth:api`, app/Auth).
 - **Frontend:** `resources/js/app`, `resources/js/layouts`, `resources/js/shared`.
+- **Shared record codes:** `app/Support` holds `HasPublicCode`, `PublicCode` and `PublicCodeColumn`. In the endpoint lists below, a name in braces such as `{event}` or `{id}` is the record's public code, never its number (see DATABASE.md).
 - **Must not touch:** any module's business rules.
 - Note: `EnsureConsented` reads consent through the Records contract `ConsentChecker`.
 
@@ -79,7 +80,7 @@ Count: 5 + 5 + 6 + 3 + 4 + 2 + 2 = 27 tables. Each appears once. Each module als
   - `GET /api/me/availability` (the person's own on-call status)
   - `GET /api/me/profile`, `PATCH /api/me/profile` (contact number only)
   - `GET|POST|PUT|DELETE /api/me/emergency-contacts[/{contact}]`, `GET /api/admin/people/{user}/emergency-contacts`
-  - `GET|POST|PATCH|DELETE /api/departments[/{department}]` and `/api/teams[/{team}]` (the Manage lists screen, which also edits event types and campus locations through the Events endpoints)
+  - `GET|POST|PATCH|DELETE /api/departments[/{department}]` and `/api/teams[/{team}]` (the Manage lists screen, which also edits event types, duty types and campus locations through the Events endpoints)
   - `POST /api/register`, `POST /api/register/verify`, `POST /api/register/resend` (public Request access for volunteers)
   - `GET /api/admin/registrations`, `POST /api/admin/registrations/{user}/approve`, `POST /api/admin/registrations/{user}/reject`
 - **Policies:** `UserPolicy`. Departments, teams and emergency contacts use its gate abilities (`viewPeople`, `managePeople`, `manageOwnProfile`).

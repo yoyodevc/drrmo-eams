@@ -27,10 +27,10 @@ class AlertController
 
         return response()->json([
             'data' => $rows->map(fn (Notification $n) => [
-                'id' => $n->id,
+                'id' => $n->public_code,
                 'type' => $n->type,
-                'emergency_report_id' => $n->emergency_report_id,
-                'site_report_id' => $n->site_report_id,
+                'emergency_report_id' => $n->emergencyReport?->public_code,
+                'site_report_id' => $n->siteReport?->public_code,
                 'about' => $n->subject->name ?? null,
                 'event' => $n->assignment?->event->title,
                 'due_at' => $n->siteReport?->due_at->toIso8601String(),

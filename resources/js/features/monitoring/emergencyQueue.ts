@@ -5,7 +5,7 @@ import type { EmergencyType } from './api';
 
 export interface QueuedEmergency {
     client_id: string;
-    assignment_id: number;
+    assignment_id: string;
     type: EmergencyType;
     note: string;
     // A data URL of the resized photo, or null. Dropped first when the storage is full.

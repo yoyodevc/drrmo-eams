@@ -29,7 +29,7 @@ export async function resendCode(email: string): Promise<void> {
 export type RequestStatus = 'pending_email' | 'pending_approval' | 'active' | 'rejected';
 
 export interface AccessRequest {
-    id: number;
+    id: string;
     first_name: string;
     last_name: string;
     // First and last name together, for display.
@@ -54,11 +54,11 @@ export async function listRequests(status: RequestFilter): Promise<RequestList> 
     return api<RequestList>(`/api/admin/registrations?status=${status}`);
 }
 
-export async function approveRequest(id: number): Promise<void> {
+export async function approveRequest(id: string): Promise<void> {
     await api(`/api/admin/registrations/${id}/approve`, { method: 'POST' });
 }
 
-export async function rejectRequest(id: number, reason: string): Promise<void> {
+export async function rejectRequest(id: string, reason: string): Promise<void> {
     await api(`/api/admin/registrations/${id}/reject`, {
         method: 'POST',
         body: JSON.stringify({ reason }),

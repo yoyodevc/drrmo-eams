@@ -88,7 +88,7 @@ export function EmergencySender({
     assignmentId,
     showList = true,
 }: {
-    assignmentId: number;
+    assignmentId: string;
     showList?: boolean;
 }) {
     const queryClient = useQueryClient();

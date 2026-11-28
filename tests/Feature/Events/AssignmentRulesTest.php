@@ -37,12 +37,12 @@ it('edits an event, audits before and after, and keeps duty shifts inside the ne
     $event->requirements()->create(shift($event));
     $cookies = loginCookies($admin);
     $payload = fn (array $o = []) => [
-        'title' => 'New title', 'event_type' => 'ceremony', 'campus_location_id' => $event->campus_location_id,
+        'title' => 'New title', 'event_type' => 'ceremony', 'campus_location_id' => $event->location->public_code,
         'starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String(), ...$o,
     ];
 
-    withAuthCookies($cookies)->putJson("/api/events/{$event->id}", $payload())->assertOk()->assertJsonPath('data.title', 'New title');
-    withAuthCookies($cookies)->putJson("/api/events/{$event->id}", $payload(['ends_at' => $event->ends_at->subHour()->toIso8601String()]))
+    withAuthCookies($cookies)->putJson("/api/events/{$event->public_code}", $payload())->assertOk()->assertJsonPath('data.title', 'New title');
+    withAuthCookies($cookies)->putJson("/api/events/{$event->public_code}", $payload(['ends_at' => $event->ends_at->subHour()->toIso8601String()]))
         ->assertUnprocessable()->assertJsonValidationErrors(['starts_at']);
 
     $log = AuditLog::query()->where('action', 'event.updated')->firstOrFail();
@@ -53,11 +53,11 @@ it('keeps event editing away from non-admins and cancelled events', function () 
     $marshal = User::factory()->role(RoleCode::Marshal)->create();
     $admin = User::factory()->role(RoleCode::Admin)->create();
     $event = Event::factory()->create(['status' => 'cancelled']);
-    $body = ['title' => 'X', 'event_type' => 'ceremony', 'campus_location_id' => $event->campus_location_id,
+    $body = ['title' => 'X', 'event_type' => 'ceremony', 'campus_location_id' => $event->location->public_code,
         'starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String()];
 
-    withAuthCookies(loginCookies($marshal))->putJson("/api/events/{$event->id}", $body)->assertForbidden();
-    withAuthCookies(loginCookies($admin))->putJson("/api/events/{$event->id}", $body)->assertUnprocessable();
+    withAuthCookies(loginCookies($marshal))->putJson("/api/events/{$event->public_code}", $body)->assertForbidden();
+    withAuthCookies(loginCookies($admin))->putJson("/api/events/{$event->public_code}", $body)->assertUnprocessable();
 });
 
 it('blocks an overlapping shift and shows it as a conflict in the candidates', function () {
@@ -69,9 +69,9 @@ it('blocks an overlapping shift and shows it as a conflict in the candidates', f
     $second = $two->requirements()->create(shift($two));
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->getJson("/api/requirements/{$second->id}/candidates")
+    withAuthCookies($cookies)->getJson("/api/requirements/{$second->public_code}/candidates")
         ->assertOk()->assertJsonPath('data.0.conflict', 'First event');
-    withAuthCookies($cookies)->postJson("/api/requirements/{$second->id}/assignments", ['user_id' => $marshal->id])
+    withAuthCookies($cookies)->postJson("/api/requirements/{$second->public_code}/assignments", ['user_id' => $marshal->public_code])
         ->assertUnprocessable()->assertJsonValidationErrors(['user_id']);
     expect(Assignment::query()->count())->toBe(1);
 });
@@ -84,7 +84,7 @@ it('does not count a cancelled assignment as a clash', function () {
     assignTo($one->requirements()->create(shift($one)), $marshal, ['status' => 'cancelled']);
     $second = $two->requirements()->create(shift($two));
 
-    withAuthCookies(loginCookies($admin))->postJson("/api/requirements/{$second->id}/assignments", ['user_id' => $marshal->id])->assertCreated();
+    withAuthCookies(loginCookies($admin))->postJson("/api/requirements/{$second->public_code}/assignments", ['user_id' => $marshal->public_code])->assertCreated();
 });
 
 it('blocks an inactive person', function () {
@@ -93,7 +93,7 @@ it('blocks an inactive person', function () {
     $event = Event::factory()->create();
     $req = $event->requirements()->create(shift($event));
 
-    withAuthCookies(loginCookies($admin))->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $marshal->id])->assertUnprocessable();
+    withAuthCookies(loginCookies($admin))->postJson("/api/requirements/{$req->public_code}/assignments", ['user_id' => $marshal->public_code])->assertUnprocessable();
 });
 
 it('allows a full duty only with an override reason and audits it', function () {
@@ -102,11 +102,11 @@ it('allows a full duty only with an override reason and audits it', function () 
     $event = Event::factory()->create();
     $req = $event->requirements()->create(shift($event));
     $cookies = loginCookies($admin);
-    $url = "/api/requirements/{$req->id}/assignments";
+    $url = "/api/requirements/{$req->public_code}/assignments";
 
-    withAuthCookies($cookies)->postJson($url, ['user_id' => $a->id])->assertCreated();
-    withAuthCookies($cookies)->postJson($url, ['user_id' => $b->id])->assertUnprocessable()->assertJsonValidationErrors(['override_reason']);
-    withAuthCookies($cookies)->postJson($url, ['user_id' => $b->id, 'override_reason' => 'Extra hands needed at the gate'])->assertCreated();
+    withAuthCookies($cookies)->postJson($url, ['user_id' => $a->public_code])->assertCreated();
+    withAuthCookies($cookies)->postJson($url, ['user_id' => $b->public_code])->assertUnprocessable()->assertJsonValidationErrors(['override_reason']);
+    withAuthCookies($cookies)->postJson($url, ['user_id' => $b->public_code, 'override_reason' => 'Extra hands needed at the gate'])->assertCreated();
 
     expect(Assignment::query()->where('user_id', $b->id)->value('override_reason'))->toBe('Extra hands needed at the gate')
         ->and(AuditLog::query()->where('action', 'assignment.created')->get()->last()->meta['override_reason'])->toBe('Extra hands needed at the gate');
@@ -118,13 +118,13 @@ it('acknowledges once, never for someone else, and repeating it does nothing', f
     $event = Event::factory()->create(['status' => 'published']);
     $assignment = assignTo($event->requirements()->create(shift($event)), $mine);
 
-    withAuthCookies(loginCookies($other))->postJson("/api/me/assignments/{$assignment->id}/acknowledge")->assertForbidden();
+    withAuthCookies(loginCookies($other))->postJson("/api/me/assignments/{$assignment->public_code}/acknowledge")->assertForbidden();
     $cookies = loginCookies($mine);
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/acknowledge")->assertOk()->assertJsonPath('data.status', 'acknowledged');
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/acknowledge")->assertOk()->assertJsonPath('data.status', 'acknowledged');
     $first = $assignment->fresh()->acknowledged_at;
     $assignment->update(['acknowledged_at' => $first->copy()->subHour()]);
     $first = $assignment->fresh()->acknowledged_at;
-    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->id}/acknowledge")->assertOk();
+    withAuthCookies($cookies)->postJson("/api/me/assignments/{$assignment->public_code}/acknowledge")->assertOk();
 
     expect($assignment->fresh()->acknowledged_at->equalTo($first))->toBeTrue()
         ->and(AuditLog::query()->where('action', 'assignment.acknowledged')->count())->toBe(1);
@@ -138,14 +138,14 @@ it('cancels an assignment with a reason, audits it, and refuses on duty ones', f
     $assignment = assignTo($req, $marshal);
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->postJson("/api/assignments/{$assignment->id}/cancel", [])->assertUnprocessable()->assertJsonValidationErrors(['reason']);
-    withAuthCookies($cookies)->postJson("/api/assignments/{$assignment->id}/cancel", ['reason' => 'Person is sick'])->assertOk()->assertJsonPath('data.status', 'cancelled');
+    withAuthCookies($cookies)->postJson("/api/assignments/{$assignment->public_code}/cancel", [])->assertUnprocessable()->assertJsonValidationErrors(['reason']);
+    withAuthCookies($cookies)->postJson("/api/assignments/{$assignment->public_code}/cancel", ['reason' => 'Person is sick'])->assertOk()->assertJsonPath('data.status', 'cancelled');
 
     $log = AuditLog::query()->where('action', 'assignment.cancelled')->firstOrFail();
     expect($log->meta['before']['status'])->toBe('assigned')->and($log->meta['reason'])->toBe('Person is sick');
 
     $onDuty = assignTo($req, User::factory()->role(RoleCode::Marshal)->create(), ['status' => 'on_duty']);
-    withAuthCookies($cookies)->postJson("/api/assignments/{$onDuty->id}/cancel", ['reason' => 'Changed my mind'])->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/assignments/{$onDuty->public_code}/cancel", ['reason' => 'Changed my mind'])->assertUnprocessable();
 });
 
 it('moves a person to another duty of the same event', function () {
@@ -156,7 +156,7 @@ it('moves a person to another duty of the same event', function () {
     $two = $event->requirements()->create(shift($event, ['headcount' => 3]));
     $assignment = assignTo($one, $marshal, ['status' => 'acknowledged']);
 
-    withAuthCookies(loginCookies($admin))->patchJson("/api/assignments/{$assignment->id}", ['requirement_id' => $two->id])->assertOk();
+    withAuthCookies(loginCookies($admin))->patchJson("/api/assignments/{$assignment->public_code}", ['requirement_id' => $two->public_code])->assertOk();
 
     expect($assignment->fresh()->requirement_id)->toBe($two->id)->and($assignment->fresh()->status->value)->toBe('assigned')
         ->and(AuditLog::query()->where('action', 'assignment.updated')->count())->toBe(1);
@@ -169,9 +169,9 @@ it('keeps assignment changes away from non-admins', function () {
     $assignment = assignTo($req, $marshal);
     $cookies = loginCookies($marshal);
 
-    withAuthCookies($cookies)->patchJson("/api/assignments/{$assignment->id}", ['requirement_id' => $req->id])->assertForbidden();
-    withAuthCookies($cookies)->postJson("/api/assignments/{$assignment->id}/cancel", ['reason' => 'No reason really'])->assertForbidden();
-    withAuthCookies($cookies)->postJson("/api/assignments/{$assignment->id}/no-show")->assertForbidden();
+    withAuthCookies($cookies)->patchJson("/api/assignments/{$assignment->public_code}", ['requirement_id' => $req->public_code])->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/assignments/{$assignment->public_code}/cancel", ['reason' => 'No reason really'])->assertForbidden();
+    withAuthCookies($cookies)->postJson("/api/assignments/{$assignment->public_code}/no-show")->assertForbidden();
     withAuthCookies($cookies)->getJson('/api/dashboard')->assertForbidden();
 });
 
@@ -201,8 +201,8 @@ it('lets an admin mark a no show only after the shift has started', function () 
     $b = assignTo($later->requirements()->create(shift($later)), $marshal);
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->postJson("/api/assignments/{$b->id}/no-show")->assertUnprocessable();
-    withAuthCookies($cookies)->postJson("/api/assignments/{$a->id}/no-show")->assertOk()->assertJsonPath('data.status', 'no_show');
+    withAuthCookies($cookies)->postJson("/api/assignments/{$b->public_code}/no-show")->assertUnprocessable();
+    withAuthCookies($cookies)->postJson("/api/assignments/{$a->public_code}/no-show")->assertOk()->assertJsonPath('data.status', 'no_show');
 });
 
 it('shows the admin dashboard with today, unacknowledged and late people', function () {
@@ -234,10 +234,10 @@ it('moves people who started duty from the late list to the on duty list', funct
         ->assertJsonPath('data.today_events.0.on_duty_count', 1)
         ->assertJsonPath('data.today_events.0.places_needed', 3)
         ->assertJsonCount(1, 'data.on_duty')
-        ->assertJsonPath('data.on_duty.0.id', $on->id)
+        ->assertJsonPath('data.on_duty.0.id', $on->public_code)
         ->assertJsonPath('data.on_duty.0.status', 'on_duty')
         ->assertJsonCount(1, 'data.not_on_duty')
-        ->assertJsonPath('data.not_on_duty.0.id', $off->id);
+        ->assertJsonPath('data.not_on_duty.0.id', $off->public_code);
 });
 
 it('gives coordinators read only notices for their department or campus wide', function () {
@@ -265,8 +265,8 @@ it('lets a cancelled person be added to the event again', function () {
     $old = assignTo($req, $marshal, ['status' => 'cancelled', 'cancel_reason' => 'Was sick']);
     $cookies = loginCookies($admin);
 
-    withAuthCookies($cookies)->getJson("/api/requirements/{$req->id}/candidates")->assertJsonCount(1, 'data');
-    withAuthCookies($cookies)->postJson("/api/requirements/{$req->id}/assignments", ['user_id' => $marshal->id])->assertCreated();
+    withAuthCookies($cookies)->getJson("/api/requirements/{$req->public_code}/candidates")->assertJsonCount(1, 'data');
+    withAuthCookies($cookies)->postJson("/api/requirements/{$req->public_code}/assignments", ['user_id' => $marshal->public_code])->assertCreated();
 
     expect(Assignment::query()->count())->toBe(1)
         ->and($old->fresh()->status->value)->toBe('assigned')
@@ -311,10 +311,10 @@ it('blocks moving an inactive person, an overlapping shift, and a full duty with
     assignTo($full, $b);
     $assignment = assignTo($one, $a);
     $cookies = loginCookies($admin);
-    $url = "/api/assignments/{$assignment->id}";
+    $url = "/api/assignments/{$assignment->public_code}";
 
-    withAuthCookies($cookies)->patchJson($url, ['requirement_id' => $full->id])->assertUnprocessable()->assertJsonValidationErrors(['override_reason']);
-    withAuthCookies($cookies)->patchJson($url, ['requirement_id' => $full->id, 'override_reason' => 'Extra hands needed at the gate'])->assertOk();
+    withAuthCookies($cookies)->patchJson($url, ['requirement_id' => $full->public_code])->assertUnprocessable()->assertJsonValidationErrors(['override_reason']);
+    withAuthCookies($cookies)->patchJson($url, ['requirement_id' => $full->public_code, 'override_reason' => 'Extra hands needed at the gate'])->assertOk();
     expect($assignment->fresh()->override_reason)->toBe('Extra hands needed at the gate');
 
     $other = Event::factory()->create(['starts_at' => $event->starts_at->copy()->addHour(), 'ends_at' => $event->ends_at->copy()->addHour()]);
@@ -322,13 +322,13 @@ it('blocks moving an inactive person, an overlapping shift, and a full duty with
     $second = $other->requirements()->create(shift($other, ['headcount' => 3]));
     $mine = assignTo($otherReq, $a);
     // $a still holds a duty in the first event, which overlaps this one, so the move is blocked.
-    withAuthCookies($cookies)->patchJson("/api/assignments/{$mine->id}", ['requirement_id' => $second->id])
+    withAuthCookies($cookies)->patchJson("/api/assignments/{$mine->public_code}", ['requirement_id' => $second->public_code])
         ->assertUnprocessable()->assertJsonValidationErrors(['requirement_id']);
     $assignment->update(['status' => 'cancelled']);
-    withAuthCookies($cookies)->patchJson("/api/assignments/{$mine->id}", ['requirement_id' => $second->id])->assertOk();
+    withAuthCookies($cookies)->patchJson("/api/assignments/{$mine->public_code}", ['requirement_id' => $second->public_code])->assertOk();
 
     $a->forceFill(['account_status' => 'pending_approval'])->save();
-    withAuthCookies($cookies)->patchJson("/api/assignments/{$mine->id}", ['requirement_id' => $otherReq->id])
+    withAuthCookies($cookies)->patchJson("/api/assignments/{$mine->public_code}", ['requirement_id' => $otherReq->public_code])
         ->assertUnprocessable()->assertJsonValidationErrors(['requirement_id']);
 });
 
@@ -343,14 +343,14 @@ it('frees people when an event is cancelled, so they can be assigned to an overl
     $cookies = loginCookies($admin);
 
     // Still blocked while the first event is active.
-    withAuthCookies($cookies)->postJson("/api/requirements/{$second->id}/assignments", ['user_id' => $marshal->id])
+    withAuthCookies($cookies)->postJson("/api/requirements/{$second->public_code}/assignments", ['user_id' => $marshal->public_code])
         ->assertUnprocessable()->assertJsonValidationErrors(['user_id']);
 
-    withAuthCookies($cookies)->postJson("/api/events/{$one->id}/cancel")->assertOk();
+    withAuthCookies($cookies)->postJson("/api/events/{$one->public_code}/cancel")->assertOk();
 
     expect($freed->refresh()->status->value)->toBe('cancelled')->and($freed->cancelled_at)->not->toBeNull()->and($freed->cancel_reason)->toBe('Event cancelled');
-    withAuthCookies($cookies)->getJson("/api/requirements/{$second->id}/candidates")->assertOk()->assertJsonPath('data.0.conflict', null);
-    withAuthCookies($cookies)->postJson("/api/requirements/{$second->id}/assignments", ['user_id' => $marshal->id])->assertCreated();
+    withAuthCookies($cookies)->getJson("/api/requirements/{$second->public_code}/candidates")->assertOk()->assertJsonPath('data.0.conflict', null);
+    withAuthCookies($cookies)->postJson("/api/requirements/{$second->public_code}/assignments", ['user_id' => $marshal->public_code])->assertCreated();
 });
 
 it('ends duty already started when an event is cancelled, and keeps notifications', function () {
@@ -362,7 +362,7 @@ it('ends duty already started when an event is cancelled, and keeps notification
     $started = assignTo($req, $onDuty, ['status' => 'on_duty', 'duty_started_at' => now()]);
     $pending = assignTo($req, $waiting);
 
-    withAuthCookies(loginCookies($admin))->postJson("/api/events/{$event->id}/cancel")->assertOk();
+    withAuthCookies(loginCookies($admin))->postJson("/api/events/{$event->public_code}/cancel")->assertOk();
 
     expect($started->refresh()->status->value)->toBe('completed')->and($started->duty_ended_at)->not->toBeNull();
     expect($pending->refresh()->status->value)->toBe('cancelled');

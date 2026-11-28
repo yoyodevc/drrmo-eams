@@ -32,15 +32,15 @@ class DashboardController
             ->orderBy('starts_at')->get();
 
         $base = fn () => Assignment::query()
-            ->with(['user:id,first_name,last_name', 'event:id,title', 'requirement:id,duty_type_id,team_needed,shift_starts_at,shift_ends_at', 'requirement.dutyType:id,name'])
+            ->with(['user:id,first_name,last_name', 'event:id,public_code,title', 'requirement:id,duty_type_id,team_needed,shift_starts_at,shift_ends_at', 'requirement.dutyType:id,name'])
             ->whereHas('event', fn ($q) => $q->where('status', 'published'))
             ->whereHas('requirement', fn ($q) => $q->where('shift_ends_at', '>', $now));
 
         $row = fn (Assignment $a) => [
-            'id' => $a->id,
+            'id' => $a->public_code,
             'person' => $a->user->name,
             'status' => $a->status->value,
-            'event' => ['id' => $a->event->id, 'title' => $a->event->title],
+            'event' => ['id' => $a->event->public_code, 'title' => $a->event->title],
             'duty' => $a->requirement?->dutyType->name,
             'starts_at' => $a->requirement?->shift_starts_at->toIso8601String(),
             'ends_at' => $a->requirement?->shift_ends_at->toIso8601String(),
@@ -54,14 +54,14 @@ class DashboardController
             ->get()->sortBy('requirement.shift_starts_at')->values();
         // On duty now. The auto end job closes duties 30 minutes after the shift ends.
         $onDuty = Assignment::query()
-            ->with(['user:id,first_name,last_name', 'event:id,title', 'requirement:id,duty_type_id,team_needed,shift_starts_at,shift_ends_at', 'requirement.dutyType:id,name'])
+            ->with(['user:id,first_name,last_name', 'event:id,public_code,title', 'requirement:id,duty_type_id,team_needed,shift_starts_at,shift_ends_at', 'requirement.dutyType:id,name'])
             ->where('status', AssignmentStatus::OnDuty->value)
             ->whereHas('event', fn ($q) => $q->where('status', 'published'))
             ->orderBy('duty_started_at')->get();
 
         return response()->json(['data' => [
             'today_events' => $events->map(fn (Event $e) => [
-                'id' => $e->id,
+                'id' => $e->public_code,
                 'title' => $e->title,
                 'location' => $e->location?->name,
                 'starts_at' => $e->starts_at->toIso8601String(),

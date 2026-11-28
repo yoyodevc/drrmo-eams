@@ -237,7 +237,7 @@ function AddPeopleDialog({
 }) {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
-    const [picked, setPicked] = useState<Map<number, Person>>(new Map());
+    const [picked, setPicked] = useState<Map<string, Person>>(new Map());
 
     const people = useQuery({
         queryKey: ['people', 'role-picker', search],
@@ -539,7 +539,7 @@ function EditDialog({ open, role, onClose }: { open: boolean; role: Role; onClos
 
 export function RoleDetail() {
     const { id } = useParams();
-    const roleId = Number(id);
+    const roleId = id ?? '';
     const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();

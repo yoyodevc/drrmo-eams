@@ -18,14 +18,14 @@ class GrantResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->public_code,
             'permission' => [
                 'code' => $this->permission->code,
                 'label' => PermissionMatrix::permissions()[$this->permission->code]['label'] ?? $this->permission->code,
                 'description' => $this->permission->description,
             ],
-            'person' => ['id' => $this->user_id, 'name' => $this->user?->name],
-            'event' => $this->event === null ? null : ['id' => $this->event->id, 'title' => $this->event->title],
+            'person' => ['id' => $this->user?->public_code, 'name' => $this->user?->name],
+            'event' => $this->event === null ? null : ['id' => $this->event->public_code, 'title' => $this->event->title],
             'starts_at' => $this->starts_at->toIso8601String(),
             'ends_at' => $this->ends_at->toIso8601String(),
             'reason' => $this->reason,

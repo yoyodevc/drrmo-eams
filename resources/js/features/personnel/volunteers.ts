@@ -13,7 +13,7 @@ export interface StatusChange {
 }
 
 export async function setVolunteerStatus(
-    id: number,
+    id: string,
     status: Availability,
     reason: string,
 ): Promise<void> {
@@ -23,7 +23,7 @@ export async function setVolunteerStatus(
     });
 }
 
-export async function statusHistory(id: number): Promise<StatusChange[]> {
+export async function statusHistory(id: string): Promise<StatusChange[]> {
     const body = await api<{ data: StatusChange[] }>(`/api/admin/volunteers/${id}/status-history`);
     return body.data;
 }

@@ -1,6 +1,6 @@
-// A-Reports, All reports tab (S4.8). Site reports, newest first, with filters by event, place and
-// date. Filters sit in the URL so a view can be shared. Under 768 px they fold behind a Filters
-// button, like People. A photo opens in a lightbox.
+// A-Reports, All reports tab (S4.8). Site reports, newest first and split into days, with filters by
+// event, place and date. Filters sit in the URL so a view can be shared. Under 768 px they fold
+// behind a Filters button, like People. A photo opens in a lightbox.
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
@@ -8,7 +8,7 @@ import { Avatar, ChevronDownIcon, FilterIcon } from '@/features/personnel/compon
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { getReportFeed, reportPhotoUrl, type FeedFilters, type FeedReport } from '../../api';
-import { nameParts, ReportChip, useNow, when } from '../../components/reportsUi';
+import { clock, dayLabel, nameParts, ReportChip, useNow } from '../../components/reportsUi';
 
 // The server sends 15 a page.
 const PER_PAGE = 15;
@@ -86,58 +86,72 @@ function Lightbox({ report, onClose }: { report: FeedReport | null; onClose: () 
     );
 }
 
-function ReportRow({
-    report,
-    now,
-    onPhoto,
-}: {
-    report: FeedReport;
-    now: number;
-    onPhoto: () => void;
-}) {
+// When the slot counts from: the time it was sent, or the time it was due if nothing came.
+const at = (r: FeedReport) => r.submitted_at ?? r.due_at;
+
+// Rows in order, split into days. The server sends them newest first, so the days come out in order.
+function byDay(rows: FeedReport[], now: number): { day: string; rows: FeedReport[] }[] {
+    const days: { day: string; rows: FeedReport[] }[] = [];
+    for (const r of rows) {
+        const day = dayLabel(at(r), now);
+        const last = days[days.length - 1];
+        if (last && last.day === day) last.rows.push(r);
+        else days.push({ day, rows: [r] });
+    }
+    return days;
+}
+
+function ReportRow({ report, onPhoto }: { report: FeedReport; onPhoto: () => void }) {
     const [first, last] = nameParts(report.author);
-    const missed = report.status === 'missed' || !report.summary;
+    const empty = !report.summary;
+    const sent = report.submitted_at !== null;
 
     return (
         <li
-            className={`relative px-4 py-4 md:px-5 ${report.status === 'missed' ? 'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-red-700' : ''}`}
+            className={`relative flex gap-3 px-4 py-4 md:gap-5 md:px-5 ${empty ? 'bg-stone-50/60' : ''} ${report.status === 'missed' ? 'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-red-700' : ''}`}
         >
-            <div className="flex gap-3 md:gap-4">
-                <div className="hidden sm:block">
-                    <Avatar first={first} last={last} dim={missed} />
+            {/* 768 px and up: the time sits in its own column, so the day reads like a log. */}
+            <div className="hidden w-20 shrink-0 pt-0.5 whitespace-nowrap md:block">
+                <p className="text-sm font-semibold text-stone-800 tabular-nums">
+                    {clock.format(new Date(at(report)))}
+                </p>
+                <p className="text-xs text-stone-500">{sent ? 'Sent' : 'Was due'}</p>
+            </div>
+            <div className="hidden sm:block">
+                <Avatar first={first} last={last} dim={empty} />
+            </div>
+            <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    <p className="font-semibold text-stone-900">{report.author ?? 'Unknown'}</p>
+                    <ReportChip status={report.status} />
                 </div>
-                <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
-                            <p className="font-semibold text-stone-900">
-                                {report.author ?? 'Unknown'}
+                <p className="mt-0.5 text-sm text-stone-600">
+                    {report.event.title ?? 'Event'}
+                    {report.location && ` · ${report.location}`}
+                    {sent && (
+                        <span className="tabular-nums max-md:hidden">
+                            {' '}
+                            · due {clock.format(new Date(report.due_at))}
+                        </span>
+                    )}
+                </p>
+                <p className="text-sm text-stone-500 tabular-nums md:hidden">
+                    {sent
+                        ? `Sent ${clock.format(new Date(at(report)))} · due ${clock.format(new Date(report.due_at))}`
+                        : `Was due ${clock.format(new Date(at(report)))}`}
+                </p>
+                {(report.summary || report.has_photo) && (
+                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                        {report.summary && (
+                            <p className="max-w-3xl min-w-0 flex-1 text-base text-pretty whitespace-pre-wrap text-stone-800">
+                                {report.summary}
                             </p>
-                            <ReportChip status={report.status} />
-                        </div>
-                        <p className="text-sm text-stone-500 tabular-nums">
-                            {report.submitted_at
-                                ? `Sent ${when(report.submitted_at, now)}`
-                                : `Due ${when(report.due_at, now)}`}
-                        </p>
-                    </div>
-                    <p className="mt-0.5 text-sm text-stone-600">
-                        {report.event.title ?? 'Event'}
-                        {report.location && ` · ${report.location}`}
-                        {report.submitted_at && (
-                            <span className="tabular-nums"> · due {when(report.due_at, now)}</span>
                         )}
-                    </p>
-                    <div className="mt-2.5 flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-                        <p
-                            className={`max-w-3xl min-w-0 flex-1 text-pretty whitespace-pre-wrap ${report.summary ? 'text-base text-stone-800' : 'text-sm text-stone-500'}`}
-                        >
-                            {report.summary ?? 'No report was sent for this slot.'}
-                        </p>
                         {report.has_photo && (
                             <button
                                 type="button"
                                 onClick={onPhoto}
-                                className="shrink-0 self-start overflow-hidden rounded-control ring-1 ring-stone-200 transition hover:ring-stone-400 focus:ring-2 focus:ring-maroon-700 focus:outline-none"
+                                className="shrink-0 self-start overflow-hidden rounded-control ring-1 ring-stone-200 transition hover:ring-stone-400 focus:ring-2 focus:ring-maroon-700 focus:outline-none sm:ml-auto"
                             >
                                 <span className="sr-only">
                                     Open the photo from {report.author ?? 'this report'}
@@ -146,12 +160,19 @@ function ReportRow({
                                     src={reportPhotoUrl(report.id)}
                                     alt=""
                                     loading="lazy"
-                                    className="h-24 w-32 object-cover"
+                                    className="h-20 w-28 object-cover"
                                 />
                             </button>
                         )}
                     </div>
-                </div>
+                )}
+                {empty && (
+                    <p className="mt-2 text-sm text-stone-500">
+                        {report.status === 'overdue'
+                            ? 'Not sent yet. They can still send it.'
+                            : 'No report was sent for this slot.'}
+                    </p>
+                )}
             </div>
         </li>
     );
@@ -360,16 +381,29 @@ export function ReportFeed() {
                         )}
                     </div>
                 ) : (
-                    <ul className="divide-y divide-stone-100">
-                        {rows.map((report) => (
-                            <ReportRow
-                                key={report.id}
-                                report={report}
-                                now={now}
-                                onPhoto={() => setPhotoOf(report)}
-                            />
-                        ))}
-                    </ul>
+                    byDay(rows, now).map((group, i) => (
+                        <section
+                            key={group.day}
+                            aria-labelledby={`feed-day-${i}`}
+                            className="border-b border-stone-200 last-of-type:border-b-0"
+                        >
+                            <h2
+                                id={`feed-day-${i}`}
+                                className="border-b border-stone-200 bg-stone-50 px-4 py-2 text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase md:px-5"
+                            >
+                                {group.day}
+                            </h2>
+                            <ul className="divide-y divide-stone-100">
+                                {group.rows.map((report) => (
+                                    <ReportRow
+                                        key={report.id}
+                                        report={report}
+                                        onPhoto={() => setPhotoOf(report)}
+                                    />
+                                ))}
+                            </ul>
+                        </section>
+                    ))
                 )}
 
                 {lastPage > 1 && (

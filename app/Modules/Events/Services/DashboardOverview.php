@@ -50,8 +50,8 @@ class DashboardOverview
         }
         if (Gate::forUser($user)->allows('viewAny', Memo::class)) {
             $out['memos'] = [
-                'recent' => Memo::query()->orderByDesc('posted_at')->limit(3)->get(['id', 'title', 'category', 'posted_at'])
-                    ->map(fn (Memo $m) => ['id' => $m->id, 'title' => $m->title, 'category' => $m->category->label(), 'posted_at' => $m->posted_at->toIso8601String()])
+                'recent' => Memo::query()->orderByDesc('posted_at')->limit(3)->get(['id', 'public_code', 'title', 'category', 'posted_at'])
+                    ->map(fn (Memo $m) => ['id' => $m->public_code, 'title' => $m->title, 'category' => $m->category->label(), 'posted_at' => $m->posted_at->toIso8601String()])
                     ->values(),
                 'this_week' => Memo::query()->where('posted_at', '>=', now()->subDays(7))->count(),
             ];

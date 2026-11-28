@@ -6,6 +6,7 @@ namespace App\Modules\Access\Models;
 
 use App\Modules\Access\Enums\Role as RoleCode;
 use App\Modules\Personnel\Models\User;
+use App\Support\HasPublicCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,9 +17,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property string|null $description
  * @property bool $is_system
+ * @property string $public_code
  */
 class Role extends Model
 {
+    use HasPublicCode;
+
     protected $fillable = ['code', 'name', 'description', 'is_system'];
 
     /** @return array<string, string> */

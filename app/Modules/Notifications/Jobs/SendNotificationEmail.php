@@ -68,7 +68,7 @@ class SendNotificationEmail implements ShouldQueue
 
         $a = $n->assignment;
         $event = $a?->event->title ?? 'an event';
-        $link = url('/').'?assignment='.($a->id ?? '');
+        $link = url('/').'?assignment='.($a->public_code ?? '');
 
         [$subject, $heading, $intro, $preheader] = match ($n->type) {
             NotificationType::AssignmentCreated->value => ['New duty assignment', 'You have a new duty', 'You have been assigned to a duty. Please check the details below.', 'You have been assigned to a duty at '.$event.'.'],
@@ -136,7 +136,7 @@ class SendNotificationEmail implements ShouldQueue
             ->greeting($name)
             ->line($now ? 'Your site report is due now. Please send it as soon as you can.' : 'Your site report is due in 15 minutes. Please get ready to send it.')
             ->details(['Event' => $event, 'Due' => $due])
-            ->button('Write the report', url('/me/reports/'.($n->site_report_id ?? '')));
+            ->button('Write the report', url('/me/reports/'.($n->siteReport->public_code ?? '')));
     }
 
     /** Tells a reviewer or admin that someone on duty sent an emergency. No location in the email: open the app. */
@@ -178,9 +178,16 @@ class SendNotificationEmail implements ShouldQueue
         if ($duties->isEmpty()) {
             $message->line('They have no upcoming duties.');
         } else {
-            $message->details($duties->mapWithKeys(fn (Assignment $a) => [
-                ($a->event->title ?? 'An event').' (#'.$a->id.')' => $this->shift($a->requirement?->shift_starts_at, $a->requirement?->shift_ends_at),
-            ])->all());
+            // One line for each duty. Two events can share a title, so a repeat is numbered.
+            $lines = [];
+            foreach ($duties as $a) {
+                $title = $label = $a->event->title ?? 'An event';
+                for ($i = 2; isset($lines[$label]); $i++) {
+                    $label = "{$title} ({$i})";
+                }
+                $lines[$label] = $this->shift($a->requirement?->shift_starts_at, $a->requirement?->shift_ends_at);
+            }
+            $message->details($lines);
         }
 
         return $message->button('Open DRRMO EAMS', url('/admin/events'));

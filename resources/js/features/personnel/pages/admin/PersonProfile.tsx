@@ -124,7 +124,7 @@ function Skeleton() {
 
 export function PersonProfile() {
     const { id } = useParams();
-    const personId = Number(id);
+    const personId = id ?? '';
     const state = useLocation().state as { invited?: boolean; from?: string } | null;
     const listUrl = `/admin/people${state?.from ?? ''}`;
 
@@ -413,7 +413,7 @@ function AvailabilityCard({
     status,
     history,
 }: {
-    personId: number;
+    personId: string;
     firstName: string;
     status: Availability;
     history: {

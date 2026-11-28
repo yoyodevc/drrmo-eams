@@ -4,7 +4,7 @@
 import { useEffect, useId, useRef } from 'react';
 
 export interface AlarmScreenProps {
-    alerts: { id: number; text: string }[];
+    alerts: { id: string; text: string }[];
     // Label of the main button, for example "Open emergencies".
     openLabel: string;
     // Stops the alarm and opens the screen where the emergency is handled.

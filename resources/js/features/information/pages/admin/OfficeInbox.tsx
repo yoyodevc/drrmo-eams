@@ -40,7 +40,7 @@ const CHATS = `${BASE}/chats`;
 const textLink =
     'inline-flex min-h-10 items-center gap-1 rounded-sm px-2 text-sm font-semibold text-maroon-700 underline-offset-2 hover:underline';
 
-function OfficeThread({ personId }: { personId: number }) {
+function OfficeThread({ personId }: { personId: string }) {
     const client = useQueryClient();
     const me = useMe().data;
     const canSeePeople = me?.permissions.includes('people.view') ?? false;
@@ -179,7 +179,7 @@ function ListTabs({
     );
 }
 
-function Lists({ chats, activeId }: { chats: boolean; activeId: number | null }) {
+function Lists({ chats, activeId }: { chats: boolean; activeId: string | null }) {
     const inbox = useQuery({ queryKey: ['inbox'], queryFn: getInbox, refetchInterval: POLL_MS });
     const direct = useQuery({
         queryKey: ['direct-chats'],
@@ -327,7 +327,7 @@ function Lists({ chats, activeId }: { chats: boolean; activeId: number | null })
 export function OfficeInbox() {
     const { pathname } = useLocation();
     const chats = pathname.startsWith(CHATS);
-    const activeId = Number(useParams().id) || null;
+    const activeId = useParams().id ?? null;
     const inbox = useQuery({ queryKey: ['inbox'], queryFn: getInbox, refetchInterval: POLL_MS });
     const waiting = inbox.data?.unread ?? 0;
 

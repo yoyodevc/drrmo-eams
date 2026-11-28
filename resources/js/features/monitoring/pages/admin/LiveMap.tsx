@@ -294,8 +294,8 @@ function SelectedCard({
 }
 
 export function LiveMap() {
-    const [eventId, setEventId] = useState<number | undefined>();
-    const [selected, setSelected] = useState<number | null>(null);
+    const [eventId, setEventId] = useState<string | undefined>();
+    const [selected, setSelected] = useState<string | null>(null);
     const [query, setQuery] = useState('');
     const [map, setMap] = useState<L.Map | null>(null);
 
@@ -310,7 +310,7 @@ export function LiveMap() {
     // The trail loads once per click, not on a timer, so one click is one audit row.
     const trail = useQuery({
         queryKey: ['map-trail', selected],
-        queryFn: () => getTrail(selected as number),
+        queryFn: () => getTrail(selected as string),
         enabled: selected !== null,
         staleTime: Infinity,
     });
@@ -328,7 +328,7 @@ export function LiveMap() {
             : chosen?.ping
               ? [[chosen.ping.lat, chosen.ping.lng]]
               : [];
-    const toggle = (id: number) => setSelected((cur) => (cur === id ? null : id));
+    const toggle = (id: string) => setSelected((cur) => (cur === id ? null : id));
     const shown = (list: MapPerson[]) => list.filter((p) => matchesSearch(p, query));
     const loading = latest.isPending;
 
@@ -405,7 +405,7 @@ export function LiveMap() {
                             className={`${control} w-52`}
                             value={eventId ?? ''}
                             onChange={(e) => {
-                                setEventId(e.target.value ? Number(e.target.value) : undefined);
+                                setEventId(e.target.value || undefined);
                                 setSelected(null);
                             }}
                         >

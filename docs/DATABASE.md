@@ -2,6 +2,14 @@
 
 MySQL 8, InnoDB, utf8mb4. Times are stored in UTC and shown in Asia/Manila. All tables use `id` bigint unsigned auto increment unless noted.
 
+## Public codes
+
+Records that people open also have a `public_code`: 16 random lower case letters and digits, starting with a letter, unique in its table. URLs, query strings, request bodies and API answers use this code. Primary keys and foreign keys stay as integers and stay inside the server. A record number in a URL answers 404.
+
+Tables with a code: roles, permission_grants, users, departments, emergency_contacts, duty_types, campus_locations, events, event_duty_requirements, assignments, site_reports, emergency_reports, notifications, push_subscriptions and memos. Teams and event types already use a readable `code`. Messages have none, because a chat is opened by the person's code.
+
+A model gets this with the `App\Support\HasPublicCode` trait. A request turns codes back into ids with `App\Support\PublicCode::toId`. A migration adds the column and fills old rows with `App\Support\PublicCodeColumn`.
+
 ## 1. Gaps found in the brief's data model
 
 The 20 tables in the original brief covered the flows, but several flows had nowhere to store their data. The owner approved the fixes below and all of them are built. The table is kept as the reason behind each column. The system has grown since then: section 2 lists all 27 domain tables, including the ones added after the brief (teams, event_types, emergency_reports, report_reviewers, push_subscriptions, alert_preferences and refresh_tokens).
@@ -76,13 +84,13 @@ Each module gets a fixed timestamp prefix so parallel sessions never collide and
 | Order | Prefix | Module | Tables |
 |---|---|---|---|
 | 0 | `0001_01_01_*` | Core | Laravel defaults: cache, jobs, failed_jobs, sessions, password_reset_tokens |
-| 1 | `2026_01_01_1000xx` | Access | roles, permissions, role_permission, and `100004` adds `description` and `is_system` to roles (custom roles have `is_system` false) |
-| 2 | `2026_01_01_2000xx` | Personnel | departments, users (FK roles, departments), emergency_contacts, volunteer_status_logs, `200005` adds the sign up columns to users (account_status, email code fields, reviewed_by, reviewed_at, rejection_reason), `200006` replaces `users.name` with `first_name` and `last_name`, and `200007` adds teams (with the three starting teams) and an `active` flag on departments |
-| 3 | `2026_01_01_3000xx` | Events | duty_types, campus_locations, events, event_types, event_duty_requirements, assignments. Later files add `event_type` to events, `active` to campus_locations, and the status, cancel and duty time columns to assignments |
-| 4 | `2026_01_01_3500xx` | Access | refresh_tokens (needs users), permission_grants (needs events). Both are owned by Access, though refresh_tokens is used by the login code in Core |
-| 5 | `2026_01_01_4000xx` | Monitoring | location_pings, site_reports, emergency_reports, report_reviewers. `400004` adds `missed_at` to site_reports and `reminded_at` to emergency_reports |
-| 6 | `2026_01_01_5000xx` | Notifications | notifications (needs assignments), `500002` subject_user_id, `500003` site_report_id, `500004` emergency_report_id and read_at (in app alerts), `500005` push_subscriptions (one row for each device, unique on a hash of the endpoint), `500006` alert_preferences (mute and quiet hours for each person) |
-| 7 | `2026_01_01_6000xx` | Information | memos (`600002` adds the PDF preview columns), messages (`600004` adds `is_direct`) |
+| 1 | `2026_01_01_1000xx` | Access | roles, permissions, role_permission, and `100004` adds `description` and `is_system` to roles (custom roles have `is_system` false), and `100005` adds `public_code` |
+| 2 | `2026_01_01_2000xx` | Personnel | departments, users (FK roles, departments), emergency_contacts, volunteer_status_logs, `200005` adds the sign up columns to users (account_status, email code fields, reviewed_by, reviewed_at, rejection_reason), `200006` replaces `users.name` with `first_name` and `last_name`, and `200007` adds teams (with the three starting teams) and an `active` flag on departments. `200008` adds `public_code` |
+| 3 | `2026_01_01_3000xx` | Events | duty_types, campus_locations, events, event_types, event_duty_requirements, assignments. Later files add `event_type` to events, `active` to campus_locations and duty_types, and the status, cancel and duty time columns to assignments. `300010` adds `public_code` |
+| 4 | `2026_01_01_3500xx` | Access | refresh_tokens (needs users), permission_grants (needs events). Both are owned by Access, though refresh_tokens is used by the login code in Core. `350003` adds `public_code` to permission_grants |
+| 5 | `2026_01_01_4000xx` | Monitoring | location_pings, site_reports, emergency_reports, report_reviewers. `400004` adds `missed_at` to site_reports and `reminded_at` to emergency_reports. `400006` adds `public_code` to site_reports and emergency_reports |
+| 6 | `2026_01_01_5000xx` | Notifications | notifications (needs assignments), `500002` subject_user_id, `500003` site_report_id, `500004` emergency_report_id and read_at (in app alerts), `500005` push_subscriptions (one row for each device, unique on a hash of the endpoint), `500006` alert_preferences (mute and quiet hours for each person), `500007` adds `public_code` to notifications and push_subscriptions |
+| 7 | `2026_01_01_6000xx` | Information | memos (`600002` adds the PDF preview columns), messages (`600004` adds `is_direct`), `600005` adds `public_code` to memos |
 | 8 | `2026_01_01_7000xx` | Records | audit_logs, consent_records |
 
 Laravel's default `users` migration is replaced by the Personnel version. The default `sessions` table keeps its `user_id` column without a foreign key.
@@ -93,6 +101,7 @@ Foreign key rules: `restrict` on delete for people and events (we soft-close, no
 
 | Table | Index | Why |
 |---|---|---|
+| every table with a public code | unique(public_code) | routes find a record by its code |
 | users | unique(email), (role_id, status), (department_id), (account_status, created_at) | login, assignable list, access requests list |
 | permission_grants | (user_id, permission_id, ends_at), (event_id) | permission check runs on most requests |
 | role_permission | unique(role_id, permission_id) | no duplicates |

@@ -59,7 +59,7 @@ export function PeopleResults({
 }: {
     search: ReturnType<typeof usePeopleSearch>;
     base: string;
-    activeId: number | null;
+    activeId: string | null;
 }) {
     const { people, term } = search;
     if (people.isPending) return <ListSkeleton label="Searching..." />;
@@ -103,7 +103,7 @@ export function PeopleResults({
 function ChatList() {
     const { pathname } = useLocation();
     // The list sits above the chat's route, so it reads the open chat from the address.
-    const activeId = Number(/\/with\/(\d+)/.exec(pathname)?.[1]) || null;
+    const activeId = /\/with\/([a-z0-9]+)/.exec(pathname)?.[1] ?? null;
     const office = useQuery({
         queryKey: ['my-messages'],
         queryFn: getMyConversation,

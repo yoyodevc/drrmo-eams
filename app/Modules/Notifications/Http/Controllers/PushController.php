@@ -25,7 +25,7 @@ class PushController
         return response()->json(['data' => [
             'public_key' => config('webpush.public_key'),
             'devices' => PushSubscription::query()->where('user_id', $userId)->orderByDesc('id')->get()
-                ->map(fn (PushSubscription $s) => ['id' => $s->id, 'label' => $s->device_label, 'last_used_at' => $s->last_used_at?->toIso8601String(), 'endpoint_hash' => $s->endpoint_hash]),
+                ->map(fn (PushSubscription $s) => ['id' => $s->public_code, 'label' => $s->device_label, 'last_used_at' => $s->last_used_at?->toIso8601String(), 'endpoint_hash' => $s->endpoint_hash]),
             'settings' => [
                 'sound_muted' => $prefs->sound_muted ?? false,
                 'push_muted' => $prefs->push_muted ?? false,
@@ -53,7 +53,7 @@ class PushController
             $audit->log('push.enabled', $sub);
         }
 
-        return response()->json(['data' => ['id' => $sub->id, 'endpoint_hash' => $sub->endpoint_hash]], $sub->wasRecentlyCreated ? 201 : 200);
+        return response()->json(['data' => ['id' => $sub->public_code, 'endpoint_hash' => $sub->endpoint_hash]], $sub->wasRecentlyCreated ? 201 : 200);
     }
 
     /** Removes this device (used on sign out and when the person turns alerts off). */

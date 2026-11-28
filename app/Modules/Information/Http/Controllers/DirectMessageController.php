@@ -42,12 +42,12 @@ class DirectMessageController
             ->groupBy(DB::raw($other))
             ->orderByDesc('last_id')->limit(self::LIMIT)->get();
 
-        $people = User::query()->whereIn('id', $rows->pluck('person_id'))->get(['id', 'first_name', 'last_name'])->keyBy('id');
+        $people = User::query()->whereIn('id', $rows->pluck('person_id'))->get(['id', 'public_code', 'first_name', 'last_name'])->keyBy('id');
         $last = Message::query()->whereIn('id', $rows->pluck('last_id'))->get()->keyBy('id');
 
         return response()->json([
             'data' => $rows->map(fn ($r) => [
-                'person' => ['id' => (int) $r->person_id, 'name' => $people[$r->person_id]->name ?? 'Unknown'],
+                'person' => ['id' => $people[$r->person_id]->public_code ?? null, 'name' => $people[$r->person_id]->name ?? 'Unknown'],
                 'last' => [
                     'body' => $last[$r->last_id]->body,
                     'sent_at' => $last[$r->last_id]->sent_at->toIso8601String(),
@@ -71,9 +71,9 @@ class DirectMessageController
             // Matches the full name, so "demo vol" finds "Demo Volunteer".
             ->when($q !== '', fn ($query) => $query->whereRaw("concat(first_name, ' ', last_name) like ?", ['%'.$q.'%']))
             ->orderBy('first_name')->orderBy('last_name')->limit(self::PEOPLE_LIMIT)
-            ->get(['id', 'first_name', 'last_name']);
+            ->get(['id', 'public_code', 'first_name', 'last_name']);
 
-        return response()->json(['data' => $users->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name])->values()]);
+        return response()->json(['data' => $users->map(fn (User $u) => ['id' => $u->public_code, 'name' => $u->name])->values()]);
     }
 
     public function show(Request $request, User $user): JsonResponse
@@ -85,7 +85,7 @@ class DirectMessageController
             ->orderByDesc('sent_at')->orderByDesc('id')->limit(self::LIMIT)->get()->reverse()->values();
 
         return response()->json([
-            'person' => ['id' => $user->id, 'name' => $user->name],
+            'person' => ['id' => $user->public_code, 'name' => $user->name],
             'data' => $messages->map(fn (Message $m) => $this->row($m, $me, $user))->values(),
         ]);
     }

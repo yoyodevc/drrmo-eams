@@ -4,9 +4,10 @@ Scripts live in `scripts/windows`. Each has a `.ps1` and a `.bat` wrapper (doubl
 
 ## Run locally
 
-`run-local.bat` starts the web server on http://127.0.0.1:8000, the queue worker and Vite.
+`run-local.bat` starts the web server on http://127.0.0.1:8000, the queue worker, the scheduler and Vite.
 In PowerShell, add `-Build` to serve built assets instead of Vite.
 MySQL must already be running.
+The worker runs the `high` queue first, so emergency pushes are sent. Both scripts also open a scheduler window for reminders and report checks, and pass the temp folder to PHP so memo files and photos upload. Keep `MAIL_MAILER=log` in `.env` while testing so no real email goes out.
 
 ## Run behind a Cloudflare quick tunnel
 

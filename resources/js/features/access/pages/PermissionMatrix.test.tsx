@@ -6,7 +6,7 @@ import type { Role } from '@/features/access/api';
 import { PermissionMatrix } from './PermissionMatrix';
 
 const role = (over: Partial<Role>): Role => ({
-    id: 1,
+    id: 'r1',
     code: 'x',
     name: 'X',
     description: null,
@@ -21,11 +21,11 @@ const role = (over: Partial<Role>): Role => ({
 });
 
 const roles: Role[] = [
-    role({ id: 1, code: 'coordinator', name: 'Coordinator', members_count: 3 }),
-    role({ id: 2, code: 'records', name: 'Records officer', is_system: false }),
+    role({ id: 'r1', code: 'coordinator', name: 'Coordinator', members_count: 3 }),
+    role({ id: 'r2', code: 'records', name: 'Records officer', is_system: false }),
 ];
 
-const save = vi.fn((input: { id: number; permissions: string[] }[]) =>
+const save = vi.fn((input: { id: string; permissions: string[] }[]) =>
     Promise.resolve(
         roles.map((r) => ({
             ...r,
@@ -61,7 +61,7 @@ vi.mock('@/features/access/api', () => ({
                 { key: 'self', label: 'Own account' },
             ],
         }),
-    saveRolePermissions: (input: { id: number; permissions: string[] }[]) => save(input),
+    saveRolePermissions: (input: { id: string; permissions: string[] }[]) => save(input),
 }));
 
 function renderMatrix() {
@@ -94,7 +94,7 @@ describe('PermissionMatrix', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
         await vi.waitFor(() => expect(save).toHaveBeenCalledOnce());
         expect(save.mock.calls[0][0]).toEqual([
-            { id: 2, permissions: ['audit.view', 'profile.own'] },
+            { id: 'r2', permissions: ['audit.view', 'profile.own'] },
         ]);
     });
 

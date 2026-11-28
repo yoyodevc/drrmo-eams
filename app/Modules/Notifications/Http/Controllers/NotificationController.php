@@ -71,11 +71,11 @@ class NotificationController
             ->orderByDesc('sent_at')->limit(50)->get();
 
         return response()->json(['data' => $rows->map(fn (Notification $n) => [
-            'id' => $n->id,
+            'id' => $n->public_code,
             'type' => $n->type,
             'sent_at' => $n->sent_at?->toIso8601String(),
             'event' => $n->assignment?->event->title,
-            'assignment_id' => $n->assignment_id,
+            'assignment_id' => $n->assignment?->public_code,
         ])->values()]);
     }
 
@@ -95,7 +95,7 @@ class NotificationController
     private function row(Notification $n): array
     {
         return [
-            'id' => $n->id,
+            'id' => $n->public_code,
             'type' => $n->type,
             'status' => $n->status,
             'attempts' => $n->attempts,

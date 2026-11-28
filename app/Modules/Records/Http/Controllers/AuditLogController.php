@@ -27,7 +27,7 @@ class AuditLogController
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
 
-        $query = AuditLog::query()->with('actor:id,first_name,last_name,email');
+        $query = AuditLog::query()->with('actor:id,public_code,first_name,last_name,email');
         if (! empty($f['actor'])) {
             $like = '%'.addcslashes($f['actor'], '%_\\').'%';
             $query->whereHas('actor', fn ($q) => $q->where('email', 'like', $like)
@@ -57,7 +57,7 @@ class AuditLogController
                 'meta' => $l->meta,
                 'ip_address' => $l->ip_address,
                 'created_at' => $l->created_at->toIso8601String(),
-                'actor' => $l->actor ? ['id' => $l->actor->id, 'name' => $l->actor->name, 'email' => $l->actor->email] : null,
+                'actor' => $l->actor ? ['id' => $l->actor->public_code, 'name' => $l->actor->name, 'email' => $l->actor->email] : null,
             ])->values(),
             'meta' => ['current_page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
             // Distinct values for the filter dropdowns.

@@ -173,6 +173,10 @@ Uploads:
 
 Files get random names. Original names are kept only in the database. MIME type is checked from the file content, not the extension. Nothing user-uploaded is ever placed in `public/`.
 
+## 6a. Record links
+
+URLs and API answers use a random public code for each record, not its number. This stops people from guessing other records or counting them. It is not a permission check: every endpoint still runs its policy or gate, and a guessed or shared code gives no access.
+
 ## 7. Breach response (short version)
 
 1. Contain: log everyone out by running `php artisan jwt:secret --force` (new signing secret) and setting `revoked_at` on every row of `refresh_tokens`, rotate `APP_KEY` only if needed, change server and SMTP passwords.

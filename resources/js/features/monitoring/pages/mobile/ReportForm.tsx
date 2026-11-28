@@ -13,7 +13,7 @@ import { resizePhoto } from '../../resizePhoto';
 const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 
 export function ReportForm() {
-    const slotId = Number(useParams().id);
+    const slotId = useParams().id ?? '';
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const slots = useQuery({ queryKey: ['report-slots'], queryFn: listReportSlots });

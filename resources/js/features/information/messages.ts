@@ -24,7 +24,7 @@ export interface MyConversation {
 }
 
 export interface InboxRow {
-    person: { id: number; name: string };
+    person: { id: string; name: string };
     last: { body: string; sent_at: string; from_office: boolean };
     unread: number;
 }
@@ -35,18 +35,18 @@ export interface Inbox {
 }
 
 export interface DirectRow {
-    person: { id: number; name: string };
+    person: { id: string; name: string };
     last: { body: string; sent_at: string; mine: boolean };
     unread: number;
 }
 
 export interface Person {
-    id: number;
+    id: string;
     name: string;
 }
 
 export interface InboxThread {
-    person: { id: number; name: string };
+    person: { id: string; name: string };
     data: Message[];
 }
 
@@ -69,13 +69,13 @@ export const markMyConversationRead = () =>
 
 export const getInbox = () => api<Inbox>('/api/inbox');
 
-export const getInboxThread = (personId: number) => api<InboxThread>(`/api/inbox/${personId}`);
+export const getInboxThread = (personId: string) => api<InboxThread>(`/api/inbox/${personId}`);
 
-export async function replyTo(personId: number, body: string): Promise<Message> {
+export async function replyTo(personId: string, body: string): Promise<Message> {
     return (await api<{ data: Message }>(`/api/inbox/${personId}/reply`, json({ body }))).data;
 }
 
-export const markInboxThreadRead = (personId: number) =>
+export const markInboxThreadRead = (personId: string) =>
     api<{ unread: number }>(`/api/inbox/${personId}/read`, { method: 'POST' });
 
 // Unread count for the Messages tab. Everyone has `messages.use`, so this always runs once signed in.
@@ -109,14 +109,14 @@ export const getDirectChats = () => api<{ data: DirectRow[]; unread: number }>('
 export const findPeople = (q: string) =>
     api<{ data: Person[] }>(`/api/me/chats/people?q=${encodeURIComponent(q)}`);
 
-export const getDirectChat = (personId: number) =>
+export const getDirectChat = (personId: string) =>
     api<{ person: Person; data: Message[] }>(`/api/me/chats/${personId}`);
 
-export async function sendDirect(personId: number, body: string): Promise<Message> {
+export async function sendDirect(personId: string, body: string): Promise<Message> {
     return (await api<{ data: Message }>(`/api/me/chats/${personId}`, json({ body }))).data;
 }
 
-export const markDirectRead = (personId: number) =>
+export const markDirectRead = (personId: string) =>
     api<{ unread: number }>(`/api/me/chats/${personId}/read`, { method: 'POST' });
 
 const time = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });

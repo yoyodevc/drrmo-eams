@@ -458,14 +458,13 @@ function AssignForm({ role, duties, dutyId, onPick, focusRequest }: AssignProps)
     const full = duty !== undefined && spotsTaken(duty) >= duty.headcount;
 
     const candidates = useQuery({
-        queryKey: ['requirement-candidates', Number(dutyId)],
-        queryFn: () => listCandidates(Number(dutyId)),
+        queryKey: ['requirement-candidates', dutyId],
+        queryFn: () => listCandidates(dutyId),
         enabled: dutyId !== '',
     });
 
     const add = useMutation({
-        mutationFn: () =>
-            assignPerson(Number(dutyId), Number(userId), full ? reason.trim() : undefined),
+        mutationFn: () => assignPerson(dutyId, userId, full ? reason.trim() : undefined),
         onSuccess: () => {
             setUserId('');
             setReason('');
@@ -605,7 +604,7 @@ function PickPeople({ requirement, onDone }: { requirement: Requirement; onDone:
     const labels = roleLabels[requirement.role];
     const limit = requirement.headcount;
     const headingId = `pick-${requirement.id}-heading`;
-    const [chosen, setChosen] = useState<number[]>([]);
+    const [chosen, setChosen] = useState<string[]>([]);
     const [search, setSearch] = useState('');
     const [error, setError] = useState<string | null>(null);
 
@@ -644,7 +643,7 @@ function PickPeople({ requirement, onDone }: { requirement: Requirement; onDone:
         : people;
     const full = chosen.length >= limit;
 
-    function toggle(id: number) {
+    function toggle(id: string) {
         setError(null);
         setChosen((list) =>
             list.includes(id) ? list.filter((item) => item !== id) : [...list, id],
@@ -824,7 +823,7 @@ function AddDuty({ event, role, taskTypes, onClose }: AddProps) {
     const save = useMutation({
         mutationFn: () =>
             createRequirement(event.id, {
-                duty_type_id: Number(dutyTypeId),
+                duty_type_id: dutyTypeId,
                 role,
                 team_needed: team,
                 headcount: Number(headcount),
@@ -865,9 +864,9 @@ function AddDuty({ event, role, taskTypes, onClose }: AddProps) {
         <form
             onSubmit={submit}
             aria-labelledby={`${prefix}-heading`}
-            className="border-b border-stone-200 bg-white"
+            className="@container border-b border-stone-200 bg-white"
         >
-            <div className="px-6 pt-5">
+            <div className="px-4 pt-5 @md:px-6">
                 <p className="text-xs font-semibold tracking-[0.14em] text-stone-500 uppercase">
                     Step 1 of 2
                 </p>
@@ -878,27 +877,29 @@ function AddDuty({ event, role, taskTypes, onClose }: AddProps) {
                     Say what is needed. Next, you pick the people.
                 </p>
             </div>
-            <div className={`grid gap-4 px-6 py-5 sm:grid-cols-2 ${pickerClass}`}>
-                <SelectField
-                    id={`${prefix}-type`}
-                    label="Duty type"
-                    size="md"
-                    placeholder="Choose a duty"
-                    value={dutyTypeId}
-                    onChange={(e) => setDutyTypeId(e.target.value)}
-                    error={first('duty_type_id')}
-                    required
-                >
-                    {taskTypes.map((task) => (
-                        <SelectOption key={task.id} value={task.id}>
-                            {task.name}
-                        </SelectOption>
-                    ))}
-                </SelectField>
-                <div className="grid grid-cols-[1fr_6rem] gap-3">
+            <div className={`grid gap-4 px-4 py-5 @md:px-6 @lg:grid-cols-2 ${pickerClass}`}>
+                <div className="@lg:col-span-2">
+                    <SelectField
+                        id={`${prefix}-type`}
+                        label="Duty type"
+                        size="md"
+                        placeholder="Choose a duty"
+                        value={dutyTypeId}
+                        onChange={(e) => setDutyTypeId(e.target.value)}
+                        error={first('duty_type_id')}
+                        required
+                    >
+                        {taskTypes.map((task) => (
+                            <SelectOption key={task.id} value={task.id}>
+                                {task.name}
+                            </SelectOption>
+                        ))}
+                    </SelectField>
+                </div>
+                <div className="grid grid-cols-[1fr_6rem] gap-3 @lg:col-span-2 @lg:grid-cols-[1fr_8rem]">
                     <TextField
                         id={`${prefix}-team`}
-                        label="Team (optional)"
+                        label="Station (optional)"
                         value={team}
                         onChange={(e) => setTeam(e.target.value)}
                         error={first('team_needed')}
@@ -940,7 +941,7 @@ function AddDuty({ event, role, taskTypes, onClose }: AddProps) {
                     hint={duration(startsAt, endsAt) ?? 'Must sit inside the event time.'}
                     required
                 />
-                <div className="sm:col-span-2">
+                <div className="@lg:col-span-2">
                     <label
                         htmlFor={`${prefix}-instructions`}
                         className="mb-1.5 block text-sm font-medium text-stone-800"
@@ -970,7 +971,7 @@ function AddDuty({ event, role, taskTypes, onClose }: AddProps) {
                     )}
                 </div>
             </div>
-            <div className="space-y-3 px-6 pb-5">
+            <div className="space-y-3 px-4 pb-5 @md:px-6">
                 {formError && <Alert tone="error">{formError}</Alert>}
                 <div className="flex flex-wrap items-center justify-end gap-3">
                     <Button type="button" variant="secondary" size="md" onClick={onClose}>
@@ -1234,7 +1235,7 @@ function EventActions({ event }: { event: EventSummary }) {
 }
 
 export function EventDetail() {
-    const eventId = Number(useParams().id);
+    const eventId = useParams().id ?? '';
 
     const event = useQuery({ queryKey: ['event', eventId], queryFn: () => getEvent(eventId) });
     const lookups = useQuery({ queryKey: ['event-lookups'], queryFn: getLookups });

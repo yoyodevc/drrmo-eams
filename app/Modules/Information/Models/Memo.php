@@ -6,6 +6,7 @@ namespace App\Modules\Information\Models;
 
 use App\Modules\Information\Enums\MemoCategory;
 use App\Modules\Personnel\Models\User;
+use App\Support\HasPublicCode;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Database\Factories\MemoFactory;
@@ -19,12 +20,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property MemoCategory $category
  * @property CarbonImmutable|Carbon $posted_at
+ * @property string $public_code
  */
 class Memo extends Model
 {
     /** @use HasFactory<MemoFactory> */
     use HasFactory;
 
+    use HasPublicCode;
     use SoftDeletes;
 
     /** Word files get a PDF copy for the preview pane (ConvertMemoFile). */

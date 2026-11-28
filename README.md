@@ -109,9 +109,9 @@ Every day:
 1. Start MySQL in the XAMPP Control Panel.
 2. In one terminal run `php artisan serve`.
 3. In a second terminal run `npm run dev`. Skip this if you are not changing React code.
-4. In a third terminal run `php artisan queue:work`. Emails and push alerts wait in the queue until it runs.
+4. In a third terminal run `php artisan queue:work --queue=high,default`. Without `high`, emergency pushes are never sent. Emails and push alerts wait in the queue until it runs.
 5. In a fourth terminal run `php artisan schedule:work`. It sends the reminders, makes the report slots, flags overdue and missed reports and unanswered emergencies, and closes finished duties.
-6. Open http://127.0.0.1:8000. With `MAIL_MAILER=log`, emails are written to `storage/logs/laravel.log`.
+6. Open http://127.0.0.1:8000. With `MAIL_MAILER=log`, emails are written to `storage/logs/laravel.log`. Keep `MAIL_MAILER=log` for local testing so no real email is sent. The `run-local` and `run-tunnel` scripts (see docs/WINDOWS_SCRIPTS.md) start the server, the worker on `high,default`, the scheduler, and pass the temp folder to PHP so uploads work.
 
 To stop, press Ctrl+C in all terminals and stop MySQL in XAMPP.
 
@@ -121,7 +121,7 @@ Run checks with `composer check` and `npm run check`. Note: XAMPP ships MariaDB 
 
 The app sends these emails:
 
-- **Queued** (needs `php artisan queue:work`): a new, moved or cancelled assignment, a cancelled event, the shift reminders (6:00 PM the evening before and 1 hour before), report reminders and overdue or missed report alerts, and emergency alerts. Each assignment email has a button that opens the app on the right duty, with the link `/?assignment=<id>`. A person who is signed out signs in first and then lands on that duty.
+- **Queued** (needs `php artisan queue:work`): a new, moved or cancelled assignment, a cancelled event, the shift reminders (6:00 PM the evening before and 1 hour before), report reminders and overdue or missed report alerts, and emergency alerts. Each assignment email has a button that opens the app on the right duty, with the link `/?assignment=<code>`, where the code is the duty's random public code. A person who is signed out signs in first and then lands on that duty.
 - **Sent at once:** the sign up confirmation code, access approved or rejected, and the password reset link.
 
 A failed queued email is retried 3 times and then shows as `failed` in the notification log. Reminders need `php artisan schedule:work` locally. On the server, cron runs the scheduler. Notification log rows are deleted after 6 months.

@@ -21,7 +21,7 @@ export interface AuditRow {
     meta: Record<string, unknown> | null;
     ip_address: string | null;
     created_at: string;
-    actor: { id: number; name: string; email: string } | null;
+    actor: { id: string; name: string; email: string } | null;
 }
 
 export interface AuditFilters {

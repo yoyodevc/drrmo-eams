@@ -2,6 +2,10 @@
 
 Filled in per milestone. See ../../DOCUMENTATION_GUIDE.md. Types are shown as Laravel column types.
 
+## Public codes
+
+These tables also have `public_code` (string 16, unique, not null), the random code used in URLs and in the API: roles, permission_grants, users, departments, emergency_contacts, duty_types, campus_locations, events, event_duty_requirements, assignments, site_reports, emergency_reports, notifications, push_subscriptions and memos.
+
 ## M0 tables
 
 ### roles (Access)
@@ -165,7 +169,7 @@ Indexes: starts_at, status.
 | event_id | foreign key | restrict on delete |
 | duty_type_id | foreign key | restrict on delete |
 | role | string(20) | marshal or volunteer |
-| team_needed | string(100), nullable | the team the person must be in, or empty for any team |
+| team_needed | string(100), nullable | optional station for the duty, free text, for example Gate A |
 | headcount | smallint | people needed |
 | shift_starts_at, shift_ends_at | datetime | |
 | instructions | text, nullable | shown to the person on their duty |

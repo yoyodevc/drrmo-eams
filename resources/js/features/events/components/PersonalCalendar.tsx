@@ -25,7 +25,7 @@ const longDay = new Intl.DateTimeFormat(undefined, {
 });
 
 interface Dated {
-    id: number;
+    id: string;
     starts_at: string;
     ends_at: string;
 }

@@ -96,7 +96,7 @@ function Detail({
     onChanged,
     panel = false,
 }: {
-    id: number;
+    id: string;
     onChanged: () => void;
     panel?: boolean;
 }) {
@@ -349,9 +349,9 @@ export function EmergencyInbox({ embedded = false }: { embedded?: boolean }) {
     const wide = useMediaQuery('(min-width: 1024px)');
     const split = embedded && wide;
     const [filter, setFilter] = useState<'open' | 'all'>('open');
-    const openParam = Number(params.get('open')) || null;
-    const [openId, setOpenIdState] = useState<number | null>(openParam);
-    const setOpenId = (id: number | null) => {
+    const openParam = params.get('open') || null;
+    const [openId, setOpenIdState] = useState<string | null>(openParam);
+    const setOpenId = (id: string | null) => {
         setOpenIdState(id);
         if (params.has('open')) {
             const next = new URLSearchParams(params);

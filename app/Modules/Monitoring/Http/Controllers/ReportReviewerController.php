@@ -8,6 +8,7 @@ use App\Modules\Access\Enums\Role;
 use App\Modules\Monitoring\Models\ReportReviewer;
 use App\Modules\Personnel\Models\User;
 use App\Modules\Records\Contracts\AuditLogger;
+use App\Support\PublicCode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,7 @@ class ReportReviewerController
     public function update(Request $request, AuditLogger $audit): JsonResponse
     {
         $this->authorizeAdmin($request);
+        $request->merge(['user_ids' => PublicCode::toIds(User::class, $request->input('user_ids'))]);
         $data = $request->validate([
             'user_ids' => ['present', 'array', 'max:'.ReportReviewer::MAX],
             'user_ids.*' => ['integer', 'distinct'],
@@ -62,12 +64,14 @@ class ReportReviewerController
     private function payload(): array
     {
         $selected = ReportReviewer::query()->pluck('user_id')->all();
+        $codes = User::query()->whereIn('id', $selected)->pluck('public_code', 'id');
 
         return [
             'max' => ReportReviewer::MAX,
-            'user_ids' => array_map('intval', $selected),
+            // In the order they were picked.
+            'user_ids' => array_values(array_filter(array_map(fn ($id) => $codes[$id] ?? null, $selected))),
             'candidates' => $this->marshals()->orderBy('first_name')->orderBy('last_name')->get()
-                ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])->values()->all(),
+                ->map(fn (User $u) => ['id' => $u->public_code, 'name' => $u->name, 'email' => $u->email])->values()->all(),
         ];
     }
 

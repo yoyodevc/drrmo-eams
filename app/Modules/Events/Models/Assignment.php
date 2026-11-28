@@ -7,6 +7,7 @@ namespace App\Modules\Events\Models;
 use App\Modules\Events\Enums\AssignmentStatus;
 use App\Modules\Events\Enums\EventStatus;
 use App\Modules\Personnel\Models\User;
+use App\Support\HasPublicCode;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,9 +20,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|Carbon|null $duty_started_at
  * @property CarbonImmutable|Carbon|null $duty_ended_at
  * @property CarbonImmutable|Carbon|null $cancelled_at
+ * @property string $public_code
  */
 class Assignment extends Model
 {
+    use HasPublicCode;
+
     protected $attributes = ['status' => 'assigned'];
 
     protected $fillable = ['event_id', 'requirement_id', 'user_id', 'duty_type_id', 'assigned_by', 'status', 'acknowledged_at', 'duty_started_at', 'duty_ended_at', 'cancelled_at', 'cancel_reason', 'override_reason'];

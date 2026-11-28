@@ -31,13 +31,13 @@ describe('saveMemo', () => {
         };
 
         await saveMemo(null, input);
-        await saveMemo(7, input);
+        await saveMemo('m7', input);
 
         const [newUrl, newInit] = fetchMock.mock.calls[0];
         const [editUrl, editInit] = fetchMock.mock.calls[1];
         expect(newUrl).toBe('/api/memos');
         expect((newInit?.body as FormData).get('_method')).toBeNull();
-        expect(editUrl).toBe('/api/memos/7');
+        expect(editUrl).toBe('/api/memos/m7');
         expect(editInit?.method).toBe('POST');
         expect((editInit?.body as FormData).get('_method')).toBe('PATCH');
         expect((editInit?.body as FormData).get('remove_file')).toBe('1');

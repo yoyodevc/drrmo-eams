@@ -63,7 +63,7 @@ it('refuses removing someone else\'s device and anonymous use', function () {
     $other = User::factory()->role(RoleCode::Marshal)->create();
     $theirs = deviceFor($other);
 
-    withAuthCookies(loginCookies($mine))->deleteJson("/api/push/devices/{$theirs->id}")->assertForbidden();
+    withAuthCookies(loginCookies($mine))->deleteJson("/api/push/devices/{$theirs->public_code}")->assertForbidden();
     expect(PushSubscription::query()->count())->toBe(1);
     withAuthCookies([])->postJson('/api/push/subscribe', subscribeBody())->assertUnauthorized();
 });

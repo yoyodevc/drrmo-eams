@@ -7,6 +7,7 @@ namespace App\Modules\Events\Models;
 use App\Modules\Events\Enums\EventStatus;
 use App\Modules\Personnel\Models\Department;
 use App\Modules\Personnel\Models\User;
+use App\Support\HasPublicCode;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Database\Factories\EventFactory;
@@ -24,12 +25,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|string|null $places_needed
  * @property CarbonImmutable|Carbon $starts_at
  * @property CarbonImmutable|Carbon $ends_at
+ * @property string $public_code
  */
 #[UseFactory(EventFactory::class)]
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
     use HasFactory;
+
+    use HasPublicCode;
 
     protected $fillable = ['title', 'description', 'event_type', 'campus_location_id', 'department_id', 'starts_at', 'ends_at', 'status', 'created_by'];
 

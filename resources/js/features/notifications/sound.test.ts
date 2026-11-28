@@ -155,7 +155,10 @@ describe('sound engine', () => {
     it('plays from a local copy once the files are preloaded', async () => {
         vi.stubGlobal(
             'fetch',
-            vi.fn(() => Promise.resolve(new Response(new Blob(['x']), { status: 200 }))),
+            // A plain object: Node's Response cannot read jsdom's Blob on every runner.
+            vi.fn(() =>
+                Promise.resolve({ ok: true, blob: () => Promise.resolve(new Blob(['x'])) }),
+            ),
         );
         URL.createObjectURL = vi.fn(() => 'blob:local-file');
         await sound.preloadSounds();
@@ -163,6 +166,16 @@ describe('sound engine', () => {
         expect(player().src).toBe('blob:local-file');
         sound.startAlarm();
         expect(sound.isAlarmPlaying()).toBe(true);
+    });
+
+    it('remembers on this device that sound was turned on, for the next page load', async () => {
+        localStorage.clear();
+        expect(sound.soundRemembered()).toBe(false);
+        await sound.unlock();
+        vi.resetModules();
+        const nextTab = await import('./sound');
+        expect(nextTab.soundRemembered()).toBe(true);
+        expect(nextTab.isUnlocked()).toBe(false);
     });
 
     it('tells listeners when sound unlocks', async () => {

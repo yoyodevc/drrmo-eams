@@ -6,19 +6,19 @@ beforeEach(() => localStorage.clear());
 
 describe('report draft', () => {
     it('keeps the text for one slot and forgets it when cleared', () => {
-        saveDraft(1, 'Gate 2 is clear');
-        saveDraft(2, 'Other slot');
-        expect(readDraft(1)).toBe('Gate 2 is clear');
-        expect(readDraft(2)).toBe('Other slot');
+        saveDraft('1', 'Gate 2 is clear');
+        saveDraft('2', 'Other slot');
+        expect(readDraft('1')).toBe('Gate 2 is clear');
+        expect(readDraft('2')).toBe('Other slot');
 
-        clearDraft(1);
-        expect(readDraft(1)).toBe('');
-        expect(readDraft(2)).toBe('Other slot');
+        clearDraft('1');
+        expect(readDraft('1')).toBe('');
+        expect(readDraft('2')).toBe('Other slot');
     });
 
     it('removes the draft when the text is emptied', () => {
-        saveDraft(1, 'x');
-        saveDraft(1, '');
+        saveDraft('1', 'x');
+        saveDraft('1', '');
         expect(localStorage.length).toBe(0);
     });
 });

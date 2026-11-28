@@ -72,7 +72,7 @@ function SelectField({
 
 export function PersonForm() {
     const { id } = useParams();
-    const personId = id ? Number(id) : null;
+    const personId = id ?? null;
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     // null until the admin types, so the form shows what is on file.
@@ -80,7 +80,7 @@ export function PersonForm() {
 
     const person = useQuery({
         queryKey: ['person', personId],
-        queryFn: () => getPerson(personId as number),
+        queryFn: () => getPerson(personId as string),
         enabled: personId !== null,
     });
     const departments = useQuery({ queryKey: ['departments'], queryFn: listDepartments });

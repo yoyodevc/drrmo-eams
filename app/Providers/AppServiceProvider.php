@@ -8,6 +8,7 @@ use App\Auth\AccessTokens;
 use App\Auth\JwtGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Foundation\Console\ServeCommand;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
@@ -31,6 +32,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // `php artisan serve` hands PHP only a few environment variables. Without these two, PHP on
+        // Windows has no temporary folder and every file upload fails.
+        if ($this->app->runningInConsole()) {
+            array_push(ServeCommand::$passthroughVariables, 'TEMP', 'TMP');
+        }
+
         // Behind a tunnel or load balancer the page must still know it is https. Set TRUSTED_PROXIES
         // to the proxy IPs (for example 127.0.0.1 for a local cloudflared). Empty trusts nobody.
         $proxies = array_values(array_filter(array_map('trim', explode(',', (string) config('app.trusted_proxies')))));

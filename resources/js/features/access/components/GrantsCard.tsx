@@ -34,7 +34,7 @@ function toLocalInput(date: Date): string {
 const selectClass =
     'block min-h-12 w-full cursor-pointer rounded-control border border-stone-300 bg-white px-3.5 text-base text-stone-900 hover:border-stone-400 focus:border-maroon-700 focus:ring-3 focus:ring-maroon-700/15 focus:outline-none';
 
-export function GrantsCard({ personId, firstName }: { personId: number; firstName: string }) {
+export function GrantsCard({ personId, firstName }: { personId: string; firstName: string }) {
     const queryClient = useQueryClient();
     const grants = useQuery({
         queryKey: ['grants', personId],
@@ -44,7 +44,7 @@ export function GrantsCard({ personId, firstName }: { personId: number; firstNam
     const [ending, setEnding] = useState<Grant | null>(null);
 
     const revoke = useMutation({
-        mutationFn: (id: number) => revokeGrant(id),
+        mutationFn: (id: string) => revokeGrant(id),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: ['grants', personId] });
             setEnding(null);
@@ -179,7 +179,7 @@ export function GiveDialog({
 }: {
     open: boolean;
     // Left out on the Access page, where the admin picks the person in the dialog.
-    personId?: number;
+    personId?: string;
     firstName?: string;
     onClose: () => void;
     onSaved: () => Promise<void>;
@@ -206,9 +206,9 @@ export function GiveDialog({
     const save = useMutation({
         mutationFn: () =>
             createGrant({
-                user_id: personId ?? Number(picked),
+                user_id: personId ?? picked,
                 permission: code,
-                event_id: eventId ? Number(eventId) : null,
+                event_id: eventId || null,
                 starts_at: new Date(starts).toISOString(),
                 ends_at: new Date(ends).toISOString(),
                 reason: reason.trim(),

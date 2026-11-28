@@ -510,3 +510,37 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Open: DEPLOYMENT.md and `.env.example` mention a ProductionSeeder and an AdminUserSeeder that do not exist, so there is no first admin step yet. It belongs to S6.5.
 - Evidence: docs only, no code changed
 - Paper: Chapter 3 (system design)
+
+## 2026-11-28 · Random record codes in links (core, all modules)
+- What was built: every record people open now has a random public code. Addresses such as /admin/events/..., the duty link in emails, push links, query filters and API answers use the code. Record numbers stay inside the database. Old rows got their codes during the migration
+- Decision and why: random codes stop people from guessing the next record or counting records. Primary keys stayed integers, so no foreign key changed. Policies were not relaxed. A code is not a permission
+- Problem met and fix: a number sent to the map filter would have shown every event, so an unknown code now matches nothing. A copied row would have kept the same code, so copies get a new one
+- Open: links in emails sent before this change no longer highlight the duty or open the report. Reports, emergencies and location points still waiting offline on a phone at the moment of the update are not sent by the new version, so deploy when no duty is running
+- Evidence: tests/Feature/Core/PublicCodeTest.php checks that a number is refused for each record type. 466 PHP tests and 155 JavaScript tests pass. Click-through on the local server as an admin and as a marshal at phone width
+- Paper: Chapter 3 (security design), Chapter 4
+
+## 2026-11-28 · Local start fixes: uploads and urgent push (core)
+- Problem met and fix: on Windows, `php artisan serve` hid the temporary folder from PHP, so every memo file and report or emergency photo failed. The app now passes TEMP and TMP through to the web server
+- Problem met and fix: run-local and run-tunnel started a worker that skipped the `high` queue, so emergency pushes were never sent. Both now process `high` first. The production worker was already correct
+- Evidence: found during a click-through, then an upload sent to a normally started server no longer shows the PHP warning
+- Paper: Chapter 4 (testing)
+
+## 2026-11-28 · Scheduler in the local start scripts (core)
+- What was built: run-local and run-tunnel now also open a scheduler window, so duty reminders, report slots, emergency escalation and the cleanup jobs run during local and phone testing
+- Evidence: both scripts parse without errors
+- Paper: Chapter 4 (testing)
+
+## 2026-11-28 · Alert sound reminder, duty types, Station and Add duty layout (notifications, events)
+- What was built: the "Turn on alert sound" banner no longer shows in every new tab. The app remembers the choice on the device
+- What was built: Manage lists now has a Duty types list. Admins can add, rename and switch off a duty type. Switched off types stay on old records
+- What was built: the duty's team field is called Station in the screens and messages, to match how the office speaks. The database column name did not change
+- What was built: the Add duty form adapts to its own width, so it fits the side panel and the full page
+- Evidence: new Pest tests for the duty type endpoints, including the forbidden case. Checked in the browser at phone and desktop width
+- Paper: Chapter 4 (admin screens)
+
+## 2026-11-28 · Reports pages redesign (monitoring)
+- What was built: Needs attention has larger summary numbers with a status bar on wide screens, one late reports list at every width, and a stacked bar per event for on time, late, overdue and missed
+- What was built: All reports splits rows by day, puts the time in its own column from 768 px, shows slots with no report as a quieter row, and uses smaller photos
+- Evidence: type check and lint pass. Checked at phone and desktop width
+- Paper: Chapter 4 (monitoring screens)
+

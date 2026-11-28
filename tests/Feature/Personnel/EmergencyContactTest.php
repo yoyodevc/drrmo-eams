@@ -48,8 +48,8 @@ it('only shows a person their own contacts', function () {
     $theirs = $other->emergencyContacts()->create(CONTACT);
 
     withAuthCookies(loginCookies($me))->getJson('/api/me/emergency-contacts')->assertOk()->assertJsonCount(0, 'data');
-    withAuthCookies(loginCookies($me))->putJson("/api/me/emergency-contacts/{$theirs->id}", CONTACT)->assertForbidden();
-    withAuthCookies(loginCookies($me))->deleteJson("/api/me/emergency-contacts/{$theirs->id}")->assertForbidden();
+    withAuthCookies(loginCookies($me))->putJson("/api/me/emergency-contacts/{$theirs->public_code}", CONTACT)->assertForbidden();
+    withAuthCookies(loginCookies($me))->deleteJson("/api/me/emergency-contacts/{$theirs->public_code}")->assertForbidden();
     expect($theirs->fresh())->not->toBeNull();
 });
 
@@ -58,7 +58,7 @@ it('lets an admin read a persons contacts and audits it', function () {
     $volunteer = User::factory()->role(RoleCode::Volunteer)->create();
     $volunteer->emergencyContacts()->create(CONTACT);
 
-    withAuthCookies(loginCookies($admin))->getJson("/api/admin/people/{$volunteer->id}/emergency-contacts")
+    withAuthCookies(loginCookies($admin))->getJson("/api/admin/people/{$volunteer->public_code}/emergency-contacts")
         ->assertOk()->assertJsonPath('data.0.phone', '0917 123 4567');
     expect(AuditLog::query()->where('action', 'emergency_contact.viewed')->exists())->toBeTrue();
 });
@@ -68,6 +68,6 @@ it('keeps non-admins from reading other peoples contacts', function () {
     $other = User::factory()->role(RoleCode::Volunteer)->create();
     $other->emergencyContacts()->create(CONTACT);
 
-    withAuthCookies(loginCookies($me))->getJson("/api/admin/people/{$other->id}/emergency-contacts")->assertForbidden();
+    withAuthCookies(loginCookies($me))->getJson("/api/admin/people/{$other->public_code}/emergency-contacts")->assertForbidden();
     $this->withAuthCookies([])->getJson('/api/me/emergency-contacts')->assertUnauthorized();
 });

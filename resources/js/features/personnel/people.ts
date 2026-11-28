@@ -6,18 +6,18 @@ import type { Availability } from '@/features/personnel/volunteers';
 export type RoleCode = string;
 
 export interface Person {
-    id: number;
+    id: string;
     first_name: string;
     last_name: string;
     name: string;
     email: string;
     contact_number: string | null;
     role: RoleCode | null;
-    role_id: number | null;
+    role_id: string | null;
     role_name: string | null;
     team: string | null;
     team_name: string | null;
-    department: { id: number; name: string } | null;
+    department: { id: string; name: string } | null;
     status: Availability;
     account_status: string;
     last_login_at: string | null;
@@ -44,7 +44,7 @@ export interface PeopleFilters {
 }
 
 export interface Department {
-    id: number;
+    id: string;
     name: string;
     active: boolean;
     people_count: number;
@@ -71,13 +71,13 @@ export async function listPeople(
     return api(`/api/people${query ? `?${query}` : ''}`);
 }
 
-export async function getPerson(id: number): Promise<Person> {
+export async function getPerson(id: string): Promise<Person> {
     const body = await api<{ data: Person }>(`/api/people/${id}`);
     return body.data;
 }
 
 export async function savePerson(
-    id: number | null,
+    id: string | null,
     input: PersonInput,
 ): Promise<{ data: Person; invite_sent?: boolean }> {
     return api(id === null ? '/api/people' : `/api/people/${id}`, {
@@ -85,13 +85,13 @@ export async function savePerson(
         body: JSON.stringify({
             ...input,
             team: input.team === '' ? null : input.team,
-            department_id: input.department_id === '' ? null : Number(input.department_id),
+            department_id: input.department_id === '' ? null : input.department_id,
             contact_number: input.contact_number.trim() === '' ? null : input.contact_number,
         }),
     });
 }
 
-export async function resendInvite(id: number): Promise<boolean> {
+export async function resendInvite(id: string): Promise<boolean> {
     const body = await api<{ invite_sent: boolean }>(`/api/people/${id}/invite`, {
         method: 'POST',
     });

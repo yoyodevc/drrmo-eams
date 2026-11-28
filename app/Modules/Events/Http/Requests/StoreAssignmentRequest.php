@@ -6,6 +6,8 @@ namespace App\Modules\Events\Http\Requests;
 
 use App\Modules\Events\Models\DutyRequirement;
 use App\Modules\Events\Models\Event;
+use App\Modules\Personnel\Models\User;
+use App\Support\PublicCode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -17,6 +19,14 @@ class StoreAssignmentRequest extends FormRequest
     public function authorize(): bool
     {
         return Gate::allows('assign', Event::class);
+    }
+
+    /** Clients send public codes. The rules below work on the ids behind them. */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('user_id')) {
+            $this->merge(['user_id' => PublicCode::toId(User::class, $this->input('user_id'))]);
+        }
     }
 
     /** @return array<string, list<mixed>> */

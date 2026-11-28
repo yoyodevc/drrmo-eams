@@ -67,13 +67,13 @@ class EmergencyController
 
         EmergencyReported::dispatch($report);
 
-        return response()->json(['data' => self::ownRow($report->load('event:id,title'))], 201);
+        return response()->json(['data' => self::ownRow($report->load('event:id,public_code,title'))], 201);
     }
 
     /** The signed in person's own emergencies from the last day, newest first, with their status. */
     public function mine(Request $request): JsonResponse
     {
-        $rows = EmergencyReport::query()->with(['event:id,title', 'acknowledger:id,first_name,last_name'])
+        $rows = EmergencyReport::query()->with(['event:id,public_code,title', 'acknowledger:id,first_name,last_name'])
             ->where('user_id', $request->user()?->id)->where('created_at', '>=', now()->subDay())
             ->orderByDesc('id')->limit(20)->get();
 
@@ -98,7 +98,7 @@ class EmergencyController
             ->orderBy('id')->limit(50)->get();
 
         return response()->json(['data' => $rows->map(fn (EmergencyReport $e) => [
-            'id' => $e->id,
+            'id' => $e->public_code,
             'type' => $e->type->value,
             'note' => $e->note,
             'status' => $e->status->value,
@@ -121,7 +121,7 @@ class EmergencyController
         Gate::authorize('viewAny', EmergencyReport::class);
         $f = $request->validate(['status' => ['nullable', 'in:sent,acknowledged,resolved,open']]);
 
-        $query = EmergencyReport::query()->with(['event:id,title', 'reporter:id,first_name,last_name', 'acknowledger:id,first_name,last_name', 'resolver:id,first_name,last_name']);
+        $query = EmergencyReport::query()->with(['event:id,public_code,title', 'reporter:id,first_name,last_name', 'acknowledger:id,first_name,last_name', 'resolver:id,first_name,last_name']);
         if (($f['status'] ?? null) === 'open') {
             $query->where('status', '!=', EmergencyStatus::Resolved->value);
         } elseif (! empty($f['status'])) {
@@ -139,7 +139,7 @@ class EmergencyController
     public function show(EmergencyReport $emergency, AuditLogger $audit): JsonResponse
     {
         Gate::authorize('review', $emergency);
-        $emergency->load(['event:id,title', 'reporter:id,first_name,last_name', 'acknowledger:id,first_name,last_name', 'resolver:id,first_name,last_name']);
+        $emergency->load(['event:id,public_code,title', 'reporter:id,first_name,last_name', 'acknowledger:id,first_name,last_name', 'resolver:id,first_name,last_name']);
 
         $audit->log($emergency->hasLocation() ? 'emergency.location_viewed' : 'emergency.viewed', $emergency, meta: ['event_id' => $emergency->event_id]);
 
@@ -175,7 +175,7 @@ class EmergencyController
             $audit->log('emergency.acknowledged', $locked, meta: ['event_id' => $locked->event_id, 'escalated' => $locked->escalated_at !== null]);
         });
 
-        return response()->json(['data' => self::reviewRow($emergency->fresh(['event:id,title', 'reporter:id,first_name,last_name', 'acknowledger:id,first_name,last_name', 'resolver:id,first_name,last_name']) ?? $emergency)]);
+        return response()->json(['data' => self::reviewRow($emergency->fresh(['event:id,public_code,title', 'reporter:id,first_name,last_name', 'acknowledger:id,first_name,last_name', 'resolver:id,first_name,last_name']) ?? $emergency)]);
     }
 
     /** Closes the emergency with an optional note. Doing it twice changes nothing. */
@@ -193,7 +193,7 @@ class EmergencyController
             $audit->log('emergency.resolved', $locked, meta: ['event_id' => $locked->event_id, 'has_note' => ! empty($data['note'])]);
         });
 
-        return response()->json(['data' => self::reviewRow($emergency->fresh(['event:id,title', 'reporter:id,first_name,last_name', 'acknowledger:id,first_name,last_name', 'resolver:id,first_name,last_name']) ?? $emergency)]);
+        return response()->json(['data' => self::reviewRow($emergency->fresh(['event:id,public_code,title', 'reporter:id,first_name,last_name', 'acknowledger:id,first_name,last_name', 'resolver:id,first_name,last_name']) ?? $emergency)]);
     }
 
     private function photoResponse(EmergencyReport $emergency): StreamedResponse
@@ -213,7 +213,7 @@ class EmergencyController
     public static function ownRow(EmergencyReport $r): array
     {
         return [
-            'id' => $r->id,
+            'id' => $r->public_code,
             'client_id' => $r->client_id,
             'type' => $r->type->value,
             'note' => $r->note,
@@ -232,7 +232,7 @@ class EmergencyController
     public static function reviewRow(EmergencyReport $r): array
     {
         return [
-            'id' => $r->id,
+            'id' => $r->public_code,
             'type' => $r->type->value,
             'note' => $r->note,
             'has_photo' => $r->photo_path !== null,
@@ -241,7 +241,7 @@ class EmergencyController
             'escalated' => $r->escalated_at !== null,
             'sent_at' => $r->created_at->toIso8601String(),
             'escalated_at' => $r->escalated_at?->toIso8601String(),
-            'event' => ['id' => $r->event_id, 'title' => $r->event->title ?? null],
+            'event' => ['id' => $r->event->public_code ?? null, 'title' => $r->event->title ?? null],
             'reporter' => $r->reporter->name ?? null,
             'acknowledged_by' => $r->acknowledger->name ?? null,
             'acknowledged_at' => $r->acknowledged_at?->toIso8601String(),

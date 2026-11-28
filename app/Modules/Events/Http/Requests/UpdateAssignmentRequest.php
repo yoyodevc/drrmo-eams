@@ -7,6 +7,7 @@ namespace App\Modules\Events\Http\Requests;
 use App\Modules\Events\Models\Assignment;
 use App\Modules\Events\Models\DutyRequirement;
 use App\Modules\Events\Models\Event;
+use App\Support\PublicCode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Validator;
@@ -17,6 +18,14 @@ class UpdateAssignmentRequest extends FormRequest
     public function authorize(): bool
     {
         return Gate::allows('assign', Event::class);
+    }
+
+    /** Clients send public codes. The rules below work on the ids behind them. */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('requirement_id')) {
+            $this->merge(['requirement_id' => PublicCode::toId(DutyRequirement::class, $this->input('requirement_id'))]);
+        }
     }
 
     /** @return array<string, list<mixed>> */

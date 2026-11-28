@@ -94,7 +94,7 @@ function LoadingView() {
 }
 
 export function MemoView() {
-    const id = Number(useParams().id);
+    const id = useParams().id ?? '';
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [confirming, setConfirming] = useState(false);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Events\Models;
 
+use App\Support\HasPublicCode;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
@@ -13,9 +14,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property CarbonImmutable|Carbon $shift_starts_at
  * @property CarbonImmutable|Carbon $shift_ends_at
+ * @property string $public_code
  */
 class DutyRequirement extends Model
 {
+    use HasPublicCode;
+
     protected $table = 'event_duty_requirements';
 
     protected $fillable = ['event_id', 'duty_type_id', 'role', 'team_needed', 'headcount', 'shift_starts_at', 'shift_ends_at', 'instructions'];

@@ -73,8 +73,7 @@ function NewRoleDialog({
     const [copyFrom, setCopyFrom] = useState('');
 
     const save = useMutation({
-        mutationFn: () =>
-            createRole({ name, description, copy_from: copyFrom ? Number(copyFrom) : null }),
+        mutationFn: () => createRole({ name, description, copy_from: copyFrom || null }),
         onSuccess: async (role) => {
             await queryClient.invalidateQueries({ queryKey: ['roles'] });
             await queryClient.invalidateQueries({ queryKey: ['role-options'] });
