@@ -1,4 +1,4 @@
-# Runs the app on http://127.0.0.1:8000 with the Vite dev server and a queue worker.
+# Runs the app on http://127.0.0.1:8000 with the Vite dev server, a queue worker and the scheduler.
 # Use -Build to serve built assets instead of Vite (no hot reload).
 param([switch]$Build, [int]$Port = 8000)
 . "$PSScriptRoot\_common.ps1"
@@ -11,6 +11,7 @@ php artisan config:clear | Out-Null
 
 Start-Window 'DRRMO web' "php artisan serve --host=127.0.0.1 --port=$Port"
 Start-Window 'DRRMO queue' 'php artisan queue:work --queue=high,default --tries=3 --sleep=3'
+Start-Window 'DRRMO scheduler' 'php artisan schedule:work'
 if ($Build) {
     Remove-Item public\hot -ErrorAction SilentlyContinue
     npm run build

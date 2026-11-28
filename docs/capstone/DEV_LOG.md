@@ -524,3 +524,8 @@ One entry per merged story. Format in ../DOCUMENTATION_GUIDE.md section 4.
 - Problem met and fix: run-local and run-tunnel started a worker that skipped the `high` queue, so emergency pushes were never sent. Both now process `high` first. The production worker was already correct
 - Evidence: found during a click-through, then an upload sent to a normally started server no longer shows the PHP warning
 - Paper: Chapter 4 (testing)
+
+## 2026-11-28 · Scheduler in the local start scripts (core)
+- What was built: run-local and run-tunnel now also open a scheduler window, so duty reminders, report slots, emergency escalation and the cleanup jobs run during local and phone testing
+- Evidence: both scripts parse without errors
+- Paper: Chapter 4 (testing)

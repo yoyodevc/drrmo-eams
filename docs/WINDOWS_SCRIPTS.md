@@ -4,7 +4,7 @@ Scripts live in `scripts/windows`. Each has a `.ps1` and a `.bat` wrapper (doubl
 
 ## Run locally
 
-`run-local.bat` starts the web server on http://127.0.0.1:8000, the queue worker and Vite.
+`run-local.bat` starts the web server on http://127.0.0.1:8000, the queue worker, the scheduler and Vite.
 In PowerShell, add `-Build` to serve built assets instead of Vite.
 MySQL must already be running.
 
